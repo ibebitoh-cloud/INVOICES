@@ -1,14 +1,14 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { 
   FileUp, Search, Plus, FileText, CheckCircle2, XCircle, Clock, Printer, 
-  ChevronLeft, Info, Settings2, Calendar, User, Hash, ArrowRightLeft, 
-  Layout, Eye, EyeOff, ArrowUp, ArrowDown, Users, UserCircle, 
-  Filter, Download, Trash2, Edit3, Image as ImageIcon, Table as TableIcon,
-  Save, X, Copy, BookOpen, SlidersHorizontal, ChevronDown, ChevronUp, AlertCircle,
-  Building2, Palette, Layers, Info as InfoIcon, Settings, CheckCircle, Anchor,
-  FileSpreadsheet, ClipboardCheck, FilePlus, ToggleLeft, ToggleRight, Settings as SettingsIcon,
-  MapPin, Package, Truck
+  ChevronLeft, Layout, Eye, EyeOff, ArrowUp, ArrowDown, Users, UserCircle, 
+  Download, Trash2, Edit3, Image as ImageIcon, Table as TableIcon,
+  Save, X, CheckCircle, Anchor, FileSpreadsheet, ClipboardCheck, 
+  FilePlus, ToggleLeft, ToggleRight, Settings as SettingsIcon,
+  MapPin, Package, Truck, SlidersHorizontal, ChevronUp, ChevronDown, 
+  ArrowRightLeft, Building2, User, Upload, ShieldCheck, Mail, CreditCard,
+  Briefcase, Hash
 } from 'lucide-react';
 import { Booking, Invoice, InvoiceSectionId, TemplateConfig, UserProfile, SavedTemplate, InvoiceTheme, CustomerSettings, TemplateFields } from './types';
 import { parseCurrency, formatCurrency, exportToCSV } from './utils/formatters';
@@ -21,49 +21,28 @@ const App: React.FC = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
-  const [hoveredBookingNo, setHoveredBookingNo] = useState<string | null>(null);
-  
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const [filterDateRange, setFilterDateRange] = useState({ start: '', end: '' });
-  const [filterRoute, setFilterRoute] = useState('');
-  const [filterReefer, setFilterReefer] = useState('');
-  const [filterGenset, setFilterGenset] = useState('');
   const [activeQuickPort, setActiveQuickPort] = useState<string | null>(null);
 
   const [view, setView] = useState<'dashboard' | 'config' | 'invoice-preview' | 'profile' | 'portfolio' | 'operations' | 'field-master'>('dashboard');
   const [activeInvoice, setActiveInvoice] = useState<Invoice | null>(null);
-  const [inspectingBooking, setInspectingBooking] = useState<Booking | null>(null);
-  const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
   const [selectedCustomerName, setSelectedCustomerName] = useState<string | null>(null);
-  const [showSaveTemplateModal, setShowSaveTemplateModal] = useState(false);
-  const [newTemplateName, setNewTemplateName] = useState('');
+  const [showManualAddModal, setShowManualAddModal] = useState(false);
 
   const [customerSettings, setCustomerSettings] = useState<Record<string, CustomerSettings>>(() => {
     const saved = localStorage.getItem('customer_settings');
     return saved ? JSON.parse(saved) : {};
   });
 
-  const [editingCustomerSettings, setEditingCustomerSettings] = useState<string | null>(null);
-
   useEffect(() => {
     localStorage.setItem('customer_settings', JSON.stringify(customerSettings));
   }, [customerSettings]);
-
-  const [savedTemplates, setSavedTemplates] = useState<SavedTemplate[]>(() => {
-    const saved = localStorage.getItem('invoice_templates');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  useEffect(() => {
-    localStorage.setItem('invoice_templates', JSON.stringify(savedTemplates));
-  }, [savedTemplates]);
 
   const [profile, setProfile] = useState<UserProfile>(() => {
     const saved = localStorage.getItem('user_profile');
     return saved ? JSON.parse(saved) : {
       name: 'Ahmed Mostafa',
       companyName: 'Logistics Pro Egypt Ltd.',
-      address: 'Industrial Zone 4, Plot 12\nBorg El Arab, Alexandria\nEgypt',
+      address: 'Industrial Zone 4, Plot 12\nAlexandria, Egypt',
       taxId: '412-100-XXX',
       email: 'billing@logisticspro.com.eg',
       signatureUrl: null,
@@ -112,17 +91,6 @@ const App: React.FC = () => {
     }
   });
 
-  const downloadSampleTemplate = () => {
-    const headers = "Customer,Booking No,Booking Date,Rate,VAT,Reefer,Genset,Port In,Port Out,Beneficiary,Address,Status,Trucker";
-    const sampleData = "Maersk Egypt,BK99021,2024-05-20,4500.00,630.00,MSKU1234567,GS8892,ALEX,SCCT,Global Traders LLC,Borg El Arab Ind Zone,OK,Super Logistics Ltd";
-    const blob = new Blob([`${headers}\n${sampleData}`], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'logistics_invoice_template.csv';
-    a.click();
-  };
-
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -143,147 +111,133 @@ const App: React.FC = () => {
 
       const headerIdx = findHeaderIndex();
       const headers = allRows[headerIdx].map(h => h.replace(/"/g, '').trim().toLowerCase());
-      const findCol = (keys: string[]) => headers.findIndex(h => keys.some(k => h.includes(k)));
+      
+      const findCol = (keys: string[]) => {
+        let idx = headers.findIndex(h => keys.some(k => h === k));
+        if (idx !== -1) return idx;
+        return headers.findIndex(h => keys.some(k => {
+          if (k === 'po' || k === 'ref') {
+            const regex = new RegExp(`\\b${k}\\b`, 'i');
+            return regex.test(h);
+          }
+          return h.includes(k);
+        }));
+      };
 
       const mapping = {
         customer: findCol(['customer', 'client']),
-        bookingNo: findCol(['booking no', 'booking #', 'bk no']),
+        bookingNo: findCol(['booking no', 'booking #', 'bk no', 'booking']),
         rate: findCol(['rate', 'amount', 'price', 'value']),
         vat: findCol(['vat', 'tax']),
         bookingDate: findCol(['booking date', 'date']),
         reefer: findCol(['reefer', 'container']),
         genset: findCol(['genset']),
-        goPort: findCol(['port in', 'go port', 'origin', 'from', 'clip on']),
-        giPort: findCol(['port out', 'gi port', 'destination', 'to', 'clip off']),
+        goPort: findCol(['port in', 'go port', 'origin', 'from', 'clip on', 'entry port']),
+        giPort: findCol(['port out', 'gi port', 'destination', 'to', 'clip off', 'exit port']),
         beneficiary: findCol(['beneficiary', 'attention']),
         shipperAddress: findCol(['address', 'shipper']),
         status: findCol(['status']),
-        customerRef: findCol(['ref', 'customer ref']),
+        customerRef: findCol(['ref', 'customer ref', 'po', 'reference']),
         trucker: findCol(['trucker', 'driver', 'transporter']),
         invNo: findCol(['inv no', 'invoice no', 'invoice #']),
       };
 
-      if (mapping.rate === -1) mapping.rate = 18;
-      if (mapping.vat === -1) mapping.vat = 19;
-      if (mapping.customer === -1) mapping.customer = 1;
+      if (mapping.customer === -1) mapping.customer = 0;
+      if (mapping.rate === -1) mapping.rate = 3;
 
-      const dataRows = allRows.slice(headerIdx + 1).filter(r => r.length > 2 && r[mapping.customer > -1 ? mapping.customer : 1]?.trim());
+      const dataRows = allRows.slice(headerIdx + 1).filter(r => r.length > 2 && r[mapping.customer]?.trim());
 
+      const timestamp = Date.now();
       const parsed: Booking[] = dataRows.map((row, idx) => {
         const clean = (valIdx: number) => {
           if (valIdx === -1 || !row[valIdx]) return '';
           return row[valIdx].replace(/"/g, '').trim();
         };
-
         const rateStr = clean(mapping.rate);
         const vatStr = clean(mapping.vat);
-
         return {
-          id: `booking-${idx}-${Date.now()}`,
-          totalBooking: clean(0),
-          customer: clean(mapping.customer),
-          bookingDate: clean(mapping.bookingDate),
-          customerRef: clean(mapping.customerRef),
-          gops: clean(4),
-          dateOfClipOn: clean(5),
-          goPort: clean(mapping.goPort),
-          giPort: clean(mapping.giPort),
-          clipOffDate: clean(8),
-          trucker: clean(mapping.trucker),
-          bookingNo: clean(mapping.bookingNo),
-          beneficiaryName: clean(mapping.beneficiary),
-          reeferNumber: clean(mapping.reefer),
-          gensetNo: clean(mapping.genset),
-          res: clean(14),
-          gaz: clean(15),
-          shipperAddress: clean(mapping.shipperAddress),
-          status: clean(mapping.status),
-          rate: rateStr,
-          rateValue: parseCurrency(rateStr),
-          vat: vatStr,
-          vatValue: parseCurrency(vatStr),
-          remarks: clean(20),
-          gensetFaultDescription: clean(21),
-          invNo: clean(mapping.invNo),
-          invDate: clean(23),
-          invIssueDate: clean(24),
+          id: `booking-${idx}-${timestamp}`,
+          totalBooking: '', customer: clean(mapping.customer), bookingDate: clean(mapping.bookingDate),
+          customerRef: clean(mapping.customerRef), gops: '', dateOfClipOn: '', goPort: clean(mapping.goPort),
+          giPort: clean(mapping.giPort), clipOffDate: '', trucker: clean(mapping.trucker), bookingNo: clean(mapping.bookingNo),
+          beneficiaryName: clean(mapping.beneficiary), reeferNumber: clean(mapping.reefer), gensetNo: clean(mapping.genset),
+          res: '', gaz: '', shipperAddress: clean(mapping.shipperAddress), status: clean(mapping.status), rate: rateStr,
+          rateValue: parseCurrency(rateStr), vat: vatStr, vatValue: parseCurrency(vatStr), remarks: '',
+          gensetFaultDescription: '', invNo: clean(mapping.invNo), invDate: '', invIssueDate: '',
         };
       });
-
-      setBookings(parsed);
+      setBookings(prev => [...prev, ...parsed]);
     };
     reader.readAsText(file);
     event.target.value = '';
   };
 
-  const handleSignatureUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const finalizeInvoice = useCallback(() => {
+    const selectedItems = bookings.filter(b => selectedIds.has(b.id));
+    if (selectedItems.length === 0) return;
+    const subtotal = selectedItems.reduce((acc, curr) => acc + curr.rateValue, 0);
+    const tax = selectedItems.reduce((acc, curr) => acc + curr.vatValue, 0);
+    const firstItem = selectedItems[0];
+    
+    setBookings(prev => prev.map(b => selectedIds.has(b.id) ? { ...b, invNo: invConfig.number } : b));
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string;
-      setProfile(prev => ({ ...prev, signatureUrl: dataUrl }));
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string;
-      setProfile(prev => ({ ...prev, logoUrl: dataUrl }));
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleSaveEdit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingBooking) return;
-
-    setBookings(prev => prev.map(b => 
-      b.id === editingBooking.id 
-        ? { 
-            ...editingBooking, 
-            rateValue: parseCurrency(editingBooking.rate),
-            vatValue: parseCurrency(editingBooking.vat)
-          } 
-        : b
-    ));
-    setEditingBooking(null);
-  };
-
-  const saveCurrentTemplate = () => {
-    if (!newTemplateName.trim()) return;
-    const newTemplate: SavedTemplate = {
-      id: `template-${Date.now()}`,
-      name: newTemplateName,
-      config: {
-        sectionOrder: templateConfig.sectionOrder,
-        hiddenSections: Array.from(templateConfig.hiddenSections),
-        fields: templateConfig.fields,
-        theme: templateConfig.theme
-      }
-    };
-    setSavedTemplates([...savedTemplates, newTemplate]);
-    setNewTemplateName('');
-    setShowSaveTemplateModal(false);
-  };
-
-  const applyTemplate = (template: SavedTemplate) => {
-    setTemplateConfig({
-      sectionOrder: template.config.sectionOrder,
-      hiddenSections: new Set(template.config.hiddenSections),
-      fields: template.config.fields,
-      theme: template.config.theme || 'modern'
+    setActiveInvoice({
+      id: `INV-${Date.now()}`, invoiceNumber: invConfig.number, date: invConfig.date, dueDate: invConfig.dueDate,
+      customerName: firstItem.customer, customerAddress: invConfig.address, beneficiaryName: firstItem.beneficiaryName,
+      items: selectedItems, subtotal, tax, total: subtotal + tax, currency: invConfig.currency, notes: invConfig.notes,
+      templateConfig: { ...templateConfig, hiddenSections: new Set(templateConfig.hiddenSections) }, userProfile: profile
     });
+
+    setSelectedIds(new Set());
+    setView('invoice-preview');
+  }, [bookings, selectedIds, invConfig, templateConfig, profile]);
+
+  // Implemented handleManualAdd to handle manual booking entry form submission
+  const handleManualAdd = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const rateStr = (formData.get('rate') as string) || '0';
+    const rateValue = parseCurrency(rateStr);
+    
+    const newBooking: Booking = {
+      id: `manual-${Date.now()}`,
+      customer: (formData.get('customer') as string) || '',
+      bookingNo: (formData.get('bookingNo') as string) || '',
+      customerRef: (formData.get('ref') as string) || '',
+      bookingDate: (formData.get('date') as string) || new Date().toISOString().split('T')[0],
+      reeferNumber: (formData.get('reefer') as string) || '',
+      rate: rateStr,
+      rateValue: rateValue,
+      vat: '0',
+      vatValue: 0,
+      status: 'UNBILLED',
+      totalBooking: '', gops: '', dateOfClipOn: '', goPort: '', giPort: '', clipOffDate: '',
+      trucker: '', beneficiaryName: '', gensetNo: '', res: '', gaz: '', shipperAddress: '',
+      remarks: '', gensetFaultDescription: '', invNo: '', invDate: '', invIssueDate: ''
+    };
+    
+    setBookings(prev => [...prev, newBooking]);
+    setShowManualAddModal(false);
   };
 
-  const deleteTemplate = (id: string) => {
-    setSavedTemplates(savedTemplates.filter(t => t.id !== id));
+  const toggleBookingSelection = (booking: Booking) => {
+    const next = new Set(selectedIds);
+    const relatedBookings = (booking.bookingNo && booking.bookingNo.trim() !== '') 
+      ? bookings.filter(b => b.bookingNo === booking.bookingNo) : [booking];
+    const isCurrentlySelected = next.has(booking.id);
+    relatedBookings.forEach(b => { if (isCurrentlySelected) next.delete(b.id); else next.add(b.id); });
+    setSelectedIds(next);
+  };
+
+  const handleProfileImageUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'signature') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const url = event.target?.result as string;
+      setProfile(prev => ({ ...prev, [type === 'logo' ? 'logoUrl' : 'signatureUrl']: url }));
+    };
+    reader.readAsDataURL(file);
   };
 
   const filteredBookings = useMemo(() => {
@@ -291,387 +245,255 @@ const App: React.FC = () => {
       const matchesSearch = b.customer?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           b.bookingNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           b.reeferNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          b.invNo?.toLowerCase().includes(searchTerm.toLowerCase());
+                          b.invNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          b.customerRef?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === 'ALL' || b.status?.toUpperCase().includes(statusFilter);
-      const matchesRoute = !filterRoute || b.goPort?.toLowerCase().includes(filterRoute.toLowerCase()) || b.giPort?.toLowerCase().includes(filterRoute.toLowerCase());
-      const matchesReefer = !filterReefer || b.reeferNumber?.toLowerCase().includes(filterReefer.toLowerCase());
-      const matchesGenset = !filterGenset || b.gensetNo?.toLowerCase().includes(filterGenset.toLowerCase());
       let matchesQuickPort = true;
       if (activeQuickPort) matchesQuickPort = b.goPort?.toUpperCase().includes(activeQuickPort) || b.giPort?.toUpperCase().includes(activeQuickPort);
-      let matchesDate = true;
-      if (filterDateRange.start) matchesDate = matchesDate && b.bookingDate >= filterDateRange.start;
-      if (filterDateRange.end) matchesDate = matchesDate && b.bookingDate <= filterDateRange.end;
-      return matchesSearch && matchesStatus && matchesRoute && matchesReefer && matchesGenset && matchesDate && matchesQuickPort;
+      return matchesSearch && matchesStatus && matchesQuickPort;
     });
-  }, [bookings, searchTerm, statusFilter, filterRoute, filterReefer, filterGenset, filterDateRange, activeQuickPort]);
+  }, [bookings, searchTerm, statusFilter, activeQuickPort]);
 
   const customerStats = useMemo(() => {
     const map = new Map<string, { count: number; total: number; bookings: Booking[] }>();
     bookings.forEach(b => {
       const existing = map.get(b.customer) || { count: 0, total: 0, bookings: [] };
-      existing.count += 1;
-      existing.total += b.rateValue;
-      existing.bookings.push(b);
+      existing.count += 1; existing.total += b.rateValue; existing.bookings.push(b);
       map.set(b.customer, existing);
     });
     return Array.from(map.entries()).sort((a, b) => b[1].total - a[1].total);
   }, [bookings]);
 
-  const toggleBookingSelection = (booking: Booking) => {
-    const next = new Set(selectedIds);
-    const relatedBookings = booking.bookingNo ? bookings.filter(b => b.bookingNo === booking.bookingNo) : [booking];
-    const isCurrentlySelected = next.has(booking.id);
-    relatedBookings.forEach(b => {
-      if (isCurrentlySelected) next.delete(b.id);
-      else next.add(b.id);
-    });
-    setSelectedIds(next);
-  };
-
-  const prepareInvoiceConfig = () => {
-    if (selectedIds.size === 0) return;
-    const firstItem = bookings.find(b => selectedIds.has(b.id));
-    if (!firstItem) return;
-    const settings = customerSettings[firstItem.customer];
-    let suggestedNumber = firstItem.invNo || `INV-${Date.now().toString().slice(-6)}`;
-    if (settings) suggestedNumber = `${settings.prefix}${settings.nextSerial}`;
-    setInvConfig({ ...invConfig, number: suggestedNumber, address: firstItem.shipperAddress || '' });
-    setView('config');
-  };
-
-  const handleQuickCreate = (booking: Booking) => {
-    const next = new Set<string>();
-    const groupMembers = booking.bookingNo ? bookings.filter(x => x.bookingNo === booking.bookingNo) : [booking];
-    groupMembers.forEach(m => next.add(m.id));
-    setSelectedIds(next);
-    const firstItem = groupMembers[0];
-    const settings = customerSettings[firstItem.customer];
-    let suggestedNumber = firstItem.invNo || `INV-${Date.now().toString().slice(-6)}`;
-    if (settings) suggestedNumber = `${settings.prefix}${settings.nextSerial}`;
-    setInvConfig({ ...invConfig, number: suggestedNumber, date: new Date().toISOString().split('T')[0], dueDate: new Date(Date.now() + 15 * 86400000).toISOString().split('T')[0], address: firstItem.shipperAddress || '', notes: '', currency: 'EGP' });
-    setView('config');
-  };
-
-  const finalizeInvoice = () => {
-    const selectedItems = bookings.filter(b => selectedIds.has(b.id));
-    if (selectedItems.length === 0) return;
-    const subtotal = selectedItems.reduce((acc, curr) => acc + curr.rateValue, 0);
-    const tax = selectedItems.reduce((acc, curr) => acc + curr.vatValue, 0);
-    const firstItem = selectedItems[0];
-    const settings = customerSettings[firstItem.customer];
-    if (settings && invConfig.number === `${settings.prefix}${settings.nextSerial}`) {
-      setCustomerSettings({ ...customerSettings, [firstItem.customer]: { ...settings, nextSerial: settings.nextSerial + 1 } });
-    }
-    const updatedBookings = bookings.map(b => selectedIds.has(b.id) ? { ...b, invNo: invConfig.number } : b);
-    setBookings(updatedBookings);
-    setActiveInvoice({ id: `INV-${Date.now()}`, invoiceNumber: invConfig.number, date: invConfig.date, dueDate: invConfig.dueDate, customerName: firstItem.customer, customerAddress: invConfig.address, beneficiaryName: firstItem.beneficiaryName, items: selectedItems, subtotal, tax, total: subtotal + tax, currency: invConfig.currency, notes: invConfig.notes, templateConfig: { ...templateConfig, hiddenSections: new Set(templateConfig.hiddenSections) }, userProfile: profile });
-    setSelectedIds(new Set());
-    setView('invoice-preview');
-  };
-
-  const NavItem = ({ id, icon: Icon, label }: { id: any, icon: any, label: string }) => (
-    <button 
-      onClick={() => setView(id)}
-      className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all font-bold text-sm ${view === id ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-gray-500 hover:bg-gray-100'}`}
-    >
-      <Icon size={20} />
-      {label}
-    </button>
-  );
-
-  const THEMES: { id: InvoiceTheme; label: string; color: string }[] = [
-    { id: 'modern', label: 'Modern Blue', color: 'bg-blue-600' },
-    { id: 'minimalist', label: 'Minimalist', color: 'bg-gray-400' },
-    { id: 'corporate', label: 'Corporate Dark', color: 'bg-slate-900' },
-    { id: 'sidebar-pro', label: 'Sidebar Layout', color: 'bg-indigo-600' },
-    { id: 'modern-cards', label: 'Visual Cards', color: 'bg-purple-600' },
-    { id: 'technical-draft', label: 'Tech Blueprint', color: 'bg-[#1a365d]' },
-    { id: 'industrial', label: 'Industrial', color: 'bg-orange-600' },
-    { id: 'elegant', label: 'Elegant Serif', color: 'bg-emerald-800' },
-  ];
-
-  const FieldToggle = ({ field, label, description, icon: Icon }: { field: keyof TemplateFields, label: string, description: string, icon: any }) => {
-    const isActive = templateConfig.fields[field];
-    return (
-      <div 
-        onClick={() => setTemplateConfig({ ...templateConfig, fields: { ...templateConfig.fields, [field]: !isActive } })}
-        className={`group p-6 rounded-[2rem] border-2 transition-all cursor-pointer flex items-center justify-between ${isActive ? 'bg-blue-50 border-blue-600 shadow-md' : 'bg-white border-gray-100 opacity-60 hover:opacity-100 hover:border-gray-200'}`}
-      >
-        <div className="flex items-center gap-4">
-          <div className={`p-3 rounded-2xl transition-all ${isActive ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-400'}`}>
-            <Icon size={20} />
-          </div>
-          <div>
-            <h4 className={`text-sm font-black tracking-tight ${isActive ? 'text-blue-900' : 'text-gray-600'}`}>{label}</h4>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mt-1">{description}</p>
-          </div>
-        </div>
-        <div className={`transition-all ${isActive ? 'text-blue-600' : 'text-gray-200'}`}>
-          {isActive ? <ToggleRight size={32} /> : <ToggleLeft size={32} />}
-        </div>
-      </div>
-    );
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50 flex antialiased">
-      <aside className="no-print w-72 bg-white border-r border-gray-200 flex flex-col sticky top-0 h-screen shadow-xl z-[60]">
+    <div className="min-h-screen flex antialiased bg-slate-50">
+      <aside className="no-print w-72 bg-slate-900 flex flex-col sticky top-0 h-screen shadow-2xl z-[60]">
         <div className="p-8 pb-4">
-          <div className="flex items-center gap-4 mb-8">
-            <div className="bg-blue-900 p-2 rounded-xl text-white shadow-lg shadow-blue-900/20">
-              <FileText size={22} />
-            </div>
-            <h1 className="text-xl font-black text-gray-900 tracking-tighter uppercase">InvoicePro</h1>
+          <div className="flex items-center gap-4 mb-10">
+            <div className="bg-blue-600 p-2.5 rounded-2xl text-white shadow-xl shadow-blue-600/20"><Briefcase size={24} strokeWidth={2.5} /></div>
+            <h1 className="text-xl font-black text-white tracking-tighter uppercase">InvoicePro</h1>
           </div>
-          <div className="space-y-2">
-            <NavItem id="dashboard" icon={Layout} label="Dashboard" />
-            <NavItem id="field-master" icon={SettingsIcon} label="Field Master" />
-            <NavItem id="portfolio" icon={Users} label="Customers" />
-            <NavItem id="operations" icon={TableIcon} label="All Operations" />
-            <NavItem id="profile" icon={UserCircle} label="My Profile" />
+          <div className="space-y-1.5">
+            {[
+              { id: 'dashboard', icon: Layout, label: 'Dashboard' },
+              { id: 'field-master', icon: SettingsIcon, label: 'Templates' },
+              { id: 'portfolio', icon: Users, label: 'Clients' },
+              { id: 'operations', icon: TableIcon, label: 'History' },
+              { id: 'profile', icon: UserCircle, label: 'Account' },
+            ].map(item => (
+              <button key={item.id} onClick={() => setView(item.id as any)} className={`flex items-center gap-3 w-full px-5 py-3.5 rounded-2xl transition-all font-bold text-sm ${view === item.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}>
+                <item.icon size={20} strokeWidth={view === item.id ? 2.5 : 2} />
+                {item.label}
+              </button>
+            ))}
           </div>
         </div>
-        <div className="mt-auto p-8 border-t border-gray-50">
-          <div className="bg-gray-50 rounded-2xl p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold border-2 border-white shadow-sm overflow-hidden">
-              {profile.logoUrl ? <img src={profile.logoUrl} className="w-full h-full object-cover" /> : profile.name.charAt(0)}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-black text-gray-900 truncate">{profile.name}</p>
-              <p className="text-[10px] font-bold text-gray-400 truncate uppercase">{profile.companyName}</p>
-            </div>
-          </div>
+        <div className="mt-auto p-8">
+           <div className="bg-white/5 p-4 rounded-2xl border border-white/5 flex items-center gap-3">
+             <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-black overflow-hidden border-2 border-white/10">
+               {profile.logoUrl ? <img src={profile.logoUrl} className="w-full h-full object-cover" /> : profile.name.charAt(0)}
+             </div>
+             <div className="flex-1 min-w-0">
+               <p className="text-sm font-black text-white truncate">{profile.name}</p>
+               <p className="text-[10px] font-bold text-slate-500 truncate uppercase tracking-widest">{profile.companyName}</p>
+             </div>
+           </div>
         </div>
       </aside>
 
       <main className="flex-1 overflow-y-auto">
-        <div className="max-w-6xl mx-auto w-full p-10 print:p-0">
+        <div className="max-w-6xl mx-auto w-full p-12 print:p-0">
           {view === 'dashboard' && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="space-y-8 animate-in fade-in duration-500">
               <header className="flex justify-between items-end">
-                <div>
-                  <h2 className="text-4xl font-black text-gray-900 tracking-tight">Booking Operations</h2>
-                  <p className="text-gray-500 font-medium mt-1">Select shipments for conversion into invoices.</p>
-                </div>
+                <div><h2 className="text-4xl font-black text-slate-900 tracking-tight">Booking Dashboard</h2><p className="text-slate-500 font-medium mt-1">Manage, filter and convert shipments into high-end invoices.</p></div>
                 <div className="flex gap-4">
-                  <button onClick={downloadSampleTemplate} className="flex items-center gap-3 bg-white border-2 border-gray-200 text-gray-600 px-6 py-3 rounded-2xl hover:border-blue-500 hover:text-blue-600 transition-all font-black text-sm active:scale-95"><FileSpreadsheet size={18} /> Format Guide</button>
-                  <label className="group flex items-center gap-3 cursor-pointer bg-blue-600 text-white px-6 py-3 rounded-2xl hover:bg-blue-700 transition-all font-black text-sm shadow-xl shadow-blue-600/20 active:scale-95"><FileUp size={18} /> Import Sheet<input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} /></label>
+                  <button onClick={() => setBookings([])} className="flex items-center gap-2 bg-white border-2 border-slate-200 text-slate-400 px-6 py-3.5 rounded-2xl hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all font-black text-xs active:scale-95 uppercase tracking-widest"><Trash2 size={18} /> Clear</button>
+                  <button onClick={() => setShowManualAddModal(true)} className="flex items-center gap-2 bg-white border-2 border-slate-200 text-slate-700 px-6 py-3.5 rounded-2xl hover:bg-slate-100 transition-all font-black text-xs active:scale-95 uppercase tracking-widest"><Plus size={18} /> Add Entry</button>
+                  <label className="group flex items-center gap-3 cursor-pointer bg-blue-600 text-white px-8 py-3.5 rounded-2xl hover:bg-blue-700 transition-all font-black text-sm shadow-xl shadow-blue-600/20 active:scale-95 uppercase tracking-widest"><FileUp size={18} /> Import Sheet<input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} /></label>
                 </div>
               </header>
 
-              <div className="bg-blue-900 text-white p-6 rounded-[2rem] flex items-center justify-between shadow-2xl shadow-blue-900/30 overflow-hidden relative">
-                <div className="relative z-10 flex items-center gap-6">
-                  <div className="bg-white/10 p-4 rounded-3xl backdrop-blur-md border border-white/20"><Layers size={32} className="text-blue-100" /></div>
-                  <div><h3 className="text-xl font-black tracking-tight">Duplicate Recognition Active</h3><p className="text-blue-200 text-sm font-medium mt-1">Shipments with matching Booking Numbers are automatically linked.</p></div>
-                </div>
-                <div className="absolute -right-10 -bottom-10 opacity-10"><Layers size={200} /></div>
-              </div>
-
-              <div className="bg-white border-2 border-dashed border-blue-200 p-8 rounded-[2rem] shadow-sm flex flex-col md:flex-row gap-8 items-start">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-4"><ClipboardCheck className="text-blue-600" size={24} /><h3 className="text-xl font-black text-gray-900 tracking-tight">Import Format Guide</h3></div>
-                  <p className="text-gray-500 text-sm font-medium mb-6">Use these exact column names in your CSV to ensure 100% accurate mapping.</p>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {[
-                      { label: "Client", keys: "Customer" },
-                      { label: "Order #", keys: "Booking No" },
-                      { label: "Rate", keys: "Rate" },
-                      { label: "Tax", keys: "VAT" },
-                      { label: "Entry Port", keys: "Port In" },
-                      { label: "Exit Port", keys: "Port Out" },
-                      { label: "Unit ID", keys: "Reefer" },
-                      { label: "Add-on", keys: "Genset" },
-                    ].map(f => (
-                      <div key={f.label} className="bg-gray-50 p-3 rounded-xl border border-gray-100">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{f.label}</p>
-                        <p className="text-xs font-black text-blue-600 font-mono">{f.keys}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="w-full md:w-auto self-stretch flex flex-col justify-center gap-3">
-                   <button onClick={downloadSampleTemplate} className="flex items-center justify-center gap-3 bg-gray-900 text-white px-8 py-4 rounded-2xl font-black text-sm hover:bg-blue-600 transition-all shadow-xl active:scale-95"><Download size={18} /> Download Sample CSV</button>
-                   <p className="text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">Recommended Format</p>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-4 flex flex-col gap-4">
+              <div className="bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 p-6 flex flex-col gap-4">
                 <div className="flex flex-wrap items-center gap-4">
                   <div className="flex-1 min-w-[300px] relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
-                    <input type="text" placeholder="Search client, container, invoice or booking..." className="w-full pl-12 pr-6 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 font-bold text-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
+                    <input type="text" placeholder="Search by Client, Booking ID, Container, or Ref..." className="w-full pl-14 pr-6 py-4 bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-2xl font-bold outline-none transition-all placeholder:text-slate-300" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                   </div>
-                  <button onClick={() => setShowAdvancedFilters(!showAdvancedFilters)} className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-sm transition-all border-2 ${showAdvancedFilters ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-100 hover:border-blue-200'}`}><SlidersHorizontal size={18} /> Filters {showAdvancedFilters ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</button>
-                  <div className="h-10 w-px bg-gray-100"></div>
-                  <button onClick={prepareInvoiceConfig} disabled={selectedIds.size === 0} className="bg-gray-900 text-white px-8 py-3 rounded-xl font-black text-sm disabled:opacity-30 disabled:grayscale transition-all shadow-xl shadow-gray-900/10 active:scale-95">Create Invoice ({selectedIds.size})</button>
+                  <button disabled={selectedIds.size === 0} onClick={() => { const item = bookings.find(b => selectedIds.has(b.id)); if (item) { setInvConfig(prev => ({ ...prev, number: `INV-${Date.now().toString().slice(-6)}`, address: item.shipperAddress || '' })); setView('config'); } }} className="bg-slate-900 text-white px-10 py-4 rounded-2xl font-black disabled:opacity-30 disabled:grayscale transition-all hover:bg-blue-600 active:scale-95 shadow-xl uppercase tracking-widest text-xs">Generate Invoice ({selectedIds.size})</button>
                 </div>
               </div>
 
-              <div className="bg-white rounded-[2rem] shadow-xl border border-gray-100 overflow-hidden">
-                <table className="w-full text-left">
-                  <thead className="bg-gray-50/50 border-b border-gray-100 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+              <div className="bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-slate-50 border-b font-black text-slate-400 uppercase tracking-[0.2em] text-[10px]">
                     <tr>
-                      <th className="py-5 px-8 w-16 text-center"><input type="checkbox" className="w-5 h-5 rounded-lg border-2 border-gray-200 text-blue-600 focus:ring-0" checked={selectedIds.size === filteredBookings.length && filteredBookings.length > 0} onChange={() => { if (selectedIds.size === filteredBookings.length) setSelectedIds(new Set()); else setSelectedIds(new Set(filteredBookings.map(b => b.id))); }} /></th>
-                      <th className="py-5 px-4">Customer</th>
-                      <th className="py-5 px-4">Booking / Date</th>
-                      <th className="py-5 px-4">Port In</th>
-                      <th className="py-5 px-4">Port Out</th>
-                      <th className="py-5 px-4 text-right">Rate</th>
-                      <th className="py-5 px-4 text-center">Inv #</th>
-                      <th className="py-5 px-4 text-center">Actions</th>
+                      <th className="py-6 px-8 w-16 text-center"><input type="checkbox" className="w-6 h-6 rounded-lg text-blue-600 focus:ring-0 cursor-pointer border-slate-200" checked={selectedIds.size === filteredBookings.length && filteredBookings.length > 0} onChange={() => { if (selectedIds.size === filteredBookings.length) setSelectedIds(new Set()); else setSelectedIds(new Set(filteredBookings.map(b => b.id))); }} /></th>
+                      <th className="py-6 px-4">Client Name</th>
+                      <th className="py-6 px-4">Booking / PO Ref</th>
+                      <th className="py-6 px-4">Entry / Exit</th>
+                      <th className="py-6 px-4 text-right">Net Rate</th>
+                      <th className="py-6 px-4 text-center">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-50 text-sm">
-                    {filteredBookings.map(b => {
-                      const groupMembers = b.bookingNo ? bookings.filter(x => x.bookingNo === b.bookingNo) : [];
-                      const isPartofGroup = groupMembers.length > 1;
-                      const isHoveredGroup = b.bookingNo && hoveredBookingNo === b.bookingNo;
-                      const isSelected = selectedIds.has(b.id);
-                      return (
-                        <tr key={b.id} onMouseEnter={() => b.bookingNo && setHoveredBookingNo(b.bookingNo)} onMouseLeave={() => setHoveredBookingNo(null)} className={`group transition-all duration-200 relative ${isSelected ? 'bg-blue-50/60' : isHoveredGroup ? 'bg-orange-50/40' : 'hover:bg-gray-50/50'}`}>
-                          <td className="py-6 px-8 text-center relative">{isPartofGroup && <div className={`absolute left-0 top-2 bottom-2 w-1.5 rounded-r-full ${isSelected ? 'bg-blue-500' : isHoveredGroup ? 'bg-orange-500' : 'bg-gray-200'} transition-colors`} />}<input type="checkbox" className="w-5 h-5 rounded-lg border-2 border-gray-200 text-blue-600 focus:ring-0 cursor-pointer" checked={isSelected} onChange={() => toggleBookingSelection(b)} /></td>
-                          <td className="py-6 px-4"><p className="font-black text-gray-900 text-base leading-tight">{b.customer}</p></td>
-                          <td className="py-6 px-4"><div className="flex items-center gap-2"><p className="font-mono text-xs font-bold">{b.bookingNo}</p>{isPartofGroup && <span className="bg-gray-100 text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-1"><Layers size={8} /> {groupMembers.length}</span>}</div></td>
-                          <td className="py-6 px-4"><div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded ${MAJOR_PORTS.includes(b.goPort?.toUpperCase()) ? 'bg-blue-50 text-blue-600 border border-blue-100' : 'text-gray-600'} font-bold text-[10px] uppercase`}>{b.goPort || '---'}</div></td>
-                          <td className="py-6 px-4"><div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded ${MAJOR_PORTS.includes(b.giPort?.toUpperCase()) ? 'bg-red-50 text-red-600 border border-red-100' : 'text-gray-600'} font-bold text-[10px] uppercase`}>{b.giPort || '---'}</div></td>
-                          <td className="py-6 px-4 text-right font-black text-gray-900">{b.rate}</td>
-                          <td className="py-6 px-4 text-center">{b.invNo ? <div className="inline-flex items-center gap-1.5 text-blue-600 font-black bg-blue-50 px-2 py-1 rounded-lg"><CheckCircle size={12} /><span className="font-mono text-[10px]">{b.invNo}</span></div> : <span className="text-[10px] font-bold text-gray-300 uppercase italic">Pending</span>}</td>
-                          <td className="py-6 px-4 text-center"><div className="flex justify-center gap-1"><button onClick={() => handleQuickCreate(b)} className="p-2 text-white hover:bg-blue-700 bg-blue-600 rounded-lg active:scale-90"><FilePlus size={16} /></button><button onClick={() => setEditingBooking(b)} className="p-2 text-gray-400 hover:text-blue-600 bg-gray-50 rounded-lg"><Edit3 size={16} /></button></div></td>
-                        </tr>
-                      );
-                    })}
+                  <tbody className="divide-y divide-slate-50">
+                    {filteredBookings.map(b => (
+                      <tr key={b.id} className={`hover:bg-slate-50 transition-all cursor-pointer ${selectedIds.has(b.id) ? 'bg-blue-50/50' : ''}`} onClick={() => toggleBookingSelection(b)}>
+                        <td className="py-6 px-8 text-center" onClick={(e) => e.stopPropagation()}><input type="checkbox" className="w-6 h-6 rounded-lg text-blue-600 focus:ring-0 cursor-pointer border-slate-200" checked={selectedIds.has(b.id)} onChange={() => toggleBookingSelection(b)} /></td>
+                        <td className="py-6 px-4"><p className="font-black text-slate-900 text-base">{b.customer}</p><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{b.bookingDate}</p></td>
+                        <td className="py-6 px-4"><p className="font-mono text-xs text-slate-900 font-black">{b.bookingNo || '---'}</p>{b.customerRef && <p className="text-[10px] text-blue-600 font-black uppercase mt-1 tracking-tighter">REF: {b.customerRef}</p>}</td>
+                        <td className="py-6 px-4"><div className="flex items-center gap-2"><span className="uppercase text-[10px] font-black bg-blue-50 px-2 py-1 rounded text-blue-700 border border-blue-100">{b.goPort || '---'}</span><ArrowRightLeft size={10} className="text-slate-300" /><span className="uppercase text-[10px] font-black bg-red-50 px-2 py-1 rounded text-red-700 border border-red-100">{b.giPort || '---'}</span></div></td>
+                        <td className="py-6 px-4 text-right font-black text-slate-900 text-base">{b.rate}</td>
+                        <td className="py-6 px-4 text-center"><span className={`font-mono text-[10px] px-2 py-1 rounded-full font-black uppercase ${b.invNo ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>{b.invNo ? `INV: ${b.invNo}` : 'UNBILLED'}</span></td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
             </div>
           )}
 
-          {view === 'field-master' && (
-            <div className="space-y-10 animate-in fade-in duration-500 pb-20 no-print">
-              <header>
-                <h2 className="text-4xl font-black text-gray-900 tracking-tight">Field Master</h2>
-                <p className="text-gray-500 font-medium mt-1">Granular control over every element of your generated documents.</p>
-              </header>
+          {view === 'profile' && (
+            <div className="max-w-4xl mx-auto space-y-10 animate-in fade-in duration-500">
+               <div className="flex justify-between items-end">
+                  <div><h2 className="text-4xl font-black text-slate-900 tracking-tight">Organization Profile</h2><p className="text-slate-500 font-medium">Global settings for your company, including logo and signatures.</p></div>
+                  <button onClick={() => alert('Settings Saved to Browser LocalStorage')} className="bg-blue-600 text-white px-8 py-3.5 rounded-2xl font-black shadow-xl uppercase tracking-widest text-xs">Save Changes</button>
+               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                <div className="space-y-8">
-                  <h3 className="text-xl font-black text-gray-900 flex items-center gap-3 border-b pb-4"><Building2 className="text-blue-600" /> Header Branding</h3>
-                  <div className="grid grid-cols-1 gap-4">
-                    <FieldToggle field="showLogo" label="Company Logo" description="Main brand image at top-left" icon={ImageIcon} />
-                    <FieldToggle field="showCompanyInfo" label="Organization Info" description="Company name and address blocks" icon={Building2} />
-                    <FieldToggle field="showTaxId" label="Tax Registration" description="Tax ID / Commercial Record labels" icon={Hash} />
-                    <FieldToggle field="showWatermark" label="Faded Watermark" description="Faded logo background overlay" icon={Layers} />
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="bg-white p-10 rounded-[2.5rem] shadow-xl shadow-slate-200/50 space-y-8 border border-slate-100">
+                     <h3 className="text-xl font-black text-slate-900 flex items-center gap-3"><Building2 className="text-blue-600" /> Basic Information</h3>
+                     <div className="space-y-6">
+                        <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Company Name</label><div className="relative"><Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18}/><input type="text" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-xl pl-12 pr-6 py-4 font-bold outline-none" value={profile.companyName} onChange={e => setProfile({...profile, companyName: e.target.value})} /></div></div>
+                        <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tax ID / CR Number</label><div className="relative"><ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18}/><input type="text" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-xl pl-12 pr-6 py-4 font-bold outline-none" value={profile.taxId} onChange={e => setProfile({...profile, taxId: e.target.value})} /></div></div>
+                        <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Official Email</label><div className="relative"><Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18}/><input type="email" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-xl pl-12 pr-6 py-4 font-bold outline-none" value={profile.email} onChange={e => setProfile({...profile, email: e.target.value})} /></div></div>
+                        <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Office Address</label><textarea className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-xl px-6 py-4 font-bold outline-none min-h-[120px]" value={profile.address} onChange={e => setProfile({...profile, address: e.target.value})} /></div>
+                     </div>
                   </div>
-                </div>
 
-                <div className="space-y-8">
-                  <h3 className="text-xl font-black text-gray-900 flex items-center gap-3 border-b pb-4"><TableIcon className="text-blue-600" /> Shipment Details</h3>
-                  <div className="grid grid-cols-1 gap-4">
-                    <FieldToggle field="showReefer" label="Unit / Container ID" description="Equipment number identification" icon={Package} />
-                    <FieldToggle field="showGenset" label="Genset Add-on" description="Auxiliary power unit identification" icon={ToggleRight} />
-                    <FieldToggle field="showPorts" label="Operational Ports" description="Port-In and Port-Out journey" icon={Anchor} />
-                    <FieldToggle field="showTrucker" label="Transport Data" description="Transporter/Trucker names" icon={Truck} />
+                  <div className="space-y-8">
+                     <div className="bg-white p-10 rounded-[2.5rem] shadow-xl shadow-slate-200/50 space-y-6 border border-slate-100">
+                        <h3 className="text-xl font-black text-slate-900 flex items-center gap-3"><ImageIcon className="text-blue-600" /> Branding (Logo)</h3>
+                        <div className="flex flex-col items-center gap-6 p-8 bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200 group hover:border-blue-300 transition-all">
+                           {profile.logoUrl ? (
+                              <img src={profile.logoUrl} className="h-24 w-auto object-contain drop-shadow-md" />
+                           ) : (
+                              <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center text-slate-200"><ImageIcon size={40} /></div>
+                           )}
+                           <label className="cursor-pointer bg-white text-slate-900 px-6 py-3 rounded-xl font-black text-xs shadow-md border hover:bg-slate-900 hover:text-white transition-all uppercase tracking-widest flex items-center gap-2">
+                             <Upload size={14}/> {profile.logoUrl ? 'Change Logo' : 'Upload Logo'}
+                             <input type="file" className="hidden" accept="image/*" onChange={(e) => handleProfileImageUpload(e, 'logo')} />
+                           </label>
+                        </div>
+                     </div>
+
+                     <div className="bg-white p-10 rounded-[2.5rem] shadow-xl shadow-slate-200/50 space-y-6 border border-slate-100">
+                        <h3 className="text-xl font-black text-slate-900 flex items-center gap-3"><Edit3 className="text-blue-600" /> Signatory Authority</h3>
+                        <div className="space-y-4">
+                           <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Signer Name</label><input type="text" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-xl px-6 py-4 font-bold outline-none" value={profile.name} onChange={e => setProfile({...profile, name: e.target.value})} /></div>
+                           <div className="flex flex-col items-center gap-4 p-6 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 group">
+                              {profile.signatureUrl ? (
+                                 <img src={profile.signatureUrl} className="h-16 w-auto object-contain grayscale" />
+                              ) : (
+                                 <div className="h-16 w-full flex items-center justify-center text-slate-300 text-[10px] font-black uppercase tracking-widest italic">No Signature Uploaded</div>
+                              )}
+                              <label className="cursor-pointer text-blue-600 font-black text-xs hover:underline uppercase tracking-widest">
+                                {profile.signatureUrl ? 'Replace Signature' : 'Upload Digital Signature'}
+                                <input type="file" className="hidden" accept="image/*" onChange={(e) => handleProfileImageUpload(e, 'signature')} />
+                              </label>
+                           </div>
+                        </div>
+                     </div>
                   </div>
-                </div>
-              </div>
+               </div>
             </div>
           )}
 
-          {view === 'invoice-preview' && (
-            <div className="space-y-10 animate-in fade-in duration-500 pb-20">
-              <header className="no-print flex justify-between items-center bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-                <div className="flex items-center gap-4"><button onClick={() => setView('dashboard')} className="p-3 bg-gray-50 text-gray-400 hover:text-red-500 rounded-2xl transition-all"><X size={24} /></button><h2 className="text-2xl font-black text-gray-900 tracking-tight">Standard A4 Preview</h2></div>
-                <div className="flex items-center gap-3">
-                  <button onClick={() => setView('config')} className="bg-white border text-gray-600 px-5 py-3 rounded-xl font-bold hover:bg-gray-50 transition-all">Adjust Layout</button>
-                  <button onClick={() => window.print()} className="flex items-center gap-2 bg-blue-600 text-white px-8 py-4 rounded-2xl font-black shadow-2xl shadow-blue-600/30 hover:bg-blue-700 active:scale-95 transition-all"><Printer size={20} /> Print Invoice</button>
-                </div>
-              </header>
-              {activeInvoice && <InvoiceDocument invoice={activeInvoice} />}
+          {view === 'field-master' && (
+            <div className="space-y-10 animate-in fade-in duration-500 no-print">
+               <div className="flex justify-between items-end">
+                  <div><h2 className="text-4xl font-black text-slate-900 tracking-tight">Invoice Templates</h2><p className="text-slate-500 font-medium">Choose a visual theme and toggle visibility for different fields.</p></div>
+                  <button onClick={() => setView('dashboard')} className="bg-blue-600 text-white px-10 py-4 rounded-2xl font-black shadow-xl uppercase tracking-widest text-xs">Return to Dashboard</button>
+               </div>
+
+               <div className="space-y-6">
+                 <h3 className="text-xl font-black text-slate-900 flex items-center gap-3 uppercase tracking-widest text-sm opacity-60">Visual Themes</h3>
+                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                   {[
+                     { id: 'modern', label: 'Classic Pro', color: 'bg-blue-600' },
+                     { id: 'minimalist', label: 'Swiss Minimal', color: 'bg-slate-900' },
+                     { id: 'corporate', label: 'Executive Elite', color: 'bg-indigo-950' },
+                     { id: 'elegant', label: 'Luxury Serif', color: 'bg-emerald-900' },
+                     { id: 'glass', label: 'Clean Glass', color: 'bg-sky-400' },
+                     { id: 'technical-draft', label: 'Operation Draft', color: 'bg-blue-900' },
+                     { id: 'industrial', label: 'Raw Industrial', color: 'bg-orange-600' },
+                     { id: 'blueprint', label: 'Navy Blueprint', color: 'bg-[#002b5c]' },
+                     { id: 'royal', label: 'Midnight Gold', color: 'bg-amber-600' },
+                   ].map(t => (
+                     <button key={t.id} onClick={() => setTemplateConfig({...templateConfig, theme: t.id as any})} className={`group p-4 rounded-3xl border-4 transition-all relative overflow-hidden flex flex-col items-center gap-3 ${templateConfig.theme === t.id ? 'border-blue-600 bg-white shadow-xl' : 'border-transparent bg-white hover:border-slate-200'}`}>
+                        <div className={`w-12 h-12 rounded-2xl ${t.color} shadow-lg transition-transform group-hover:scale-110`} />
+                        <span className="font-black text-[10px] uppercase tracking-tighter text-slate-900">{t.label}</span>
+                        {templateConfig.theme === t.id && <div className="absolute top-2 right-2 bg-blue-600 text-white p-1 rounded-full"><CheckCircle size={12}/></div>}
+                     </button>
+                   ))}
+                 </div>
+               </div>
+
+               <div className="space-y-6">
+                 <h3 className="text-xl font-black text-slate-900 flex items-center gap-3 uppercase tracking-widest text-sm opacity-60">Visibility Master</h3>
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                   {Object.entries(templateConfig.fields).map(([key, val]) => (
+                     <button key={key} onClick={() => setTemplateConfig(prev => ({ ...prev, fields: { ...prev.fields, [key as keyof TemplateFields]: !val } }))} className={`p-6 rounded-[2rem] border-2 transition-all flex items-center justify-between group ${val ? 'bg-white border-blue-600 shadow-md' : 'bg-white border-slate-100 opacity-60 hover:opacity-100 hover:border-slate-200'}`}>
+                       <span className={`font-black text-[10px] uppercase tracking-widest ${val ? 'text-blue-900' : 'text-slate-500'}`}>{key.replace('show', '')}</span>
+                       {val ? <ToggleRight size={32} className="text-blue-600" /> : <ToggleLeft size={32} className="text-slate-300" />}
+                     </button>
+                   ))}
+                 </div>
+               </div>
+            </div>
+          )}
+
+          {view === 'config' && (
+            <div className="max-w-4xl mx-auto space-y-10 animate-in fade-in duration-300">
+               <header className="flex justify-between items-center"><div><h2 className="text-4xl font-black text-slate-900 tracking-tight">Invoice Details</h2><p className="text-slate-500 font-medium">Finalize shipping details and address before generation.</p></div><button onClick={() => setView('dashboard')} className="p-4 bg-white border border-slate-100 rounded-[2rem] hover:text-red-500 transition-all shadow-md"><X size={32} /></button></header>
+               <div className="bg-white rounded-[3rem] shadow-2xl p-12 grid grid-cols-2 gap-10 border border-slate-100">
+                  <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Invoice Number (Manual Override)</label><div className="relative"><Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18}/><input type="text" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-xl pl-12 pr-6 py-4 font-bold outline-none" value={invConfig.number} onChange={e => setInvConfig({...invConfig, number: e.target.value})} /></div></div>
+                  <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Currency</label><div className="relative"><CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18}/><select className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-xl pl-12 pr-6 py-4 font-bold outline-none appearance-none" value={invConfig.currency} onChange={e => setInvConfig({...invConfig, currency: e.target.value})}><option value="EGP">EGP (Egyptian Pound)</option><option value="USD">USD (US Dollar)</option><option value="EUR">EUR (Euro)</option></select></div></div>
+                  <div className="space-y-2 col-span-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Billing Address Override</label><div className="relative"><MapPin className="absolute left-4 top-6 text-slate-300" size={18}/><textarea className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-xl pl-12 pr-6 py-4 font-bold outline-none min-h-[140px]" value={invConfig.address} onChange={e => setInvConfig({...invConfig, address: e.target.value})} /></div></div>
+                  <div className="space-y-2 col-span-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Internal References / Notes</label><input type="text" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-xl px-6 py-4 font-bold outline-none" placeholder="Add specific po numbers or memo..." value={invConfig.notes} onChange={e => setInvConfig({...invConfig, notes: e.target.value})} /></div>
+                  <button onClick={finalizeInvoice} className="col-span-2 bg-blue-600 text-white py-6 rounded-[2rem] font-black text-lg hover:bg-slate-900 transition-all shadow-2xl active:scale-[0.98] uppercase tracking-widest">Finalize & Preview Document</button>
+               </div>
+            </div>
+          )}
+
+          {view === 'invoice-preview' && activeInvoice && (
+            <div className="animate-in fade-in duration-500 pb-20">
+               <header className="no-print flex justify-between items-center mb-10 bg-white p-6 rounded-[2.5rem] shadow-xl border border-slate-100">
+                  <button onClick={() => setView('dashboard')} className="flex items-center gap-2 text-slate-600 font-bold hover:text-blue-600 transition-all px-4"><ChevronLeft size={20} /> Back to Dashboard</button>
+                  <div className="flex gap-4">
+                    <button onClick={() => setView('config')} className="bg-slate-100 text-slate-900 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all">Adjust Details</button>
+                    <button onClick={() => window.print()} className="bg-blue-600 text-white px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl flex items-center gap-3 hover:bg-blue-700 active:scale-95 transition-all"><Printer size={20}/> Print A4 Invoice</button>
+                  </div>
+               </header>
+               <InvoiceDocument invoice={activeInvoice} />
             </div>
           )}
         </div>
       </main>
 
-      {selectedCustomerName && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 no-print">
-          <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md" onClick={() => setSelectedCustomerName(null)}></div>
-          <div className="bg-white w-full max-w-6xl rounded-[3rem] shadow-2xl relative flex flex-col max-h-[90vh] animate-in slide-in-from-bottom-10 overflow-hidden">
-            <div className="p-10 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-10">
-              <div><h3 className="text-3xl font-black text-gray-900">{selectedCustomerName}</h3><p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Detailed Operational Performance Report</p></div>
-              <div className="flex items-center gap-3">
-                <button 
-                  onClick={() => {
-                    const customerData = customerStats.find(s => s[0] === selectedCustomerName)?.[1];
-                    if (customerData) exportToCSV(customerData.bookings, `${selectedCustomerName}_Performance.csv`);
-                  }}
-                  className="flex items-center gap-2 bg-green-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg hover:bg-green-700 active:scale-95 transition-all"
-                >
-                  <Download size={18} /> Export Data
-                </button>
-                <button 
-                  onClick={() => {
-                    const originalView = view;
-                    // Force a layout adjustment for printing if needed, or just trigger window.print
-                    window.print();
-                  }}
-                  className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg hover:bg-blue-700 active:scale-95 transition-all"
-                >
-                  <Printer size={18} /> Print Report
-                </button>
-                <button onClick={() => setSelectedCustomerName(null)} className="p-3 bg-gray-50 text-gray-400 hover:text-red-500 rounded-xl transition-all"><X size={24} /></button>
-              </div>
+      {showManualAddModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-300">
+          <form onSubmit={handleManualAdd} className="bg-white w-full max-w-xl rounded-[3rem] shadow-2xl p-12 space-y-8 animate-in zoom-in-95 duration-300">
+            <h3 className="text-3xl font-black text-slate-900 tracking-tight">Manual Booking Entry</h3>
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Customer</label><input name="customer" required className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 p-4 rounded-xl font-bold outline-none" /></div>
+              <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Booking No</label><input name="bookingNo" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 p-4 rounded-xl font-bold outline-none" /></div>
+              <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ref / PO</label><input name="ref" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 p-4 rounded-xl font-bold outline-none" /></div>
+              <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Date</label><input name="date" type="date" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 p-4 rounded-xl font-bold outline-none" /></div>
+              <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Container ID</label><input name="reefer" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 p-4 rounded-xl font-bold outline-none" /></div>
+              <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Amount</label><input name="rate" required className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 p-4 rounded-xl font-bold outline-none" /></div>
             </div>
-            <div className="flex-1 overflow-y-auto p-10 print:p-0">
-              {(() => {
-                const customerData = customerStats.find(s => s[0] === selectedCustomerName)?.[1];
-                if (!customerData) return null;
-                return (
-                  <div className="space-y-10 portfolio-print-view">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div className="bg-blue-50/50 p-6 rounded-2xl border border-blue-100">
-                        <p className="text-[9px] font-black text-blue-900/40 uppercase mb-1">Cumulative Revenue</p>
-                        <p className="text-3xl font-black text-blue-900">{formatCurrency(customerData.total)}</p>
-                      </div>
-                      <div className="bg-green-50/50 p-6 rounded-2xl border border-green-100">
-                        <p className="text-[9px] font-black text-green-900/40 uppercase mb-1">Total Operations</p>
-                        <p className="text-3xl font-black text-green-900">{customerData.count}</p>
-                      </div>
-                      <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
-                        <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Status Coverage</p>
-                        <p className="text-2xl font-black text-slate-700">100% Verified</p>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-6">
-                       <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest border-b pb-2 flex items-center gap-2"><TableIcon size={16} className="text-blue-600" /> Operational History</h4>
-                       <div className="bg-white border rounded-2xl overflow-hidden shadow-sm">
-                        <table className="w-full text-left text-[11px]">
-                          <thead className="bg-gray-50 border-b font-black text-gray-400 uppercase tracking-widest">
-                            <tr>
-                              <th className="py-4 px-6">Booking / Date</th>
-                              <th className="py-4 px-6">Reefer ID</th>
-                              <th className="py-4 px-6">Route</th>
-                              <th className="py-4 px-6 text-right">Rate</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-50">
-                            {customerData.bookings.map(b => (
-                              <tr key={b.id} className="hover:bg-gray-50/50">
-                                <td className="py-4 px-6"><p className="font-black text-gray-900">{b.bookingNo}</p><p className="text-[9px] text-gray-400">{b.bookingDate}</p></td>
-                                <td className="py-4 px-6 font-mono font-bold text-gray-600">{b.reeferNumber || '---'}</td>
-                                <td className="py-4 px-6"><div className="flex items-center gap-1 font-bold"><span className="text-blue-600">{b.goPort}</span><ArrowRightLeft size={10} className="text-gray-300"/><span className="text-red-600">{b.giPort}</span></div></td>
-                                <td className="py-4 px-6 text-right font-black text-gray-900">{b.rate}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-          </div>
+            <div className="flex gap-4 pt-4"><button type="submit" className="flex-1 bg-blue-600 text-white py-5 rounded-2xl font-black shadow-xl hover:bg-slate-900 active:scale-95 transition-all uppercase text-xs tracking-widest">Save Booking</button><button type="button" onClick={() => setShowManualAddModal(false)} className="flex-1 bg-slate-100 text-slate-500 py-5 rounded-2xl font-black hover:bg-slate-200 transition-all uppercase text-xs tracking-widest">Dismiss</button></div>
+          </form>
         </div>
       )}
     </div>
