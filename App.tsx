@@ -6,11 +6,14 @@ import {
   Layout, Eye, EyeOff, ArrowUp, ArrowDown, Users, UserCircle, 
   Filter, Download, Trash2, Edit3, Image as ImageIcon, Table as TableIcon,
   Save, X, Copy, BookOpen, SlidersHorizontal, ChevronDown, ChevronUp, AlertCircle,
-  Building2, Palette, Layers, Info as InfoIcon, Settings
+  Building2, Palette, Layers, Info as InfoIcon, Settings, CheckCircle, Anchor,
+  FileSpreadsheet, ClipboardCheck
 } from 'lucide-react';
 import { Booking, Invoice, InvoiceSectionId, TemplateConfig, UserProfile, SavedTemplate, InvoiceTheme, CustomerSettings } from './types';
 import { parseCurrency, formatCurrency, exportToCSV } from './utils/formatters';
 import InvoiceDocument from './components/InvoiceDocument';
+
+const MAJOR_PORTS = ['ALEX', 'DAM', 'GOUDA', 'SCCT', 'SOKHNA'];
 
 const App: React.FC = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -25,6 +28,7 @@ const App: React.FC = () => {
   const [filterRoute, setFilterRoute] = useState('');
   const [filterReefer, setFilterReefer] = useState('');
   const [filterGenset, setFilterGenset] = useState('');
+  const [activeQuickPort, setActiveQuickPort] = useState<string | null>(null);
 
   const [view, setView] = useState<'dashboard' | 'config' | 'invoice-preview' | 'profile' | 'portfolio' | 'operations'>('dashboard');
   const [activeInvoice, setActiveInvoice] = useState<Invoice | null>(null);
@@ -101,6 +105,17 @@ const App: React.FC = () => {
     }
   });
 
+  const downloadSampleTemplate = () => {
+    const headers = "Customer,Booking No,Booking Date,Rate,VAT,Reefer,Genset,Port In,Port Out,Beneficiary,Address,Status,Trucker";
+    const sampleData = "Maersk Egypt,BK99021,2024-05-20,4500.00,630.00,MSKU1234567,GS8892,ALEX,SCCT,Global Traders LLC,Borg El Arab Ind Zone,OK,Super Logistics Ltd";
+    const blob = new Blob([`${headers}\n${sampleData}`], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'logistics_invoice_template.csv';
+    a.click();
+  };
+
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -132,13 +147,14 @@ const App: React.FC = () => {
         bookingDate: findCol(['booking date', 'date']),
         reefer: findCol(['reefer', 'container']),
         genset: findCol(['genset']),
-        goPort: findCol(['go port', 'origin', 'from']),
-        giPort: findCol(['gi port', 'destination', 'to']),
+        goPort: findCol(['port in', 'go port', 'origin', 'from', 'clip on']),
+        giPort: findCol(['port out', 'gi port', 'destination', 'to', 'clip off']),
         beneficiary: findCol(['beneficiary', 'attention']),
         shipperAddress: findCol(['address', 'shipper']),
         status: findCol(['status']),
         customerRef: findCol(['ref', 'customer ref']),
         trucker: findCol(['trucker', 'driver', 'transporter']),
+        invNo: findCol(['inv no', 'invoice no', 'invoice #']),
       };
 
       if (mapping.rate === -1) mapping.rate = 18;
@@ -182,20 +198,13 @@ const App: React.FC = () => {
           vatValue: parseCurrency(vatStr),
           remarks: clean(20),
           gensetFaultDescription: clean(21),
-          invNo: clean(22),
+          invNo: clean(mapping.invNo),
           invDate: clean(23),
           invIssueDate: clean(24),
         };
       });
 
       setBookings(parsed);
-      if (parsed.length > 0) {
-        const firstWithInv = parsed.find(p => p.invNo);
-        setInvConfig(prev => ({ 
-          ...prev, 
-          number: firstWithInv?.invNo || `INV-${Date.now().toString().slice(-6)}` 
-        }));
-      }
     };
     reader.readAsText(file);
     event.target.value = '';
@@ -275,7 +284,8 @@ const App: React.FC = () => {
     return bookings.filter(b => {
       const matchesSearch = b.customer?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           b.bookingNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          b.reeferNumber?.toLowerCase().includes(searchTerm.toLowerCase());
+                          b.reeferNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          b.invNo?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === 'ALL' || b.status?.toUpperCase().includes(statusFilter);
       
       const matchesRoute = !filterRoute || 
@@ -285,13 +295,18 @@ const App: React.FC = () => {
       const matchesReefer = !filterReefer || b.reeferNumber?.toLowerCase().includes(filterReefer.toLowerCase());
       const matchesGenset = !filterGenset || b.gensetNo?.toLowerCase().includes(filterGenset.toLowerCase());
       
+      let matchesQuickPort = true;
+      if (activeQuickPort) {
+        matchesQuickPort = b.goPort?.toUpperCase().includes(activeQuickPort) || b.giPort?.toUpperCase().includes(activeQuickPort);
+      }
+
       let matchesDate = true;
       if (filterDateRange.start) matchesDate = matchesDate && b.bookingDate >= filterDateRange.start;
       if (filterDateRange.end) matchesDate = matchesDate && b.bookingDate <= filterDateRange.end;
 
-      return matchesSearch && matchesStatus && matchesRoute && matchesReefer && matchesGenset && matchesDate;
+      return matchesSearch && matchesStatus && matchesRoute && matchesReefer && matchesGenset && matchesDate && matchesQuickPort;
     });
-  }, [bookings, searchTerm, statusFilter, filterRoute, filterReefer, filterGenset, filterDateRange]);
+  }, [bookings, searchTerm, statusFilter, filterRoute, filterReefer, filterGenset, filterDateRange, activeQuickPort]);
 
   const customerStats = useMemo(() => {
     const map = new Map<string, { count: number; total: number; bookings: Booking[] }>();
@@ -365,6 +380,12 @@ const App: React.FC = () => {
       });
     }
 
+    // Persist Invoice Number back to bookings
+    const updatedBookings = bookings.map(b => 
+      selectedIds.has(b.id) ? { ...b, invNo: invConfig.number } : b
+    );
+    setBookings(updatedBookings);
+
     setActiveInvoice({
       id: `INV-${Date.now()}`,
       invoiceNumber: invConfig.number,
@@ -382,6 +403,7 @@ const App: React.FC = () => {
       templateConfig: templateConfig,
       userProfile: profile
     });
+    setSelectedIds(new Set()); // Clear selection after finalizing
     setView('invoice-preview');
   };
 
@@ -392,6 +414,7 @@ const App: React.FC = () => {
     setFilterRoute('');
     setFilterReefer('');
     setFilterGenset('');
+    setActiveQuickPort(null);
   };
 
   const getStatusBadge = (status: string) => {
@@ -458,10 +481,18 @@ const App: React.FC = () => {
                   <h2 className="text-4xl font-black text-gray-900 tracking-tight">Booking Operations</h2>
                   <p className="text-gray-500 font-medium mt-1">Select shipments for conversion into invoices.</p>
                 </div>
-                <label className="group flex items-center gap-3 cursor-pointer bg-blue-600 text-white px-6 py-3 rounded-2xl hover:bg-blue-700 transition-all font-black text-sm shadow-xl shadow-blue-600/20 active:scale-95">
-                  <FileUp size={18} /> Import Sheet
-                  <input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} />
-                </label>
+                <div className="flex gap-4">
+                  <button 
+                    onClick={downloadSampleTemplate}
+                    className="flex items-center gap-3 bg-white border-2 border-gray-200 text-gray-600 px-6 py-3 rounded-2xl hover:border-blue-500 hover:text-blue-600 transition-all font-black text-sm active:scale-95"
+                  >
+                    <FileSpreadsheet size={18} /> Format Guide
+                  </button>
+                  <label className="group flex items-center gap-3 cursor-pointer bg-blue-600 text-white px-6 py-3 rounded-2xl hover:bg-blue-700 transition-all font-black text-sm shadow-xl shadow-blue-600/20 active:scale-95">
+                    <FileUp size={18} /> Import Sheet
+                    <input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} />
+                  </label>
+                </div>
               </header>
 
               {/* Grouping Info Panel */}
@@ -480,13 +511,74 @@ const App: React.FC = () => {
                 </div>
               </div>
 
+              {/* Format Guide Card - Collapsible or always visible */}
+              <div className="bg-white border-2 border-dashed border-blue-200 p-8 rounded-[2rem] shadow-sm flex flex-col md:flex-row gap-8 items-start">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-4">
+                    <ClipboardCheck className="text-blue-600" size={24} />
+                    <h3 className="text-xl font-black text-gray-900 tracking-tight">Import Format Guide</h3>
+                  </div>
+                  <p className="text-gray-500 text-sm font-medium mb-6">Use these exact column names in your CSV to ensure 100% accurate mapping. Case-insensitive.</p>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[
+                      { label: "Client", keys: "Customer" },
+                      { label: "Order #", keys: "Booking No" },
+                      { label: "Rate", keys: "Rate" },
+                      { label: "Tax", keys: "VAT" },
+                      { label: "Entry Port", keys: "Port In" },
+                      { label: "Exit Port", keys: "Port Out" },
+                      { label: "Unit ID", keys: "Reefer" },
+                      { label: "Add-on", keys: "Genset" },
+                    ].map(f => (
+                      <div key={f.label} className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{f.label}</p>
+                        <p className="text-xs font-black text-blue-600 font-mono">{f.keys}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="w-full md:w-auto self-stretch flex flex-col justify-center gap-3">
+                   <button 
+                    onClick={downloadSampleTemplate}
+                    className="flex items-center justify-center gap-3 bg-gray-900 text-white px-8 py-4 rounded-2xl font-black text-sm hover:bg-blue-600 transition-all shadow-xl active:scale-95"
+                   >
+                     <Download size={18} /> Download Sample CSV
+                   </button>
+                   <p className="text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">Recommended Format</p>
+                </div>
+              </div>
+
+              {/* Quick Port Chips */}
+              <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-full">
+                  <Anchor size={14} className="text-gray-400" />
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Major Ports</span>
+                </div>
+                {MAJOR_PORTS.map(port => (
+                  <button 
+                    key={port}
+                    onClick={() => setActiveQuickPort(activeQuickPort === port ? null : port)}
+                    className={`
+                      px-5 py-2 rounded-full text-[11px] font-black uppercase tracking-widest transition-all border-2 whitespace-nowrap
+                      ${activeQuickPort === port 
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-600/20' 
+                        : 'bg-white border-gray-100 text-gray-400 hover:border-blue-200 hover:text-blue-600'
+                      }
+                    `}
+                  >
+                    {port}
+                  </button>
+                ))}
+              </div>
+
               <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-4 flex flex-col gap-4">
                 <div className="flex flex-wrap items-center gap-4">
                   <div className="flex-1 min-w-[300px] relative">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
                     <input 
                       type="text" 
-                      placeholder="Search client, container or booking..."
+                      placeholder="Search client, container, invoice or booking..."
                       className="w-full pl-12 pr-6 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 font-bold text-sm"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
@@ -571,8 +663,10 @@ const App: React.FC = () => {
                       </th>
                       <th className="py-5 px-4">Customer</th>
                       <th className="py-5 px-4">Booking / Date</th>
-                      <th className="py-5 px-4">Ports</th>
+                      <th className="py-5 px-4">Port In</th>
+                      <th className="py-5 px-4">Port Out</th>
                       <th className="py-5 px-4 text-right">Rate</th>
+                      <th className="py-5 px-4 text-center">Inv #</th>
                       <th className="py-5 px-4 text-center">Actions</th>
                     </tr>
                   </thead>
@@ -610,7 +704,7 @@ const App: React.FC = () => {
                           </td>
                           <td className="py-6 px-4">
                             <p className="font-black text-gray-900 text-base leading-tight">{b.customer}</p>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase truncate max-w-[150px] mt-1">{b.beneficiaryName}</p>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase truncate max-w-[150px] mt-1">{b.beneficiaryName || 'No Consignee'}</p>
                           </td>
                           <td className="py-6 px-4">
                             <div className="flex items-center gap-2">
@@ -636,12 +730,16 @@ const App: React.FC = () => {
                             <p className="text-[10px] font-bold text-gray-400 mt-1">{b.bookingDate}</p>
                           </td>
                           <td className="py-6 px-4">
-                            <div className="flex items-center gap-2 font-bold text-gray-600">
-                              <span className="truncate max-w-[80px]">{b.goPort}</span>
-                              <ArrowRightLeft size={12} className="text-gray-300" />
-                              <span className="truncate max-w-[80px]">{b.giPort}</span>
+                            <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded ${MAJOR_PORTS.includes(b.goPort?.toUpperCase()) ? 'bg-blue-50 text-blue-600 border border-blue-100' : 'text-gray-600'} font-bold text-[10px] uppercase`}>
+                               {MAJOR_PORTS.includes(b.goPort?.toUpperCase()) && <Anchor size={10} />}
+                               {b.goPort || '---'}
                             </div>
-                            <div className="text-[10px] font-bold text-gray-400 mt-1">{getStatusBadge(b.status)}</div>
+                          </td>
+                          <td className="py-6 px-4">
+                             <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded ${MAJOR_PORTS.includes(b.giPort?.toUpperCase()) ? 'bg-red-50 text-red-600 border border-red-100' : 'text-gray-600'} font-bold text-[10px] uppercase`}>
+                                {MAJOR_PORTS.includes(b.giPort?.toUpperCase()) && <Anchor size={10} />}
+                                {b.giPort || '---'}
+                             </div>
                           </td>
                           <td className="py-6 px-4 text-right font-black text-gray-900">
                             {b.rateValue === 0 && b.rate !== '0' && b.rate !== '' ? (
@@ -652,11 +750,21 @@ const App: React.FC = () => {
                             ) : b.rate}
                           </td>
                           <td className="py-6 px-4 text-center">
+                            {b.invNo ? (
+                              <div className="inline-flex items-center gap-1.5 text-blue-600 font-black bg-blue-50 px-2 py-1 rounded-lg">
+                                <CheckCircle size={12} />
+                                <span className="font-mono text-[10px]">{b.invNo}</span>
+                              </div>
+                            ) : (
+                              <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest italic">Pending</span>
+                            )}
+                          </td>
+                          <td className="py-6 px-4 text-center">
                             <div className="flex justify-center gap-2">
-                              <button onClick={() => setEditingBooking(b)} className="p-2 text-gray-400 hover:text-blue-600 transition-colors bg-gray-50 rounded-lg">
+                              <button onClick={() => setEditingBooking(b)} className="p-2 text-gray-400 hover:text-blue-600 transition-colors bg-gray-50 rounded-lg" title="Edit">
                                 <Edit3 size={18} />
                               </button>
-                              <button onClick={() => setInspectingBooking(b)} className="p-2 text-gray-400 hover:text-blue-600 transition-colors bg-gray-50 rounded-lg">
+                              <button onClick={() => setInspectingBooking(b)} className="p-2 text-gray-400 hover:text-blue-600 transition-colors bg-gray-50 rounded-lg" title="Details">
                                 <Info size={18} />
                               </button>
                             </div>
@@ -664,7 +772,7 @@ const App: React.FC = () => {
                         </tr>
                       );
                     }) : (
-                      <tr><td colSpan={6} className="py-20 text-center"><p className="text-gray-400 font-bold">No results found.</p></td></tr>
+                      <tr><td colSpan={8} className="py-20 text-center"><p className="text-gray-400 font-bold">No results found.</p></td></tr>
                     )}
                   </tbody>
                 </table>
@@ -751,7 +859,7 @@ const App: React.FC = () => {
                 </div>
                 <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 p-8 sticky top-10 h-fit">
                   <h3 className="text-xl font-black text-gray-900 mb-8 border-b pb-4">Invoice Sequence</h3>
-                  <div className="space-y-3">{templateConfig.sectionOrder.map((sectionId, idx) => (<div key={sectionId} className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${templateConfig.hiddenSections.has(sectionId) ? 'opacity-30 grayscale border-gray-100' : 'bg-blue-50/30 border-blue-50'}`}><div className="flex items-center gap-3"><button onClick={() => { const next = new Set(templateConfig.hiddenSections); if (next.has(sectionId)) next.delete(sectionId); else next.add(sectionId); setTemplateConfig({ ...templateConfig, hiddenSections: next }); }} className="p-1 text-blue-600">{templateConfig.hiddenSections.has(sectionId) ? <EyeOff size={18} /> : <Eye size={18} />}</button><span className="text-xs font-black uppercase text-gray-900">{sectionId}</span></div><div className="flex gap-1"><button disabled={idx === 0} onClick={() => { const next = [...templateConfig.sectionOrder]; [next[idx], next[idx-1]] = [next[idx-1], next[idx]]; setTemplateConfig({ ...templateConfig, sectionOrder: next }); }} className="p-1 disabled:opacity-0 hover:bg-white rounded-lg transition-colors"><ArrowUp size={16} /></button><button disabled={idx === templateConfig.sectionOrder.length - 1} onClick={() => { const next = [...templateConfig.sectionOrder]; [next[idx], next[idx+1]] = [next[idx+1], next[idx]]; setTemplateConfig({ ...templateConfig, sectionOrder: next }); }} className="p-1 disabled:opacity-0 hover:bg-white rounded-lg transition-colors"><ArrowDown size={16} /></button></div></div>))}</div>
+                  <div className="space-y-3">{templateConfig.sectionOrder.map((sectionId, idx) => (<div key={sectionId} className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${templateConfig.hiddenSections.has(sectionId) ? 'opacity-30 grayscale border-gray-100' : 'bg-blue-50/30 border-blue-50'}`}><div className="flex items-center gap-3"><button onClick={() => { const next = new Set(templateConfig.hiddenSections); if (next.has(sectionId)) next.delete(sectionId); else next.add(sectionId); setTemplateConfig({ ...templateConfig, hiddenSections: next }); }} className="p-1 text-blue-600">{templateConfig.hiddenSections.has(sectionId) ? <EyeOff size={18} /> : <Eye size={18} />}</button><span className="text-xs font-black uppercase text-gray-900">{sectionId}</span></div><div className="flex gap-1"><button disabled={idx === 0} onClick={() => { const next = [...templateConfig.sectionOrder]; [next[idx], next[idx-1]] = [next[idx-1], next[idx]]; setTemplateConfig({ ...templateConfig, sectionOrder: next }); }} className="p-1 disabled:opacity-0 hover:bg-white rounded-lg transition-colors"><ArrowUp size={16} /></button><button disabled={idx === templateConfig.length - 1} onClick={() => { const next = [...templateConfig.sectionOrder]; [next[idx], next[idx+1]] = [next[idx-1], next[idx]]; setTemplateConfig({ ...templateConfig, sectionOrder: next }); }} className="p-1 disabled:opacity-0 hover:bg-white rounded-lg transition-colors"><ArrowDown size={16} /></button></div></div>))}</div>
                   <button onClick={finalizeInvoice} className="w-full mt-10 bg-gray-900 text-white py-5 rounded-2xl font-black text-sm hover:bg-blue-600 transition-all shadow-2xl active:scale-95">Preview & Export</button>
                 </div>
               </div>
@@ -802,7 +910,7 @@ const App: React.FC = () => {
           {view === 'operations' && (
             <div className="space-y-10 animate-in fade-in duration-500">
               <header className="flex justify-between items-center"><div><h2 className="text-4xl font-black text-gray-900 tracking-tight">Operation History</h2><p className="text-gray-500 font-medium mt-1">Historical log and monthly reports.</p></div><button onClick={() => exportToCSV(bookings, `Operations_Report_${new Date().getMonth() + 1}.csv`)} className="bg-green-600 text-white px-6 py-3 rounded-2xl font-black text-sm shadow-xl active:scale-95"><Download size={18} className="inline mr-2" /> Export CSV</button></header>
-              <div className="bg-white rounded-[2rem] shadow-xl border border-gray-100 overflow-hidden overflow-x-auto"><table className="w-full text-left text-xs"><thead className="bg-gray-50 border-b border-gray-100 font-black text-gray-400 uppercase tracking-widest"><tr><th className="py-4 px-4">Booking No</th><th className="py-4 px-4">Customer</th><th className="py-4 px-4">Date</th><th className="py-4 px-4">Ports</th><th className="py-4 px-4 text-right">Rate</th><th className="py-4 px-4">Status</th></tr></thead><tbody className="divide-y divide-gray-50">{bookings.map(b => (<tr key={b.id} className="hover:bg-gray-50"><td className="py-4 px-4 font-bold">{b.bookingNo}</td><td className="py-4 px-4 truncate max-w-[120px]">{b.customer}</td><td className="py-4 px-4">{b.bookingDate}</td><td className="py-4 px-4">{b.goPort} → {b.giPort}</td><td className="py-4 px-4 text-right font-black">{b.rate}</td><td className="py-4 px-4">{getStatusBadge(b.status)}</td></tr>))}</tbody></table></div>
+              <div className="bg-white rounded-[2rem] shadow-xl border border-gray-100 overflow-hidden overflow-x-auto"><table className="w-full text-left text-xs"><thead className="bg-gray-50 border-b border-gray-100 font-black text-gray-400 uppercase tracking-widest"><tr><th className="py-4 px-4">Booking No</th><th className="py-4 px-4">Customer</th><th className="py-4 px-4">Date</th><th className="py-4 px-4">Route</th><th className="py-4 px-4 text-right">Rate</th><th className="py-4 px-4">Inv #</th><th className="py-4 px-4">Status</th></tr></thead><tbody className="divide-y divide-gray-50">{bookings.map(b => (<tr key={b.id} className="hover:bg-gray-50"><td className="py-4 px-4 font-bold">{b.bookingNo}</td><td className="py-4 px-4 truncate max-w-[120px]">{b.customer}</td><td className="py-4 px-4">{b.bookingDate}</td><td className="py-4 px-4">{b.goPort} → {b.giPort}</td><td className="py-4 px-4 text-right font-black">{b.rate}</td><td className="py-4 px-4 font-mono text-blue-600">{b.invNo || '---'}</td><td className="py-4 px-4">{getStatusBadge(b.status)}</td></tr>))}</tbody></table></div>
             </div>
           )}
 
@@ -877,7 +985,28 @@ const App: React.FC = () => {
 
           {view === 'invoice-preview' && (
             <div className="space-y-10 animate-in fade-in duration-500 pb-20">
-              <header className="no-print flex justify-between items-center"><h2 className="text-4xl font-black text-gray-900 tracking-tight">Final Invoice</h2><div className="flex items-center gap-4"><button onClick={() => setView('config')} className="bg-white border text-gray-600 px-6 py-3 rounded-xl font-bold">Edit Layout</button><button onClick={() => window.print()} className="bg-blue-600 text-white px-8 py-3.5 rounded-xl font-black shadow-xl">Print / Save PDF</button></div></header>
+              <header className="no-print flex justify-between items-center bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+                <div className="flex items-center gap-4">
+                  <button onClick={() => setView('dashboard')} className="p-3 bg-gray-50 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all" title="Close Preview">
+                    <X size={24} />
+                  </button>
+                  <h2 className="text-2xl font-black text-gray-900 tracking-tight">Invoice Preview</h2>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button onClick={() => setView('dashboard')} className="flex items-center gap-2 bg-gray-50 text-gray-600 px-5 py-3 rounded-xl font-bold hover:bg-gray-100 transition-all">
+                    <Layout size={18} /> Return to Dashboard
+                  </button>
+                  <button onClick={() => setView('config')} className="bg-white border border-gray-200 text-gray-600 px-5 py-3 rounded-xl font-bold hover:bg-gray-50 transition-all">
+                    Edit Layout
+                  </button>
+                  <button 
+                    onClick={() => window.print()} 
+                    className="flex items-center gap-2 bg-blue-600 text-white px-8 py-4 rounded-2xl font-black shadow-2xl shadow-blue-600/30 hover:bg-blue-700 hover:scale-[1.02] transition-all active:scale-95 animate-pulse-subtle"
+                  >
+                    <Printer size={20} /> Print & Save PDF
+                  </button>
+                </div>
+              </header>
               {activeInvoice && <InvoiceDocument invoice={activeInvoice} />}
             </div>
           )}
@@ -986,10 +1115,11 @@ const App: React.FC = () => {
                         <thead className="bg-gray-50 border-b text-[10px] font-black text-gray-400 uppercase tracking-widest">
                           <tr>
                             <th className="py-4 px-6">Date & Booking</th>
-                            <th className="py-4 px-6">Beneficiary</th>
+                            <th className="py-4 px-6">Consignee</th>
                             <th className="py-4 px-6">Container #</th>
                             <th className="py-4 px-6">Trucker</th>
-                            <th className="py-4 px-6">Ports & Address</th>
+                            <th className="py-4 px-6">Route & Address</th>
+                            <th className="py-4 px-6">Inv #</th>
                             <th className="py-4 px-6 text-right">Rate</th>
                           </tr>
                         </thead>
@@ -1012,6 +1142,9 @@ const App: React.FC = () => {
                               <td className="py-6 px-6">
                                 <p className="font-black text-blue-600 uppercase tracking-tighter">{b.goPort} → {b.giPort}</p>
                                 <p className="text-[10px] font-medium text-gray-400 mt-1 line-clamp-1 italic">{b.shipperAddress}</p>
+                              </td>
+                              <td className="py-6 px-6">
+                                <span className="font-mono text-[10px] font-bold text-blue-600">{b.invNo || '---'}</span>
                               </td>
                               <td className="py-6 px-6 text-right font-black text-gray-900 text-sm">
                                 {b.rate}

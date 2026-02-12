@@ -2,10 +2,13 @@
 import React, { useMemo } from 'react';
 import { Invoice, InvoiceSectionId, InvoiceTheme, Booking } from '../types';
 import { formatCurrency, formatDate } from '../utils/formatters';
+import { Anchor, Truck, MapPin } from 'lucide-react';
 
 interface InvoiceDocumentProps {
   invoice: Invoice;
 }
+
+const MAJOR_EGYPT_PORTS = ['ALEX', 'DAM', 'GOUDA', 'SCCT', 'SOKHNA'];
 
 const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice }) => {
   const config = invoice.templateConfig || {
@@ -36,7 +39,6 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice }) => {
     logoUrl: null
   };
 
-  // Group items by Booking Number to handle "duplicated" bookings (multiple containers per booking)
   const groupedItems = useMemo(() => {
     const groups = new Map<string, Booking[]>();
     invoice.items.forEach(item => {
@@ -48,18 +50,17 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice }) => {
     return Array.from(groups.values());
   }, [invoice.items]);
 
-  // Theme Styles mapping
   const styles: Record<InvoiceTheme, any> = {
     modern: {
-      container: "bg-white p-16 shadow-2xl border border-gray-100 max-w-[210mm] mx-auto min-h-[297mm] flex flex-col font-sans",
+      container: "bg-white p-10 shadow-2xl border border-gray-100 max-w-[210mm] mx-auto min-h-[297mm] flex flex-col font-sans text-gray-900",
       accent: "text-blue-900",
       accentBg: "bg-blue-900",
       border: "border-blue-900",
-      tableHeader: "bg-gray-50/50 border-y border-gray-200",
+      tableHeader: "bg-gray-50/80 border-y border-gray-200",
       totalsBorder: "border-gray-900"
     },
     minimalist: {
-      container: "bg-white p-12 max-w-[210mm] mx-auto min-h-[297mm] flex flex-col font-sans",
+      container: "bg-white p-8 max-w-[210mm] mx-auto min-h-[297mm] flex flex-col font-sans",
       accent: "text-gray-900",
       accentBg: "bg-gray-100",
       border: "border-gray-200",
@@ -67,7 +68,7 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice }) => {
       totalsBorder: "border-gray-100"
     },
     corporate: {
-      container: "bg-white p-16 max-w-[210mm] mx-auto min-h-[297mm] flex flex-col font-serif",
+      container: "bg-white p-12 max-w-[210mm] mx-auto min-h-[297mm] flex flex-col font-serif",
       accent: "text-slate-900",
       accentBg: "bg-slate-900",
       border: "border-slate-300",
@@ -75,7 +76,7 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice }) => {
       totalsBorder: "border-slate-900"
     },
     industrial: {
-      container: "bg-white p-12 max-w-[210mm] mx-auto min-h-[297mm] flex flex-col font-mono",
+      container: "bg-white p-8 max-w-[210mm] mx-auto min-h-[297mm] flex flex-col font-mono",
       accent: "text-orange-600",
       accentBg: "bg-orange-600",
       border: "border-black",
@@ -83,7 +84,7 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice }) => {
       totalsBorder: "border-black"
     },
     elegant: {
-      container: "bg-white p-20 max-w-[210mm] mx-auto min-h-[297mm] flex flex-col font-serif",
+      container: "bg-white p-14 max-w-[210mm] mx-auto min-h-[297mm] flex flex-col font-serif",
       accent: "text-emerald-900",
       accentBg: "bg-emerald-900",
       border: "border-emerald-100",
@@ -94,55 +95,79 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice }) => {
 
   const activeStyle = styles[theme];
 
+  const renderPortBadge = (port: string) => {
+    if (!port || port === '---' || port.trim() === '') return <span className="text-gray-300 italic text-[9px]">---</span>;
+    
+    const portUpper = port.toUpperCase();
+    const isMajor = MAJOR_EGYPT_PORTS.some(p => portUpper.includes(p));
+    
+    if (isMajor) {
+      return (
+        <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 border border-blue-100 shadow-sm w-full justify-center">
+          <Anchor size={9} className="text-blue-500 flex-shrink-0" />
+          <span className="font-black text-blue-900 uppercase tracking-tighter text-[9px] truncate">
+            {portUpper}
+          </span>
+        </div>
+      );
+    }
+
+    return (
+      <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-50 border border-gray-100 w-full justify-center">
+        <span className="font-bold text-gray-700 uppercase tracking-tight text-[9px] truncate">
+          {port}
+        </span>
+      </div>
+    );
+  };
+
   const renderSection = (id: InvoiceSectionId) => {
     if (config.hiddenSections.has(id)) return null;
 
     switch (id) {
       case 'header':
         return (
-          <div key="header" className={`flex justify-between items-start mb-12 border-b-4 ${activeStyle.border} pb-8`}>
+          <div key="header" className={`flex justify-between items-start mb-8 border-b-4 ${activeStyle.border} pb-6`}>
             <div className="flex items-center gap-4">
               {profile.logoUrl ? (
-                <img src={profile.logoUrl} alt="Company Logo" className="h-16 w-auto object-contain" />
+                <img src={profile.logoUrl} alt="Company Logo" className="h-12 w-auto object-contain" />
               ) : (
-                <div className={`w-14 h-14 ${activeStyle.accentBg} rounded-xl flex items-center justify-center text-white font-bold text-2xl shadow-lg`}>
+                <div className={`w-10 h-10 ${activeStyle.accentBg} rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg`}>
                   {profile.companyName.charAt(0)}
                 </div>
               )}
               <div>
-                <h1 className={`text-2xl font-black ${activeStyle.accent} tracking-tighter uppercase leading-tight`}>{profile.companyName}</h1>
-                <p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em] mt-1">Premium Logistics Solutions</p>
+                <h1 className={`text-xl font-black ${activeStyle.accent} tracking-tighter uppercase leading-tight`}>{profile.companyName}</h1>
+                <p className="text-[8px] text-gray-400 font-black uppercase tracking-[0.2em] mt-0.5">Premium Logistics Solutions</p>
               </div>
             </div>
             <div className="text-right">
-              <h2 className={`text-5xl font-light ${theme === 'industrial' ? 'text-black' : 'text-gray-200'} uppercase tracking-tighter mb-2 -mr-1`}>Invoice</h2>
-              <div className="space-y-1">
-                <p className="text-sm font-black text-gray-900">No: <span className={`${activeStyle.accent} font-mono tracking-widest`}>{invoice.invoiceNumber}</span></p>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Date: {invoice.date}</p>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Due: {invoice.dueDate}</p>
+              <h2 className={`text-4xl font-light ${theme === 'industrial' ? 'text-black' : 'text-gray-200'} uppercase tracking-tighter mb-1 -mr-1`}>Invoice</h2>
+              <div className="space-y-0.5">
+                <p className="text-xs font-black text-gray-900">No: <span className={`${activeStyle.accent} font-mono tracking-widest`}>{invoice.invoiceNumber}</span></p>
+                <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">Date: {invoice.date}</p>
               </div>
             </div>
           </div>
         );
       case 'parties':
         return (
-          <div key="parties" className="grid grid-cols-2 gap-16 mb-12">
-            <div className="space-y-4">
+          <div key="parties" className="grid grid-cols-2 gap-10 mb-6">
+            <div className="space-y-3">
               <div>
-                <h3 className={`text-[10px] font-black ${activeStyle.accent} uppercase tracking-[0.2em] mb-3 border-b ${activeStyle.border} pb-1`}>Billed To</h3>
-                <p className="font-bold text-xl text-gray-900 leading-tight">{invoice.customerName}</p>
-                {invoice.beneficiaryName && <p className="text-sm text-gray-500 font-medium mt-1 italic">Attention: {invoice.beneficiaryName}</p>}
-                {invoice.customerAddress && <p className="text-xs text-gray-500 mt-2 max-w-xs leading-relaxed">{invoice.customerAddress}</p>}
+                <h3 className={`text-[8px] font-black ${activeStyle.accent} uppercase tracking-[0.2em] mb-2 border-b ${activeStyle.border} pb-1`}>Billed To</h3>
+                <p className="font-bold text-lg text-gray-900 leading-tight">{invoice.customerName}</p>
+                {invoice.beneficiaryName && <p className="text-xs text-gray-500 font-medium mt-1 italic">Attention: {invoice.beneficiaryName}</p>}
+                {invoice.customerAddress && <p className="text-[10px] text-gray-500 mt-1 max-w-xs leading-relaxed">{invoice.customerAddress}</p>}
               </div>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div>
-                <h3 className={`text-[10px] font-black ${activeStyle.accent} uppercase tracking-[0.2em] mb-3 border-b ${activeStyle.border} pb-1`}>Issued By</h3>
-                <p className="font-bold text-lg text-gray-900 leading-tight">{profile.companyName}</p>
-                <div className="text-[11px] text-gray-500 space-y-1 mt-2 whitespace-pre-line leading-relaxed font-medium">
+                <h3 className={`text-[8px] font-black ${activeStyle.accent} uppercase tracking-[0.2em] mb-2 border-b ${activeStyle.border} pb-1`}>Issued By</h3>
+                <p className="font-bold text-base text-gray-900 leading-tight">{profile.companyName}</p>
+                <div className="text-[9px] text-gray-500 space-y-0.5 mt-1 whitespace-pre-line leading-relaxed font-medium">
                   <p>{profile.address}</p>
-                  <p className="font-black text-gray-400 uppercase tracking-widest text-[9px]">Tax ID: {profile.taxId}</p>
-                  <p className={`font-bold ${activeStyle.accent} mt-2 underline`}>{profile.email}</p>
+                  <p className="font-black text-gray-400 uppercase tracking-widest text-[7px]">Tax ID: {profile.taxId}</p>
                 </div>
               </div>
             </div>
@@ -150,14 +175,17 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice }) => {
         );
       case 'table':
         return (
-          <div key="table" className="flex-1 mb-8">
-            <table className="w-full text-left border-collapse">
+          <div key="table" className="flex-1 mb-6 overflow-hidden">
+            <table className="w-full text-left border-collapse table-fixed">
               <thead>
-                <tr className={`${activeStyle.tableHeader} text-[10px] font-black uppercase tracking-widest ${theme === 'industrial' ? 'text-white' : 'text-gray-500'}`}>
-                  <th className="py-4 px-3 w-1/2">Booking & Container Details</th>
-                  {config.fields.showServicePeriod && <th className="py-4 px-3">Date</th>}
-                  {config.fields.showPorts && <th className="py-4 px-3">Ports</th>}
-                  <th className="py-4 px-3 text-right">Amount</th>
+                <tr className={`${activeStyle.tableHeader} text-[7px] font-black uppercase tracking-widest ${theme === 'industrial' ? 'text-white' : 'text-gray-500'}`}>
+                  <th className="py-3 px-2 w-[18%]">Booking / Unit</th>
+                  <th className="py-3 px-2 w-[15%] text-center">Port In</th>
+                  <th className="py-3 px-2 w-[15%] text-center">Port Out</th>
+                  <th className="py-3 px-2 w-[16%]">Shipper</th>
+                  <th className="py-3 px-2 w-[11%]">Trucker</th>
+                  {config.fields.showServicePeriod && <th className="py-3 px-2 w-[10%] text-center">Date</th>}
+                  <th className="py-3 px-2 text-right w-[15%]">Amount</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -166,57 +194,93 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice }) => {
                   const totalGroupRate = group.reduce((acc, curr) => acc + curr.rateValue, 0);
                   
                   return (
-                    <tr key={gIdx} className={`${theme === 'minimalist' ? 'hover:bg-gray-50' : 'hover:bg-blue-50/30'} transition-colors`}>
-                      <td className="py-5 px-3">
-                        {/* Group Header: Booking Number */}
-                        <div className={`font-black ${activeStyle.accent} text-sm flex items-center gap-2`}>
-                          <span className="uppercase tracking-tighter">Booking: {first.bookingNo || 'N/A'}</span>
-                          {group.length > 1 && (
-                            <span className="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-black">
-                              {group.length} CONTAINERS
-                            </span>
-                          )}
+                    <tr key={gIdx} className={`${theme === 'minimalist' ? 'hover:bg-gray-50' : 'hover:bg-blue-50/20'} transition-colors align-top`}>
+                      {/* Booking / Unit Column */}
+                      <td className="py-4 px-2">
+                        <div className={`font-black ${activeStyle.accent} text-[10px] uppercase tracking-tighter mb-2`}>
+                          BK: {first.bookingNo || 'N/A'}
                         </div>
-                        
-                        {/* Nested List of Containers */}
-                        <div className="mt-2 space-y-1 ml-1 border-l-2 border-gray-100 pl-3">
+                        <div className="space-y-2">
                           {group.map((item, iIdx) => (
-                            <div key={iIdx} className="text-[11px] text-gray-600 flex items-center gap-2">
-                              <span className="font-bold text-gray-900">
-                                {config.fields.showReefer ? (item.reeferNumber || 'No Container ID') : 'Logistics Unit'}
-                              </span>
+                            <div key={iIdx} className="space-y-0.5">
+                              <p className="text-[9px] font-black text-gray-900 truncate">
+                                {config.fields.showReefer ? (item.reeferNumber || 'UNIT-XX') : 'UNIT'}
+                              </p>
                               {config.fields.showGenset && item.gensetNo && (
-                                <span className="text-[9px] text-gray-400 font-mono">/ G: {item.gensetNo}</span>
-                              )}
-                              {item.trucker && (
-                                <span className="text-[9px] text-gray-300 italic">via {item.trucker}</span>
+                                <p className="text-[7px] text-orange-600 font-mono bg-orange-50 px-1 rounded inline-block">GS: {item.gensetNo}</p>
                               )}
                             </div>
                           ))}
                         </div>
-
-                        {config.fields.showCustomerRef && first.customerRef && (
-                          <div className="text-[10px] text-gray-400 mt-2 uppercase font-bold tracking-widest">
-                            Ref: {first.customerRef}
-                          </div>
-                        )}
                       </td>
+
+                      {/* Port In Column */}
+                      <td className="py-4 px-2 text-center">
+                        <div className="space-y-2">
+                          {group.map((item, iIdx) => (
+                            <div key={iIdx} className="min-h-[36px] flex items-center justify-center">
+                              {renderPortBadge(item.goPort)}
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+
+                      {/* Port Out Column */}
+                      <td className="py-4 px-2 text-center">
+                        <div className="space-y-2">
+                          {group.map((item, iIdx) => (
+                            <div key={iIdx} className="min-h-[36px] flex items-center justify-center">
+                              {renderPortBadge(item.giPort)}
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+
+                      {/* Shipper Column */}
+                      <td className="py-4 px-2">
+                        <div className="space-y-2">
+                          {group.map((item, iIdx) => (
+                            <div key={iIdx} className="flex items-start gap-1 min-h-[36px] pt-1">
+                              {item.shipperAddress ? (
+                                <>
+                                  <MapPin size={8} className="text-gray-300 mt-1 flex-shrink-0" />
+                                  <p className="text-[8px] text-gray-600 leading-tight line-clamp-3 italic">{item.shipperAddress}</p>
+                                </>
+                              ) : <span className="text-[8px] text-gray-300 italic">---</span>}
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+
+                      {/* Trucker Column */}
+                      <td className="py-4 px-2">
+                        <div className="space-y-2">
+                          {group.map((item, iIdx) => (
+                            <div key={iIdx} className="flex items-center gap-1 min-h-[36px]">
+                              {item.trucker ? (
+                                <>
+                                  <Truck size={8} className="text-gray-300 flex-shrink-0" />
+                                  <p className="text-[8px] text-gray-600 font-bold truncate">{item.trucker}</p>
+                                </>
+                              ) : <span className="text-[8px] text-gray-300">---</span>}
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+
+                      {/* Date Column */}
                       {config.fields.showServicePeriod && (
-                        <td className="py-5 px-3 align-top">
-                          <div className="text-xs text-gray-700 font-medium">{formatDate(first.bookingDate)}</div>
+                        <td className="py-4 px-2 text-center">
+                          <div className="text-[9px] text-gray-700 font-bold pt-1">{formatDate(first.bookingDate)}</div>
                         </td>
                       )}
-                      {config.fields.showPorts && (
-                        <td className="py-5 px-3 align-top">
-                          <div className={`text-xs font-black ${activeStyle.accent} tracking-tighter uppercase`}>{first.goPort || '---'}</div>
-                          <div className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">TO {first.giPort || '---'}</div>
-                        </td>
-                      )}
-                      <td className="py-5 px-3 text-right align-top">
-                        <span className="font-black text-gray-900">{formatCurrency(totalGroupRate, invoice.currency)}</span>
+
+                      {/* Amount Column */}
+                      <td className="py-4 px-2 text-right">
+                        <span className="font-black text-gray-900 text-sm">{formatCurrency(totalGroupRate, invoice.currency)}</span>
                         {group.length > 1 && (
-                          <div className="text-[9px] text-gray-400 mt-1 uppercase font-bold">
-                            (Sum of {group.length} units)
+                          <div className="text-[7px] text-gray-400 mt-0.5 uppercase font-black">
+                            {group.length} UNITS
                           </div>
                         )}
                       </td>
@@ -229,46 +293,46 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice }) => {
         );
       case 'totals':
         return (
-          <div key="totals" className={`mt-8 pt-8 border-t-2 ${activeStyle.totalsBorder} flex justify-end mb-8`}>
-            <div className="w-80 space-y-4">
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-500 font-black uppercase tracking-widest text-[10px]">Subtotal</span>
+          <div key="totals" className={`mt-4 pt-4 border-t-2 ${activeStyle.totalsBorder} flex justify-end mb-6`}>
+            <div className="w-64 space-y-2">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-gray-500 font-black uppercase tracking-widest text-[8px]">Subtotal</span>
                 <span className="font-bold text-gray-900">{formatCurrency(invoice.subtotal, invoice.currency)}</span>
               </div>
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-500 font-black uppercase tracking-widest text-[10px]">VAT (14%)</span>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-gray-500 font-black uppercase tracking-widest text-[8px]">VAT (14%)</span>
                 <span className="font-bold text-gray-900">{formatCurrency(invoice.tax, invoice.currency)}</span>
               </div>
-              <div className="flex justify-between items-center pt-4 border-t border-dashed border-gray-300">
-                <span className={`${activeStyle.accent} font-black uppercase tracking-[0.2em] text-[10px]`}>Total Amount</span>
-                <span className={`text-2xl font-black ${activeStyle.accent}`}>{formatCurrency(invoice.total, invoice.currency)}</span>
+              <div className="flex justify-between items-center pt-2 border-t border-dashed border-gray-300">
+                <span className={`${activeStyle.accent} font-black uppercase tracking-[0.2em] text-[8px]`}>Total Amount</span>
+                <span className={`text-xl font-black ${activeStyle.accent}`}>{formatCurrency(invoice.total, invoice.currency)}</span>
               </div>
             </div>
           </div>
         );
       case 'signature':
         return (
-          <div key="signature" className="mt-8 flex justify-end">
-            <div className="text-right space-y-2">
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-1 mb-2">Authorized Signature</p>
+          <div key="signature" className="mt-4 flex justify-end">
+            <div className="text-right space-y-1">
+              <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-1 mb-2">Authorized Signature</p>
               {profile.signatureUrl ? (
-                <img src={profile.signatureUrl} alt="Signature" className="h-20 w-auto ml-auto object-contain" />
+                <img src={profile.signatureUrl} alt="Signature" className="h-12 w-auto ml-auto object-contain" />
               ) : (
-                <div className="h-20 w-48 border-b border-dashed border-gray-300"></div>
+                <div className="h-10 w-32 border-b border-dashed border-gray-300"></div>
               )}
-              <p className={`text-sm font-black ${activeStyle.accent} mt-2`}>{profile.name}</p>
+              <p className={`text-[10px] font-black ${activeStyle.accent} mt-1`}>{profile.name}</p>
             </div>
           </div>
         );
       case 'footer':
         return (
-          <div key="footer" className={`mt-auto pt-12 text-[9px] text-gray-400 grid grid-cols-2 gap-12 border-t ${activeStyle.border} pt-8`}>
-            <div className="space-y-2">
-              <p className="font-black text-gray-500 uppercase tracking-widest border-b border-gray-50 pb-1">Terms & Remarks</p>
-              <p className="leading-relaxed font-medium">{invoice.notes || "Standard logistics terms apply."}</p>
+          <div key="footer" className={`mt-auto pt-6 text-[7px] text-gray-400 grid grid-cols-2 gap-10 border-t ${activeStyle.border} pt-4`}>
+            <div className="space-y-1">
+              <p className="font-black text-gray-500 uppercase tracking-widest border-b border-gray-50 pb-0.5">Terms & Conditions</p>
+              <p className="leading-relaxed font-medium">Standard reefer logistics terms apply. All port activities (ALEX, DAM, GOUDA, SCCT, SOKHNA) are recorded based on operational reports. Payment is due within standard terms.</p>
             </div>
             <div className="text-right flex flex-col justify-end">
-              <p className={`text-gray-200 font-black text-5xl mb-2 tracking-tighter opacity-50 uppercase italic ${theme === 'industrial' ? 'text-black' : ''}`}>Thank You</p>
+              <p className={`text-gray-200 font-black text-3xl mb-1 tracking-tighter opacity-30 uppercase italic ${theme === 'industrial' ? 'text-black' : ''}`}>Verified Logistics</p>
             </div>
           </div>
         );
