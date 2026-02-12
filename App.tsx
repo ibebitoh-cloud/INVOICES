@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { 
   FileUp, Search, Plus, FileText, CheckCircle2, XCircle, Clock, Printer, 
@@ -8,7 +7,7 @@ import {
   FilePlus, ToggleLeft, ToggleRight, Settings as SettingsIcon,
   MapPin, Package, Truck, SlidersHorizontal, ChevronUp, ChevronDown, 
   ArrowRightLeft, Building2, User, Upload, ShieldCheck, Mail, CreditCard,
-  Briefcase, Hash
+  Briefcase, Hash, ExternalLink, TrendingUp, DollarSign
 } from 'lucide-react';
 import { Booking, Invoice, InvoiceSectionId, TemplateConfig, UserProfile, SavedTemplate, InvoiceTheme, CustomerSettings, TemplateFields } from './types';
 import { parseCurrency, formatCurrency, exportToCSV } from './utils/formatters';
@@ -16,8 +15,14 @@ import InvoiceDocument from './components/InvoiceDocument';
 
 const MAJOR_PORTS = ['ALEX', 'DAM', 'GOUDA', 'SCCT', 'SOKHNA'];
 
+// Default logo placeholder that matches the user's provided colors (Dark Blue and Gold/Tan)
+const DEFAULT_COMPANY_LOGO = "https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&q=80&w=300&h=300";
+
 const App: React.FC = () => {
-  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>(() => {
+    const saved = localStorage.getItem('invoice_bookings');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
@@ -25,7 +30,6 @@ const App: React.FC = () => {
 
   const [view, setView] = useState<'dashboard' | 'config' | 'invoice-preview' | 'profile' | 'portfolio' | 'operations' | 'field-master'>('dashboard');
   const [activeInvoice, setActiveInvoice] = useState<Invoice | null>(null);
-  const [selectedCustomerName, setSelectedCustomerName] = useState<string | null>(null);
   const [showManualAddModal, setShowManualAddModal] = useState(false);
 
   const [customerSettings, setCustomerSettings] = useState<Record<string, CustomerSettings>>(() => {
@@ -37,22 +41,31 @@ const App: React.FC = () => {
     localStorage.setItem('customer_settings', JSON.stringify(customerSettings));
   }, [customerSettings]);
 
+  useEffect(() => {
+    localStorage.setItem('invoice_bookings', JSON.stringify(bookings));
+  }, [bookings]);
+
   const [profile, setProfile] = useState<UserProfile>(() => {
     const saved = localStorage.getItem('user_profile');
-    return saved ? JSON.parse(saved) : {
-      name: 'Ahmed Mostafa',
-      companyName: 'Logistics Pro Egypt Ltd.',
+    if (saved) return JSON.parse(saved);
+    return {
+      name: 'Authorized Signatory',
+      companyName: 'Logistics Pro Egypt',
       address: 'Industrial Zone 4, Plot 12\nAlexandria, Egypt',
       taxId: '412-100-XXX',
       email: 'billing@logisticspro.com.eg',
       signatureUrl: null,
-      logoUrl: null
+      logoUrl: DEFAULT_COMPANY_LOGO
     };
   });
 
-  useEffect(() => {
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  const handleSaveProfile = () => {
     localStorage.setItem('user_profile', JSON.stringify(profile));
-  }, [profile]);
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 3000);
+  };
 
   const [invConfig, setInvConfig] = useState({
     number: '',
@@ -192,7 +205,6 @@ const App: React.FC = () => {
     setView('invoice-preview');
   }, [bookings, selectedIds, invConfig, templateConfig, profile]);
 
-  // Implemented handleManualAdd to handle manual booking entry form submission
   const handleManualAdd = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -255,10 +267,15 @@ const App: React.FC = () => {
   }, [bookings, searchTerm, statusFilter, activeQuickPort]);
 
   const customerStats = useMemo(() => {
-    const map = new Map<string, { count: number; total: number; bookings: Booking[] }>();
+    const map = new Map<string, { count: number; total: number; latestDate: string; bookings: Booking[] }>();
     bookings.forEach(b => {
-      const existing = map.get(b.customer) || { count: 0, total: 0, bookings: [] };
-      existing.count += 1; existing.total += b.rateValue; existing.bookings.push(b);
+      const existing = map.get(b.customer) || { count: 0, total: 0, latestDate: '', bookings: [] };
+      existing.count += 1; 
+      existing.total += b.rateValue; 
+      existing.bookings.push(b);
+      if (!existing.latestDate || b.bookingDate > existing.latestDate) {
+        existing.latestDate = b.bookingDate;
+      }
       map.set(b.customer, existing);
     });
     return Array.from(map.entries()).sort((a, b) => b[1].total - a[1].total);
@@ -289,12 +306,12 @@ const App: React.FC = () => {
         </div>
         <div className="mt-auto p-8">
            <div className="bg-white/5 p-4 rounded-2xl border border-white/5 flex items-center gap-3">
-             <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-black overflow-hidden border-2 border-white/10">
-               {profile.logoUrl ? <img src={profile.logoUrl} className="w-full h-full object-cover" /> : profile.name.charAt(0)}
+             <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-slate-900 font-black overflow-hidden border-2 border-white/10">
+               {profile.logoUrl ? <img src={profile.logoUrl} className="w-full h-full object-cover" /> : profile.companyName.charAt(0)}
              </div>
              <div className="flex-1 min-w-0">
-               <p className="text-sm font-black text-white truncate">{profile.name}</p>
-               <p className="text-[10px] font-bold text-slate-500 truncate uppercase tracking-widest">{profile.companyName}</p>
+               <p className="text-sm font-black text-white truncate">{profile.companyName}</p>
+               <p className="text-[10px] font-bold text-slate-500 truncate uppercase tracking-widest">{profile.name}</p>
              </div>
            </div>
         </div>
@@ -305,11 +322,11 @@ const App: React.FC = () => {
           {view === 'dashboard' && (
             <div className="space-y-8 animate-in fade-in duration-500">
               <header className="flex justify-between items-end">
-                <div><h2 className="text-4xl font-black text-slate-900 tracking-tight">Booking Dashboard</h2><p className="text-slate-500 font-medium mt-1">Manage, filter and convert shipments into high-end invoices.</p></div>
+                <div><h2 className="text-4xl font-black text-slate-900 tracking-tight">Booking Dashboard</h2><p className="text-slate-500 font-medium mt-1 text-lg">Process cargo manifests and generate professional billing.</p></div>
                 <div className="flex gap-4">
-                  <button onClick={() => setBookings([])} className="flex items-center gap-2 bg-white border-2 border-slate-200 text-slate-400 px-6 py-3.5 rounded-2xl hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all font-black text-xs active:scale-95 uppercase tracking-widest"><Trash2 size={18} /> Clear</button>
-                  <button onClick={() => setShowManualAddModal(true)} className="flex items-center gap-2 bg-white border-2 border-slate-200 text-slate-700 px-6 py-3.5 rounded-2xl hover:bg-slate-100 transition-all font-black text-xs active:scale-95 uppercase tracking-widest"><Plus size={18} /> Add Entry</button>
-                  <label className="group flex items-center gap-3 cursor-pointer bg-blue-600 text-white px-8 py-3.5 rounded-2xl hover:bg-blue-700 transition-all font-black text-sm shadow-xl shadow-blue-600/20 active:scale-95 uppercase tracking-widest"><FileUp size={18} /> Import Sheet<input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} /></label>
+                  <button onClick={() => setBookings([])} className="flex items-center gap-2 bg-white border-2 border-slate-200 text-slate-400 px-6 py-3.5 rounded-2xl hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all font-black text-xs active:scale-95 uppercase tracking-widest"><Trash2 size={18} /> Clear All</button>
+                  <button onClick={() => setShowManualAddModal(true)} className="flex items-center gap-2 bg-white border-2 border-slate-200 text-slate-700 px-6 py-3.5 rounded-2xl hover:bg-slate-100 transition-all font-black text-xs active:scale-95 uppercase tracking-widest"><Plus size={18} /> Manual Entry</button>
+                  <label className="group flex items-center gap-3 cursor-pointer bg-blue-600 text-white px-8 py-3.5 rounded-2xl hover:bg-blue-700 transition-all font-black text-sm shadow-xl shadow-blue-600/20 active:scale-95 uppercase tracking-widest"><FileUp size={18} /> Import Manifest<input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} /></label>
                 </div>
               </header>
 
@@ -317,9 +334,9 @@ const App: React.FC = () => {
                 <div className="flex flex-wrap items-center gap-4">
                   <div className="flex-1 min-w-[300px] relative">
                     <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
-                    <input type="text" placeholder="Search by Client, Booking ID, Container, or Ref..." className="w-full pl-14 pr-6 py-4 bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-2xl font-bold outline-none transition-all placeholder:text-slate-300" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                    <input type="text" placeholder="Search manifest by Client, Booking ID, Container, or PO..." className="w-full pl-14 pr-6 py-5 bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-[1.5rem] font-bold outline-none transition-all placeholder:text-slate-300 text-lg shadow-inner" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                   </div>
-                  <button disabled={selectedIds.size === 0} onClick={() => { const item = bookings.find(b => selectedIds.has(b.id)); if (item) { setInvConfig(prev => ({ ...prev, number: `INV-${Date.now().toString().slice(-6)}`, address: item.shipperAddress || '' })); setView('config'); } }} className="bg-slate-900 text-white px-10 py-4 rounded-2xl font-black disabled:opacity-30 disabled:grayscale transition-all hover:bg-blue-600 active:scale-95 shadow-xl uppercase tracking-widest text-xs">Generate Invoice ({selectedIds.size})</button>
+                  <button disabled={selectedIds.size === 0} onClick={() => { const item = bookings.find(b => selectedIds.has(b.id)); if (item) { setInvConfig(prev => ({ ...prev, number: `INV-${Date.now().toString().slice(-6)}`, address: item.shipperAddress || '' })); setView('config'); } }} className="bg-slate-900 text-white px-10 py-5 rounded-[1.5rem] font-black disabled:opacity-30 disabled:grayscale transition-all hover:bg-blue-600 active:scale-95 shadow-xl uppercase tracking-widest text-sm h-full">Invoice Selection ({selectedIds.size})</button>
                 </div>
               </div>
 
@@ -328,22 +345,31 @@ const App: React.FC = () => {
                   <thead className="bg-slate-50 border-b font-black text-slate-400 uppercase tracking-[0.2em] text-[10px]">
                     <tr>
                       <th className="py-6 px-8 w-16 text-center"><input type="checkbox" className="w-6 h-6 rounded-lg text-blue-600 focus:ring-0 cursor-pointer border-slate-200" checked={selectedIds.size === filteredBookings.length && filteredBookings.length > 0} onChange={() => { if (selectedIds.size === filteredBookings.length) setSelectedIds(new Set()); else setSelectedIds(new Set(filteredBookings.map(b => b.id))); }} /></th>
-                      <th className="py-6 px-4">Client Name</th>
-                      <th className="py-6 px-4">Booking / PO Ref</th>
-                      <th className="py-6 px-4">Entry / Exit</th>
-                      <th className="py-6 px-4 text-right">Net Rate</th>
-                      <th className="py-6 px-4 text-center">Status</th>
+                      <th className="py-6 px-4">Consignee / Client</th>
+                      <th className="py-6 px-4">Manifest Info</th>
+                      <th className="py-6 px-4">Port Path</th>
+                      <th className="py-6 px-4 text-right">Service Rate</th>
+                      <th className="py-6 px-4 text-center">Invoicing</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
-                    {filteredBookings.map(b => (
+                    {filteredBookings.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-20 text-center">
+                          <div className="flex flex-col items-center gap-4">
+                            <div className="bg-slate-100 p-6 rounded-full text-slate-300"><FileText size={48} /></div>
+                            <p className="text-slate-400 font-bold text-lg">No shipments found. Upload a CSV manifest to begin.</p>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : filteredBookings.map(b => (
                       <tr key={b.id} className={`hover:bg-slate-50 transition-all cursor-pointer ${selectedIds.has(b.id) ? 'bg-blue-50/50' : ''}`} onClick={() => toggleBookingSelection(b)}>
                         <td className="py-6 px-8 text-center" onClick={(e) => e.stopPropagation()}><input type="checkbox" className="w-6 h-6 rounded-lg text-blue-600 focus:ring-0 cursor-pointer border-slate-200" checked={selectedIds.has(b.id)} onChange={() => toggleBookingSelection(b)} /></td>
                         <td className="py-6 px-4"><p className="font-black text-slate-900 text-base">{b.customer}</p><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{b.bookingDate}</p></td>
-                        <td className="py-6 px-4"><p className="font-mono text-xs text-slate-900 font-black">{b.bookingNo || '---'}</p>{b.customerRef && <p className="text-[10px] text-blue-600 font-black uppercase mt-1 tracking-tighter">REF: {b.customerRef}</p>}</td>
+                        <td className="py-6 px-4"><p className="font-mono text-xs text-slate-900 font-black">BK: {b.bookingNo || '---'}</p>{b.customerRef && <p className="text-[10px] text-blue-600 font-black uppercase mt-1 tracking-tighter">PO/REF: {b.customerRef}</p>}</td>
                         <td className="py-6 px-4"><div className="flex items-center gap-2"><span className="uppercase text-[10px] font-black bg-blue-50 px-2 py-1 rounded text-blue-700 border border-blue-100">{b.goPort || '---'}</span><ArrowRightLeft size={10} className="text-slate-300" /><span className="uppercase text-[10px] font-black bg-red-50 px-2 py-1 rounded text-red-700 border border-red-100">{b.giPort || '---'}</span></div></td>
                         <td className="py-6 px-4 text-right font-black text-slate-900 text-base">{b.rate}</td>
-                        <td className="py-6 px-4 text-center"><span className={`font-mono text-[10px] px-2 py-1 rounded-full font-black uppercase ${b.invNo ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>{b.invNo ? `INV: ${b.invNo}` : 'UNBILLED'}</span></td>
+                        <td className="py-6 px-4 text-center"><span className={`font-mono text-[10px] px-2 py-1 rounded-full font-black uppercase ${b.invNo ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-amber-100 text-amber-700 border border-amber-200'}`}>{b.invNo ? `BILL: ${b.invNo}` : 'PENDING'}</span></td>
                       </tr>
                     ))}
                   </tbody>
@@ -352,52 +378,146 @@ const App: React.FC = () => {
             </div>
           )}
 
+          {view === 'portfolio' && (
+            <div className="space-y-10 animate-in fade-in duration-500">
+               <header className="flex justify-between items-end">
+                  <div><h2 className="text-4xl font-black text-slate-900 tracking-tight">Client Portfolio</h2><p className="text-slate-500 font-medium mt-1 text-lg">Detailed billing analytics and shipment history per customer.</p></div>
+                  <div className="flex gap-4">
+                     <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-3">
+                        <TrendingUp className="text-emerald-500" />
+                        <div><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Active Clients</p><p className="text-xl font-black text-slate-900">{customerStats.length}</p></div>
+                     </div>
+                  </div>
+               </header>
+
+               <div className="grid grid-cols-1 gap-6">
+                  {customerStats.length === 0 ? (
+                    <div className="bg-white p-20 rounded-[3rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 gap-4">
+                       <Users size={64} className="opacity-20" />
+                       <p className="font-bold text-xl">No client data available yet.</p>
+                       <button onClick={() => setView('dashboard')} className="text-blue-600 font-black uppercase text-sm tracking-widest hover:underline">Go to Manifest Dashboard</button>
+                    </div>
+                  ) : (
+                    customerStats.map(([name, stats], idx) => (
+                      <div key={idx} className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 flex items-center justify-between group hover:border-blue-300 transition-all">
+                        <div className="flex items-center gap-6">
+                           <div className="w-16 h-16 rounded-3xl bg-slate-50 flex items-center justify-center text-slate-900 font-black text-2xl group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">{name.charAt(0)}</div>
+                           <div>
+                              <h3 className="text-xl font-black text-slate-900 mb-1">{name}</h3>
+                              <div className="flex items-center gap-4">
+                                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1"><Clock size={12}/> Last activity: {stats.latestDate || '---'}</span>
+                                 <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-1"><Package size={12}/> {stats.count} Shipments</span>
+                              </div>
+                           </div>
+                        </div>
+                        <div className="flex items-center gap-12">
+                           <div className="text-right">
+                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Revenue Generated</p>
+                              <p className="text-2xl font-black text-slate-900">{formatCurrency(stats.total)}</p>
+                           </div>
+                           <button onClick={() => { setSearchTerm(name); setView('dashboard'); }} className="p-4 bg-slate-50 rounded-2xl text-slate-400 group-hover:text-blue-600 group-hover:bg-blue-50 transition-all"><ExternalLink size={24} /></button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+               </div>
+            </div>
+          )}
+
+          {view === 'operations' && (
+            <div className="space-y-10 animate-in fade-in duration-500">
+               <header className="flex justify-between items-end">
+                  <div><h2 className="text-4xl font-black text-slate-900 tracking-tight">Billing History</h2><p className="text-slate-500 font-medium mt-1 text-lg">Audit trail of all generated invoices and their shipment items.</p></div>
+                  <button onClick={() => exportToCSV(bookings.filter(b => b.invNo), 'billing_history.csv')} className="bg-white border-2 border-slate-200 px-8 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-slate-100 transition-all"><Download size={18}/> Export History</button>
+               </header>
+
+               <div className="bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
+                  <table className="w-full text-left text-sm">
+                    <thead className="bg-slate-50 border-b font-black text-slate-400 uppercase tracking-[0.2em] text-[10px]">
+                      <tr>
+                        <th className="py-6 px-8">Bill Ref</th>
+                        <th className="py-6 px-4">Consignee</th>
+                        <th className="py-6 px-4">Equipment</th>
+                        <th className="py-6 px-4">Ops Port</th>
+                        <th className="py-6 px-4 text-right">Settled Amount</th>
+                        <th className="py-6 px-4 text-center">Receipt</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                       {bookings.filter(b => b.invNo).length === 0 ? (
+                         <tr>
+                           <td colSpan={6} className="py-20 text-center text-slate-300">
+                              <ClipboardCheck size={48} className="mx-auto mb-4 opacity-20" />
+                              <p className="font-bold text-lg">No invoices generated yet.</p>
+                           </td>
+                         </tr>
+                       ) : (
+                         bookings.filter(b => b.invNo).map((b, i) => (
+                           <tr key={i} className="hover:bg-slate-50 transition-all">
+                              <td className="py-6 px-8"><span className="font-mono text-xs font-black bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full border border-emerald-100">{b.invNo}</span></td>
+                              <td className="py-6 px-4 font-black text-slate-900">{b.customer}</td>
+                              <td className="py-6 px-4"><p className="font-mono text-xs text-slate-500">{b.reeferNumber || 'UNIT-X'}</p></td>
+                              <td className="py-6 px-4"><span className="font-black text-[10px] uppercase text-slate-400">{b.goPort} → {b.giPort}</span></td>
+                              <td className="py-6 px-4 text-right font-black text-slate-900">{b.rate}</td>
+                              <td className="py-6 px-4 text-center"><button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"><Printer size={18}/></button></td>
+                           </tr>
+                         ))
+                       )}
+                    </tbody>
+                  </table>
+               </div>
+            </div>
+          )}
+
           {view === 'profile' && (
             <div className="max-w-4xl mx-auto space-y-10 animate-in fade-in duration-500">
                <div className="flex justify-between items-end">
-                  <div><h2 className="text-4xl font-black text-slate-900 tracking-tight">Organization Profile</h2><p className="text-slate-500 font-medium">Global settings for your company, including logo and signatures.</p></div>
-                  <button onClick={() => alert('Settings Saved to Browser LocalStorage')} className="bg-blue-600 text-white px-8 py-3.5 rounded-2xl font-black shadow-xl uppercase tracking-widest text-xs">Save Changes</button>
+                  <div><h2 className="text-4xl font-black text-slate-900 tracking-tight">Organization Profile</h2><p className="text-slate-500 font-medium text-lg">Configure your corporate identity and billing authorities.</p></div>
+                  <button onClick={handleSaveProfile} className={`px-10 py-4 rounded-2xl font-black shadow-xl uppercase tracking-widest text-xs flex items-center gap-2 transition-all ${saveSuccess ? 'bg-emerald-600 text-white' : 'bg-blue-600 text-white hover:bg-slate-900'}`}>
+                    {saveSuccess ? <CheckCircle size={18}/> : <Save size={18}/>} 
+                    {saveSuccess ? 'Successfully Saved' : 'Update Profile'}
+                  </button>
                </div>
 
                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="bg-white p-10 rounded-[2.5rem] shadow-xl shadow-slate-200/50 space-y-8 border border-slate-100">
                      <h3 className="text-xl font-black text-slate-900 flex items-center gap-3"><Building2 className="text-blue-600" /> Basic Information</h3>
                      <div className="space-y-6">
-                        <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Company Name</label><div className="relative"><Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18}/><input type="text" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-xl pl-12 pr-6 py-4 font-bold outline-none" value={profile.companyName} onChange={e => setProfile({...profile, companyName: e.target.value})} /></div></div>
-                        <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tax ID / CR Number</label><div className="relative"><ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18}/><input type="text" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-xl pl-12 pr-6 py-4 font-bold outline-none" value={profile.taxId} onChange={e => setProfile({...profile, taxId: e.target.value})} /></div></div>
-                        <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Official Email</label><div className="relative"><Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18}/><input type="email" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-xl pl-12 pr-6 py-4 font-bold outline-none" value={profile.email} onChange={e => setProfile({...profile, email: e.target.value})} /></div></div>
-                        <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Office Address</label><textarea className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-xl px-6 py-4 font-bold outline-none min-h-[120px]" value={profile.address} onChange={e => setProfile({...profile, address: e.target.value})} /></div>
+                        <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Legal Entity Name</label><div className="relative"><Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18}/><input type="text" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-xl pl-12 pr-6 py-4 font-bold outline-none shadow-inner" value={profile.companyName} onChange={e => setProfile({...profile, companyName: e.target.value})} /></div></div>
+                        <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tax ID / Registry</label><div className="relative"><ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18}/><input type="text" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-xl pl-12 pr-6 py-4 font-bold outline-none shadow-inner" value={profile.taxId} onChange={e => setProfile({...profile, taxId: e.target.value})} /></div></div>
+                        <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Billing Support Email</label><div className="relative"><Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18}/><input type="email" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-xl pl-12 pr-6 py-4 font-bold outline-none shadow-inner" value={profile.email} onChange={e => setProfile({...profile, email: e.target.value})} /></div></div>
+                        <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Headquarters Address</label><textarea className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-xl px-6 py-4 font-bold outline-none min-h-[120px] shadow-inner" value={profile.address} onChange={e => setProfile({...profile, address: e.target.value})} /></div>
                      </div>
                   </div>
 
                   <div className="space-y-8">
                      <div className="bg-white p-10 rounded-[2.5rem] shadow-xl shadow-slate-200/50 space-y-6 border border-slate-100">
-                        <h3 className="text-xl font-black text-slate-900 flex items-center gap-3"><ImageIcon className="text-blue-600" /> Branding (Logo)</h3>
+                        <h3 className="text-xl font-black text-slate-900 flex items-center gap-3"><ImageIcon className="text-blue-600" /> Branding (Company Logo)</h3>
                         <div className="flex flex-col items-center gap-6 p-8 bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200 group hover:border-blue-300 transition-all">
                            {profile.logoUrl ? (
-                              <img src={profile.logoUrl} className="h-24 w-auto object-contain drop-shadow-md" />
+                              <img src={profile.logoUrl} className="h-32 w-auto object-contain drop-shadow-md rounded-lg" />
                            ) : (
                               <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center text-slate-200"><ImageIcon size={40} /></div>
                            )}
-                           <label className="cursor-pointer bg-white text-slate-900 px-6 py-3 rounded-xl font-black text-xs shadow-md border hover:bg-slate-900 hover:text-white transition-all uppercase tracking-widest flex items-center gap-2">
-                             <Upload size={14}/> {profile.logoUrl ? 'Change Logo' : 'Upload Logo'}
+                           <label className="cursor-pointer bg-white text-slate-900 px-8 py-3.5 rounded-2xl font-black text-xs shadow-md border hover:bg-slate-900 hover:text-white transition-all uppercase tracking-widest flex items-center gap-2">
+                             <Upload size={16}/> {profile.logoUrl ? 'Replace Logo' : 'Upload Official Logo'}
                              <input type="file" className="hidden" accept="image/*" onChange={(e) => handleProfileImageUpload(e, 'logo')} />
                            </label>
                         </div>
                      </div>
 
                      <div className="bg-white p-10 rounded-[2.5rem] shadow-xl shadow-slate-200/50 space-y-6 border border-slate-100">
-                        <h3 className="text-xl font-black text-slate-900 flex items-center gap-3"><Edit3 className="text-blue-600" /> Signatory Authority</h3>
+                        <h3 className="text-xl font-black text-slate-900 flex items-center gap-3"><Edit3 className="text-blue-600" /> Digital Signature</h3>
                         <div className="space-y-4">
-                           <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Signer Name</label><input type="text" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-xl px-6 py-4 font-bold outline-none" value={profile.name} onChange={e => setProfile({...profile, name: e.target.value})} /></div>
+                           <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Signer Authority Name</label><input type="text" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-xl px-6 py-4 font-bold outline-none shadow-inner" value={profile.name} onChange={e => setProfile({...profile, name: e.target.value})} /></div>
                            <div className="flex flex-col items-center gap-4 p-6 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 group">
                               {profile.signatureUrl ? (
-                                 <img src={profile.signatureUrl} className="h-16 w-auto object-contain grayscale" />
+                                 <img src={profile.signatureUrl} className="h-20 w-auto object-contain grayscale" />
                               ) : (
-                                 <div className="h-16 w-full flex items-center justify-center text-slate-300 text-[10px] font-black uppercase tracking-widest italic">No Signature Uploaded</div>
+                                 <div className="h-20 w-full flex items-center justify-center text-slate-300 text-[10px] font-black uppercase tracking-widest italic">Authorized Signature Required</div>
                               )}
                               <label className="cursor-pointer text-blue-600 font-black text-xs hover:underline uppercase tracking-widest">
-                                {profile.signatureUrl ? 'Replace Signature' : 'Upload Digital Signature'}
+                                {profile.signatureUrl ? 'Change Signature' : 'Upload Digital Copy'}
                                 <input type="file" className="hidden" accept="image/*" onChange={(e) => handleProfileImageUpload(e, 'signature')} />
                               </label>
                            </div>
@@ -411,8 +531,8 @@ const App: React.FC = () => {
           {view === 'field-master' && (
             <div className="space-y-10 animate-in fade-in duration-500 no-print">
                <div className="flex justify-between items-end">
-                  <div><h2 className="text-4xl font-black text-slate-900 tracking-tight">Invoice Templates</h2><p className="text-slate-500 font-medium">Choose a visual theme and toggle visibility for different fields.</p></div>
-                  <button onClick={() => setView('dashboard')} className="bg-blue-600 text-white px-10 py-4 rounded-2xl font-black shadow-xl uppercase tracking-widest text-xs">Return to Dashboard</button>
+                  <div><h2 className="text-4xl font-black text-slate-900 tracking-tight">Invoice Templates</h2><p className="text-slate-500 font-medium text-lg text-lg">Switch between industry-standard visual themes.</p></div>
+                  <button onClick={() => setView('dashboard')} className="bg-blue-600 text-white px-10 py-4 rounded-2xl font-black shadow-xl uppercase tracking-widest text-xs">Exit Designer</button>
                </div>
 
                <div className="space-y-6">
@@ -439,11 +559,11 @@ const App: React.FC = () => {
                </div>
 
                <div className="space-y-6">
-                 <h3 className="text-xl font-black text-slate-900 flex items-center gap-3 uppercase tracking-widest text-sm opacity-60">Visibility Master</h3>
+                 <h3 className="text-xl font-black text-slate-900 flex items-center gap-3 uppercase tracking-widest text-sm opacity-60">Field Visibility (Show/Hide)</h3>
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                    {Object.entries(templateConfig.fields).map(([key, val]) => (
                      <button key={key} onClick={() => setTemplateConfig(prev => ({ ...prev, fields: { ...prev.fields, [key as keyof TemplateFields]: !val } }))} className={`p-6 rounded-[2rem] border-2 transition-all flex items-center justify-between group ${val ? 'bg-white border-blue-600 shadow-md' : 'bg-white border-slate-100 opacity-60 hover:opacity-100 hover:border-slate-200'}`}>
-                       <span className={`font-black text-[10px] uppercase tracking-widest ${val ? 'text-blue-900' : 'text-slate-500'}`}>{key.replace('show', '')}</span>
+                       <span className={`font-black text-[10px] uppercase tracking-widest ${val ? 'text-blue-900' : 'text-slate-500'}`}>{key.replace('show', '').replace(/([A-Z])/g, ' $1').trim()}</span>
                        {val ? <ToggleRight size={32} className="text-blue-600" /> : <ToggleLeft size={32} className="text-slate-300" />}
                      </button>
                    ))}
@@ -454,13 +574,13 @@ const App: React.FC = () => {
 
           {view === 'config' && (
             <div className="max-w-4xl mx-auto space-y-10 animate-in fade-in duration-300">
-               <header className="flex justify-between items-center"><div><h2 className="text-4xl font-black text-slate-900 tracking-tight">Invoice Details</h2><p className="text-slate-500 font-medium">Finalize shipping details and address before generation.</p></div><button onClick={() => setView('dashboard')} className="p-4 bg-white border border-slate-100 rounded-[2rem] hover:text-red-500 transition-all shadow-md"><X size={32} /></button></header>
+               <header className="flex justify-between items-center"><div><h2 className="text-4xl font-black text-slate-900 tracking-tight">Settlement Details</h2><p className="text-slate-500 font-medium text-lg">Define billing sequence and fiscal attributes.</p></div><button onClick={() => setView('dashboard')} className="p-4 bg-white border border-slate-100 rounded-[2rem] hover:text-red-500 transition-all shadow-md"><X size={32} /></button></header>
                <div className="bg-white rounded-[3rem] shadow-2xl p-12 grid grid-cols-2 gap-10 border border-slate-100">
-                  <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Invoice Number (Manual Override)</label><div className="relative"><Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18}/><input type="text" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-xl pl-12 pr-6 py-4 font-bold outline-none" value={invConfig.number} onChange={e => setInvConfig({...invConfig, number: e.target.value})} /></div></div>
-                  <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Currency</label><div className="relative"><CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18}/><select className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-xl pl-12 pr-6 py-4 font-bold outline-none appearance-none" value={invConfig.currency} onChange={e => setInvConfig({...invConfig, currency: e.target.value})}><option value="EGP">EGP (Egyptian Pound)</option><option value="USD">USD (US Dollar)</option><option value="EUR">EUR (Euro)</option></select></div></div>
-                  <div className="space-y-2 col-span-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Billing Address Override</label><div className="relative"><MapPin className="absolute left-4 top-6 text-slate-300" size={18}/><textarea className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-xl pl-12 pr-6 py-4 font-bold outline-none min-h-[140px]" value={invConfig.address} onChange={e => setInvConfig({...invConfig, address: e.target.value})} /></div></div>
-                  <div className="space-y-2 col-span-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Internal References / Notes</label><input type="text" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-xl px-6 py-4 font-bold outline-none" placeholder="Add specific po numbers or memo..." value={invConfig.notes} onChange={e => setInvConfig({...invConfig, notes: e.target.value})} /></div>
-                  <button onClick={finalizeInvoice} className="col-span-2 bg-blue-600 text-white py-6 rounded-[2rem] font-black text-lg hover:bg-slate-900 transition-all shadow-2xl active:scale-[0.98] uppercase tracking-widest">Finalize & Preview Document</button>
+                  <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Invoice Serial #</label><div className="relative"><Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18}/><input type="text" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-xl pl-12 pr-6 py-4 font-bold outline-none" value={invConfig.number} onChange={e => setInvConfig({...invConfig, number: e.target.value})} /></div></div>
+                  <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Settlement Currency</label><div className="relative"><CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18}/><select className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-xl pl-12 pr-6 py-4 font-bold outline-none appearance-none" value={invConfig.currency} onChange={e => setInvConfig({...invConfig, currency: e.target.value})}><option value="EGP">EGP - Egyptian Pound</option><option value="USD">USD - US Dollar</option><option value="EUR">EUR - Euro</option></select></div></div>
+                  <div className="space-y-2 col-span-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Client Billing Address (Consignee)</label><div className="relative"><MapPin className="absolute left-4 top-6 text-slate-300" size={18}/><textarea className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-xl pl-12 pr-6 py-4 font-bold outline-none min-h-[140px]" value={invConfig.address} onChange={e => setInvConfig({...invConfig, address: e.target.value})} /></div></div>
+                  <div className="space-y-2 col-span-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Additional Memorandums</label><input type="text" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-xl px-6 py-4 font-bold outline-none" placeholder="Reference PO, Voyage #, or vessel name..." value={invConfig.notes} onChange={e => setInvConfig({...invConfig, notes: e.target.value})} /></div>
+                  <button onClick={finalizeInvoice} className="col-span-2 bg-blue-600 text-white py-6 rounded-[2rem] font-black text-lg hover:bg-slate-900 transition-all shadow-2xl active:scale-[0.98] uppercase tracking-widest">Generate Financial Document</button>
                </div>
             </div>
           )}
@@ -468,10 +588,10 @@ const App: React.FC = () => {
           {view === 'invoice-preview' && activeInvoice && (
             <div className="animate-in fade-in duration-500 pb-20">
                <header className="no-print flex justify-between items-center mb-10 bg-white p-6 rounded-[2.5rem] shadow-xl border border-slate-100">
-                  <button onClick={() => setView('dashboard')} className="flex items-center gap-2 text-slate-600 font-bold hover:text-blue-600 transition-all px-4"><ChevronLeft size={20} /> Back to Dashboard</button>
+                  <button onClick={() => setView('dashboard')} className="flex items-center gap-2 text-slate-600 font-bold hover:text-blue-600 transition-all px-4"><ChevronLeft size={20} /> Manifest Dashboard</button>
                   <div className="flex gap-4">
-                    <button onClick={() => setView('config')} className="bg-slate-100 text-slate-900 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all">Adjust Details</button>
-                    <button onClick={() => window.print()} className="bg-blue-600 text-white px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl flex items-center gap-3 hover:bg-blue-700 active:scale-95 transition-all"><Printer size={20}/> Print A4 Invoice</button>
+                    <button onClick={() => setView('config')} className="bg-slate-100 text-slate-900 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all">Adjust Settlement</button>
+                    <button onClick={() => window.print()} className="bg-blue-600 text-white px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl flex items-center gap-3 hover:bg-blue-700 active:scale-95 transition-all"><Printer size={20}/> Print A4 Export</button>
                   </div>
                </header>
                <InvoiceDocument invoice={activeInvoice} />
@@ -483,16 +603,16 @@ const App: React.FC = () => {
       {showManualAddModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-300">
           <form onSubmit={handleManualAdd} className="bg-white w-full max-w-xl rounded-[3rem] shadow-2xl p-12 space-y-8 animate-in zoom-in-95 duration-300">
-            <h3 className="text-3xl font-black text-slate-900 tracking-tight">Manual Booking Entry</h3>
+            <h3 className="text-3xl font-black text-slate-900 tracking-tight">Add Individual Booking</h3>
             <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Customer</label><input name="customer" required className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 p-4 rounded-xl font-bold outline-none" /></div>
-              <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Booking No</label><input name="bookingNo" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 p-4 rounded-xl font-bold outline-none" /></div>
-              <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ref / PO</label><input name="ref" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 p-4 rounded-xl font-bold outline-none" /></div>
-              <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Date</label><input name="date" type="date" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 p-4 rounded-xl font-bold outline-none" /></div>
-              <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Container ID</label><input name="reefer" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 p-4 rounded-xl font-bold outline-none" /></div>
-              <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Amount</label><input name="rate" required className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 p-4 rounded-xl font-bold outline-none" /></div>
+              <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Consignee Name</label><input name="customer" required className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 p-4 rounded-xl font-bold outline-none" /></div>
+              <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Booking ID</label><input name="bookingNo" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 p-4 rounded-xl font-bold outline-none" /></div>
+              <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Customer PO</label><input name="ref" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 p-4 rounded-xl font-bold outline-none" /></div>
+              <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Operational Date</label><input name="date" type="date" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 p-4 rounded-xl font-bold outline-none" /></div>
+              <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Container Number</label><input name="reefer" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 p-4 rounded-xl font-bold outline-none" /></div>
+              <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Service Rate</label><input name="rate" required className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 p-4 rounded-xl font-bold outline-none" /></div>
             </div>
-            <div className="flex gap-4 pt-4"><button type="submit" className="flex-1 bg-blue-600 text-white py-5 rounded-2xl font-black shadow-xl hover:bg-slate-900 active:scale-95 transition-all uppercase text-xs tracking-widest">Save Booking</button><button type="button" onClick={() => setShowManualAddModal(false)} className="flex-1 bg-slate-100 text-slate-500 py-5 rounded-2xl font-black hover:bg-slate-200 transition-all uppercase text-xs tracking-widest">Dismiss</button></div>
+            <div className="flex gap-4 pt-4"><button type="submit" className="flex-1 bg-blue-600 text-white py-5 rounded-2xl font-black shadow-xl hover:bg-slate-900 active:scale-95 transition-all uppercase text-xs tracking-widest">Commit Entry</button><button type="button" onClick={() => setShowManualAddModal(false)} className="flex-1 bg-slate-100 text-slate-500 py-5 rounded-2xl font-black hover:bg-slate-200 transition-all uppercase text-xs tracking-widest">Discard</button></div>
           </form>
         </div>
       )}
