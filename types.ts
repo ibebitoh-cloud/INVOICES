@@ -31,7 +31,7 @@ export interface Booking {
 }
 
 export type InvoiceSectionId = 'header' | 'parties' | 'table' | 'totals' | 'footer' | 'signature';
-export type InvoiceTheme = 'modern' | 'minimalist' | 'corporate' | 'industrial' | 'elegant';
+export type InvoiceTheme = 'modern' | 'minimalist' | 'corporate' | 'industrial' | 'elegant' | 'blueprint' | 'glass' | 'royal' | 'sidebar-pro' | 'modern-cards' | 'technical-draft';
 
 export interface TemplateFields {
   showReefer: boolean;
@@ -42,6 +42,18 @@ export interface TemplateFields {
   showServicePeriod: boolean;
   showTerms: boolean;
   showSignature: boolean;
+  showLogo: boolean;
+  showCompanyInfo: boolean;
+  showTaxId: boolean;
+  showCustomerAddress: boolean;
+  showBeneficiary: boolean;
+  showShipperAddress: boolean;
+  showTrucker: boolean;
+  showVat: boolean;
+  showInvoiceDate: boolean;
+  showDueDate: boolean;
+  showNotes: boolean;
+  showWatermark: boolean;
 }
 
 export interface CustomerSettings {
