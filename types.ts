@@ -31,23 +31,29 @@ export interface Booking {
 }
 
 export type InvoiceSectionId = 'header' | 'parties' | 'table' | 'totals' | 'footer' | 'signature';
+export type InvoiceTheme = 'modern' | 'minimalist' | 'corporate' | 'industrial' | 'elegant';
 
 export interface TemplateFields {
   showReefer: boolean;
   showGenset: boolean;
   showBookingNo: boolean;
   showCustomerRef: boolean;
-  showRoute: boolean;
+  showPorts: boolean;
   showServicePeriod: boolean;
-  showBankDetails: boolean;
   showTerms: boolean;
   showSignature: boolean;
+}
+
+export interface CustomerSettings {
+  prefix: string;
+  nextSerial: number;
 }
 
 export interface TemplateConfig {
   sectionOrder: InvoiceSectionId[];
   hiddenSections: Set<InvoiceSectionId>;
   fields: TemplateFields;
+  theme: InvoiceTheme;
 }
 
 export interface SavedTemplate {
@@ -55,8 +61,9 @@ export interface SavedTemplate {
   name: string;
   config: {
     sectionOrder: InvoiceSectionId[];
-    hiddenSections: InvoiceSectionId[]; // Store as array for JSON compatibility
+    hiddenSections: InvoiceSectionId[];
     fields: TemplateFields;
+    theme: InvoiceTheme;
   };
 }
 
@@ -67,6 +74,7 @@ export interface UserProfile {
   taxId: string;
   email: string;
   signatureUrl: string | null;
+  logoUrl: string | null;
 }
 
 export interface Invoice {
