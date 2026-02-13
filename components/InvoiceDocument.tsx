@@ -1,9 +1,7 @@
-
 import React, { useMemo } from 'react';
 import { Invoice, InvoiceSectionId, Booking, TemplateFields } from '../types';
 import { formatCurrency, formatDate } from '../utils/formatters';
-// Added ArrowRightLeft to the imports from lucide-react
-import { Anchor, Truck, MapPin, Package, Hash, Calendar, Layers, ShieldCheck, ArrowRightLeft } from 'lucide-react';
+import { Anchor, Truck, MapPin, Package, Hash, Calendar, Layers, ShieldCheck, ArrowRightLeft, User, Building } from 'lucide-react';
 
 interface InvoiceDocumentProps {
   invoice: Invoice;
@@ -75,6 +73,10 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice }) => {
       container: "invoice-container flex flex-col font-sans text-slate-900 bg-white",
       accent: "text-blue-700", accentBg: "bg-blue-700", border: "border-blue-700", tableHeader: "bg-slate-50 border-y border-slate-200", totalsBorder: "border-blue-700"
     },
+    'logistics-grid': {
+      container: "invoice-container flex flex-col font-sans text-slate-900 bg-white border-t-[8px] border-emerald-600",
+      accent: "text-emerald-700", accentBg: "bg-emerald-600", border: "border-emerald-600", tableHeader: "bg-emerald-950 text-white font-black", totalsBorder: "border-emerald-600"
+    },
     minimalist: {
       container: "invoice-container flex flex-col font-sans text-zinc-800 bg-white",
       accent: "text-zinc-900", accentBg: "bg-zinc-100", border: "border-zinc-200", tableHeader: "border-b-2 border-zinc-900", totalsBorder: "border-zinc-100"
@@ -90,10 +92,6 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice }) => {
     industrial: {
       container: "invoice-container flex flex-col font-mono text-black bg-white",
       accent: "text-orange-600", accentBg: "bg-orange-600", border: "border-black", tableHeader: "bg-black text-white", totalsBorder: "border-black"
-    },
-    glass: {
-      container: "invoice-container flex flex-col font-sans text-gray-800 bg-white relative",
-      accent: "text-sky-600", accentBg: "bg-sky-500", border: "border-sky-100", tableHeader: "bg-sky-50 border-b border-sky-100", totalsBorder: "border-sky-500"
     },
     elegant: {
       container: "invoice-container flex flex-col font-serif text-emerald-950 bg-white",
@@ -112,13 +110,12 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice }) => {
   const activeStyle = styles[theme] || styles.modern;
 
   const renderPortBadge = (port: string) => {
-    if (!port || port === '---' || port.trim() === '') return <span className="text-gray-300 italic text-[9px]">---</span>;
+    if (!port || port === '---' || port.trim() === '') return <span className="text-gray-300 italic text-[8px]">---</span>;
     const portUpper = port.toUpperCase();
     const isMajor = MAJOR_EGYPT_PORTS.some(p => portUpper.includes(p));
     return (
-      <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border ${isMajor ? (theme === 'royal' ? 'bg-amber-900/40 border-amber-600/40 text-amber-500' : 'bg-blue-50 border-blue-100 text-blue-900') : (theme === 'royal' ? 'bg-neutral-900 border-neutral-800 text-neutral-400' : 'bg-gray-50 border-gray-100 text-gray-700')} w-full justify-center`}>
-        {isMajor && <Anchor size={10} className="flex-shrink-0" />}
-        <span className="font-bold uppercase tracking-tighter text-[9px] truncate">{portUpper}</span>
+      <div className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border ${isMajor ? (theme === 'royal' ? 'bg-amber-900/40 border-amber-600/40 text-amber-500' : 'bg-blue-50 border-blue-100 text-blue-900') : (theme === 'royal' ? 'bg-neutral-900 border-neutral-800 text-neutral-400' : 'bg-gray-50 border-gray-100 text-gray-700')} justify-center`}>
+        <span className="font-black uppercase tracking-tighter text-[8px] truncate">{portUpper}</span>
       </div>
     );
   };
@@ -129,77 +126,64 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice }) => {
     switch (id) {
       case 'header':
         return (
-          <div key="header" className={`flex justify-between items-start mb-8 border-b-2 ${activeStyle.border} pb-6 relative z-10`}>
+          <div key="header" className={`flex justify-between items-start mb-6 border-b-2 ${activeStyle.border} pb-4 relative z-10`}>
             <div className="flex items-center gap-6">
-              {fields.showLogo && profile.logoUrl ? (
-                <img src={profile.logoUrl} alt="Logo" className="h-14 w-auto object-contain max-w-[180px]" />
-              ) : fields.showLogo ? (
-                <div className={`w-14 h-14 ${activeStyle.accentBg} rounded-lg flex items-center justify-center text-white font-black text-2xl shadow-sm`}>
-                  {profile.companyName.charAt(0)}
-                </div>
-              ) : null}
+              {fields.showLogo && profile.logoUrl && (
+                <img src={profile.logoUrl} alt="Logo" className="h-12 w-auto object-contain max-w-[150px]" />
+              )}
               {fields.showCompanyInfo && (
                 <div>
-                  <h1 className={`text-2xl font-black ${activeStyle.accent} tracking-tight uppercase leading-none mb-1`}>{profile.companyName}</h1>
-                  <div className={`text-[10px] font-bold ${theme === 'blueprint' || theme === 'royal' ? 'text-white/40' : 'text-slate-400'} uppercase tracking-[0.3em] flex items-center gap-2`}>
-                    <ShieldCheck size={12} className={activeStyle.accent} /> Verified Logistics Provider
+                  <h1 className={`text-xl font-black ${activeStyle.accent} tracking-tight uppercase leading-none mb-1`}>{profile.companyName}</h1>
+                  <div className={`text-[9px] font-bold ${theme === 'blueprint' || theme === 'royal' ? 'text-white/40' : 'text-slate-400'} uppercase tracking-[0.3em] flex items-center gap-2`}>
+                    <ShieldCheck size={10} className={activeStyle.accent} /> Official Logistics Billing
                   </div>
                 </div>
               )}
             </div>
             <div className="text-right">
-              <h2 className={`text-4xl font-black ${theme === 'industrial' ? 'text-black' : theme === 'blueprint' || theme === 'royal' ? 'text-white' : 'text-slate-200'} uppercase tracking-tight mb-2`}>Invoice</h2>
+              <h2 className={`text-3xl font-black ${theme === 'industrial' ? 'text-black' : theme === 'blueprint' || theme === 'royal' ? 'text-white' : 'text-slate-200'} uppercase tracking-tighter mb-1`}>Invoice</h2>
               <div className="space-y-1">
                 <div className={`flex items-center justify-end gap-2 text-sm font-bold ${theme === 'blueprint' || theme === 'royal' ? 'text-white' : 'text-slate-900'}`}>
-                  <span className="text-[10px] opacity-40 uppercase tracking-widest">No.</span>
-                  <span className={`${activeStyle.accent} font-mono bg-slate-100 px-2 py-0.5 rounded`}>{invoice.invoiceNumber}</span>
+                  <span className="text-[9px] opacity-40 uppercase tracking-widest">Serial</span>
+                  <span className={`${activeStyle.accent} font-mono bg-slate-50 px-2 py-0.5 rounded border border-slate-100`}>{invoice.invoiceNumber}</span>
                 </div>
-                {fields.showInvoiceDate && <p className={`text-[10px] font-bold ${theme === 'blueprint' || theme === 'royal' ? 'text-white/50' : 'text-slate-400'} uppercase tracking-widest`}>Issue Date: {invoice.date}</p>}
-                {fields.showDueDate && <p className={`text-[10px] font-black text-red-500 uppercase tracking-widest`}>Due Date: {invoice.dueDate}</p>}
+                {fields.showInvoiceDate && <p className={`text-[9px] font-bold ${theme === 'blueprint' || theme === 'royal' ? 'text-white/50' : 'text-slate-400'} uppercase tracking-widest`}>{invoice.date}</p>}
               </div>
             </div>
           </div>
         );
       case 'parties':
         return (
-          <div key="parties" className="grid grid-cols-2 gap-12 mb-10 relative z-10">
-            <div className="space-y-3">
-              <h3 className={`text-[10px] font-black ${activeStyle.accent} uppercase tracking-[0.25em] border-b pb-1 flex items-center gap-2`}>
-                <div className={`w-2 h-2 rounded-full ${activeStyle.accentBg}`}></div> Bill To
-              </h3>
-              <div className="pl-4 border-l-2 border-slate-100">
-                <p className={`font-black text-lg leading-tight mb-1 ${theme === 'blueprint' || theme === 'royal' ? 'text-white' : 'text-slate-900'}`}>{invoice.customerName}</p>
-                {fields.showBeneficiary && invoice.beneficiaryName && <p className={`text-[11px] ${theme === 'blueprint' || theme === 'royal' ? 'text-white/70' : 'text-slate-600'} italic font-bold mb-1`}>Attn: {invoice.beneficiaryName}</p>}
-                {fields.showCustomerAddress && invoice.customerAddress && <p className={`text-[10px] ${theme === 'blueprint' || theme === 'royal' ? 'text-white/50' : 'text-slate-500'} leading-relaxed max-w-sm`}>{invoice.customerAddress}</p>}
+          <div key="parties" className="grid grid-cols-2 gap-8 mb-6 relative z-10">
+            <div className="space-y-2">
+              <h3 className={`text-[9px] font-black ${activeStyle.accent} uppercase tracking-[0.2em] border-b pb-1`}>Client (Consignee)</h3>
+              <div className="pl-3 border-l-2 border-slate-100">
+                <p className={`font-black text-base leading-tight ${theme === 'blueprint' || theme === 'royal' ? 'text-white' : 'text-slate-900'}`}>{invoice.customerName}</p>
+                {fields.showCustomerAddress && invoice.customerAddress && <p className={`text-[9px] ${theme === 'blueprint' || theme === 'royal' ? 'text-white/50' : 'text-slate-500'} leading-relaxed max-w-sm mt-1`}>{invoice.customerAddress}</p>}
               </div>
             </div>
-            {fields.showCompanyInfo && (
-              <div className="space-y-3">
-                <h3 className={`text-[10px] font-black ${activeStyle.accent} uppercase tracking-[0.25em] border-b pb-1 flex items-center gap-2`}>
-                   <div className={`w-2 h-2 rounded-full ${activeStyle.accentBg}`}></div> Issued By
-                </h3>
-                <div className="pl-4 border-l-2 border-slate-100">
-                  <p className={`font-black text-sm leading-tight mb-1 ${theme === 'blueprint' || theme === 'royal' ? 'text-white' : 'text-slate-900'}`}>{profile.companyName}</p>
-                  <div className={`text-[10px] ${theme === 'blueprint' || theme === 'royal' ? 'text-white/50' : 'text-slate-500'} leading-relaxed space-y-1`}>
-                    <p className="whitespace-pre-line">{profile.address}</p>
-                    {fields.showTaxId && <p className="font-black text-[9px] uppercase tracking-widest pt-1 border-t border-slate-50 inline-block">Tax ID: {profile.taxId}</p>}
-                  </div>
-                </div>
+            <div className="space-y-2">
+              <h3 className={`text-[9px] font-black ${activeStyle.accent} uppercase tracking-[0.2em] border-b pb-1`}>Operation Config</h3>
+              <div className="grid grid-cols-2 gap-2 text-[9px]">
+                <div><span className="text-slate-400 uppercase font-bold">Tax ID:</span><p className="font-black text-slate-800">{profile.taxId}</p></div>
+                <div><span className="text-slate-400 uppercase font-bold">Currency:</span><p className="font-black text-slate-800">{invoice.currency}</p></div>
+                {fields.showDueDate && <div className="col-span-2"><span className="text-red-400 uppercase font-bold">Payment Due:</span><p className="font-black text-red-600">{invoice.dueDate}</p></div>}
               </div>
-            )}
+            </div>
           </div>
         );
       case 'table':
         return (
-          <div key="table" className="flex-1 mb-10 relative z-10 overflow-hidden">
+          <div key="table" className="flex-1 mb-6 relative z-10">
             <table className="w-full text-left border-collapse table-fixed">
               <thead>
-                <tr className={`${activeStyle.tableHeader} text-[9px] font-black uppercase tracking-widest ${theme === 'industrial' || theme === 'blueprint' || theme === 'technical-draft' ? 'text-white' : 'text-slate-500'}`}>
-                  <th className="py-4 px-3 w-[20%]">Description / Unit</th>
-                  {fields.showPorts && <th className="py-4 px-3 w-[25%] text-center">Route (Port In / Out)</th>}
-                  {fields.showTrucker && <th className="py-4 px-3 w-[15%]">Transporter</th>}
-                  {fields.showServicePeriod && <th className="py-4 px-3 w-[15%] text-center">Op Date</th>}
-                  <th className="py-4 px-3 text-right w-[25%]">Amount</th>
+                <tr className={`${activeStyle.tableHeader} text-[8px] uppercase tracking-widest`}>
+                  <th className="py-3 px-2 w-[22%]">Operation & Shipper</th>
+                  <th className="py-3 px-2 w-[18%]">Equipment (Container)</th>
+                  <th className="py-3 px-2 w-[15%] text-center">Route Path</th>
+                  <th className="py-3 px-2 w-[15%]">Trucker / Transp.</th>
+                  <th className="py-3 px-2 w-[12%] text-center">Date</th>
+                  <th className="py-3 px-2 text-right w-[18%]">Rate / Value</th>
                 </tr>
               </thead>
               <tbody className={`divide-y ${theme === 'blueprint' || theme === 'royal' ? 'divide-white/10' : 'divide-slate-100'}`}>
@@ -207,47 +191,54 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice }) => {
                   const first = group[0];
                   const totalGroupRate = group.reduce((acc, curr) => acc + curr.rateValue, 0);
                   return (
-                    <tr key={gIdx} className="align-top hover:bg-slate-50/50 transition-colors">
-                      <td className="py-5 px-3">
-                        {fields.showBookingNo && <div className={`font-black ${activeStyle.accent} text-[10px] uppercase tracking-tight mb-1.5`}>BK: {first.bookingNo || 'N/A'}</div>}
-                        {fields.showCustomerRef && first.customerRef && <div className="text-[8px] text-slate-400 font-bold mb-2">REF: {first.customerRef}</div>}
-                        <div className="space-y-1.5">
+                    <tr key={gIdx} className="align-top hover:bg-slate-50/30 transition-colors">
+                      <td className="py-3 px-2">
+                        {fields.showBookingNo && <div className={`font-black ${activeStyle.accent} text-[9px] uppercase leading-none mb-1`}>BK: {first.bookingNo || 'N/A'}</div>}
+                        {fields.showShipperAddress && first.shipperAddress && (
+                           <div className="flex items-start gap-1">
+                             <Building size={8} className="text-slate-300 mt-0.5" />
+                             <p className="text-[8px] text-slate-500 font-bold uppercase leading-tight line-clamp-2">{first.shipperAddress}</p>
+                           </div>
+                        )}
+                      </td>
+                      <td className="py-3 px-2">
+                        <div className="space-y-1">
                           {group.map((item, iIdx) => (
-                            <div key={iIdx} className="flex flex-col">
-                              {fields.showReefer && <p className={`text-[10px] font-black ${theme === 'blueprint' || theme === 'royal' ? 'text-white' : 'text-slate-900'} truncate`}>{item.reeferNumber || 'UNIT-XX'}</p>}
-                              {fields.showGenset && item.gensetNo && <p className={`text-[8px] font-mono mt-0.5 ${theme === 'royal' ? 'text-amber-500' : 'text-blue-600'} uppercase`}>Genset: {item.gensetNo}</p>}
+                            <div key={iIdx} className="bg-slate-50 p-1 rounded border-l-2 border-slate-200">
+                               <p className="text-[9px] font-black text-slate-800 font-mono tracking-tighter truncate">#{item.reeferNumber || 'UNIDENTIFIED'}</p>
+                               {fields.showGenset && item.gensetNo && <p className="text-[7px] text-blue-600 font-bold mt-0.5">GS: {item.gensetNo}</p>}
                             </div>
                           ))}
                         </div>
                       </td>
-                      {fields.showPorts && (
-                        <td className="py-5 px-3">
-                          <div className="space-y-2">
+                      <td className="py-3 px-2 text-center">
+                        <div className="space-y-1.5 flex flex-col items-center">
+                          {group.map((item, iIdx) => (
+                            <div key={iIdx} className="flex items-center gap-1 justify-center w-full">
+                               {renderPortBadge(item.goPort)}
+                               <ArrowRightLeft size={8} className="text-slate-300 shrink-0" />
+                               {renderPortBadge(item.giPort)}
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="py-3 px-2">
+                         <div className="space-y-1.5">
                             {group.map((item, iIdx) => (
-                              <div key={iIdx} className="flex items-center gap-2 justify-center">
-                                {renderPortBadge(item.goPort)}
-                                <ArrowRightLeft size={10} className="text-slate-300 shrink-0" />
-                                {renderPortBadge(item.giPort)}
+                              <div key={iIdx} className="text-[8px] font-bold text-slate-600 flex items-center gap-1 truncate uppercase">
+                                <Truck size={10} className="text-slate-300 shrink-0" /> {item.trucker || '---'}
                               </div>
                             ))}
-                          </div>
-                        </td>
-                      )}
-                      {fields.showTrucker && (
-                        <td className="py-5 px-3">
-                          <div className="space-y-2">
-                            {group.map((item, iIdx) => (
-                              <div key={iIdx} className="text-[9px] font-bold text-slate-600 flex items-center gap-1">
-                                <Truck size={12} className="text-slate-300" /> <span className="truncate">{item.trucker || '---'}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </td>
-                      )}
-                      {fields.showServicePeriod && <td className="py-5 px-3 text-center"><div className={`text-[10px] ${theme === 'blueprint' || theme === 'royal' ? 'text-white/70' : 'text-slate-700'} font-bold`}>{formatDate(first.bookingDate)}</div></td>}
-                      <td className="py-5 px-3 text-right">
-                        <span className={`font-black ${theme === 'blueprint' || theme === 'royal' ? 'text-white' : 'text-slate-900'} text-sm`}>{formatCurrency(totalGroupRate, invoice.currency)}</span>
-                        {group.length > 1 && <div className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mt-1">{group.length} Units Included</div>}
+                         </div>
+                      </td>
+                      <td className="py-3 px-2 text-center">
+                        <p className="text-[9px] font-bold text-slate-700">{formatDate(first.bookingDate)}</p>
+                      </td>
+                      <td className="py-3 px-2 text-right">
+                        <div className="flex flex-col">
+                           <span className={`font-black ${theme === 'blueprint' || theme === 'royal' ? 'text-white' : 'text-slate-900'} text-[11px]`}>{formatCurrency(totalGroupRate, invoice.currency)}</span>
+                           {group.length > 1 && <span className="text-[7px] text-slate-400 font-bold uppercase tracking-widest">({group.length} Units)</span>}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -258,62 +249,58 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice }) => {
         );
       case 'totals':
         return (
-          <div key="totals" className={`mt-4 pt-4 border-t-2 ${activeStyle.totalsBorder} flex justify-end mb-6 relative z-10`}>
-            <div className="w-64 space-y-2">
-              <div className="flex justify-between items-center text-[11px]">
-                <span className={`font-bold uppercase tracking-widest ${theme === 'blueprint' || theme === 'royal' ? 'text-white/40' : 'text-slate-400'}`}>Subtotal Amount</span>
-                <span className={`font-bold ${theme === 'blueprint' || theme === 'royal' ? 'text-white' : 'text-slate-900'}`}>{formatCurrency(invoice.subtotal, invoice.currency)}</span>
+          <div key="totals" className={`mt-2 pt-2 border-t-2 ${activeStyle.totalsBorder} flex justify-end mb-4 relative z-10`}>
+            <div className="w-56 space-y-1">
+              <div className="flex justify-between items-center text-[10px]">
+                <span className="font-bold text-slate-400 uppercase tracking-widest">Subtotal</span>
+                <span className="font-bold text-slate-800">{formatCurrency(invoice.subtotal, invoice.currency)}</span>
               </div>
               {fields.showVat && (
-                <div className="flex justify-between items-center text-[11px]">
-                  <span className={`font-bold uppercase tracking-widest ${theme === 'blueprint' || theme === 'royal' ? 'text-white/40' : 'text-slate-400'}`}>VAT / TAX (14%)</span>
-                  <span className={`font-bold ${theme === 'blueprint' || theme === 'royal' ? 'text-white' : 'text-slate-900'}`}>{formatCurrency(invoice.tax, invoice.currency)}</span>
+                <div className="flex justify-between items-center text-[10px]">
+                  <span className="font-bold text-slate-400 uppercase tracking-widest">VAT (14%)</span>
+                  <span className="font-bold text-slate-800">{formatCurrency(invoice.tax, invoice.currency)}</span>
                 </div>
               )}
-              <div className={`flex justify-between items-center pt-3 border-t-2 ${theme === 'blueprint' || theme === 'royal' ? 'border-white/30' : 'border-slate-900'}`}>
-                <span className={`${activeStyle.accent} font-black uppercase tracking-[0.2em] text-[10px]`}>Grand Total</span>
-                <span className={`text-2xl font-black ${activeStyle.accent}`}>{formatCurrency(invoice.total, invoice.currency)}</span>
+              <div className={`flex justify-between items-center pt-2 border-t border-slate-900`}>
+                <span className={`${activeStyle.accent} font-black uppercase tracking-[0.2em] text-[9px]`}>Total Amount</span>
+                <span className={`text-xl font-black ${activeStyle.accent}`}>{formatCurrency(invoice.total, invoice.currency)}</span>
               </div>
             </div>
           </div>
         );
       case 'signature':
         return fields.showSignature ? (
-          <div key="signature" className="mt-6 flex justify-between items-end relative z-10">
+          <div key="signature" className="mt-4 flex justify-between items-end relative z-10">
             <div className="max-w-xs">
               {fields.showNotes && invoice.notes && (
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                  <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Internal Reference</p>
-                  <p className="text-[10px] font-bold text-slate-700">{invoice.notes}</p>
+                <div className="p-2 bg-slate-50 border border-slate-100 rounded">
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Memorandums</p>
+                  <p className="text-[9px] font-bold text-slate-700 leading-tight">{invoice.notes}</p>
                 </div>
               )}
             </div>
             <div className="text-right flex flex-col items-end">
-              <p className={`text-[9px] font-black ${theme === 'blueprint' || theme === 'royal' ? 'text-white/30' : 'text-slate-400'} uppercase tracking-[0.2em] mb-4`}>Authorized Approval</p>
               {profile.signatureUrl ? (
-                <img src={profile.signatureUrl} alt="Signature" className={`h-16 w-auto object-contain mb-2 ${theme === 'blueprint' || theme === 'royal' ? 'brightness-0 invert' : ''}`} />
+                <img src={profile.signatureUrl} alt="Signature" className="h-12 w-auto object-contain mb-1" />
               ) : (
-                <div className="h-16 w-48 border-b-2 border-dashed border-slate-300 mb-2"></div>
+                <div className="h-10 w-32 border-b border-dashed border-slate-200 mb-1"></div>
               )}
-              <p className={`text-sm font-black ${activeStyle.accent} uppercase tracking-tight`}>{profile.name}</p>
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Administrative Manager</p>
+              <p className={`text-xs font-black ${activeStyle.accent} uppercase tracking-tight`}>{profile.name}</p>
+              <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Authority Signatory</p>
             </div>
           </div>
         ) : null;
       case 'footer':
         return (
-          <div key="footer" className={`mt-auto pt-8 text-[9px] ${theme === 'blueprint' || theme === 'royal' ? 'text-white/30' : 'text-slate-400'} border-t ${activeStyle.border} relative z-10`}>
-            <div className="grid grid-cols-2 gap-12">
-              {fields.showTerms && (
-                <div className="space-y-2">
-                  <p className={`font-black uppercase tracking-[0.2em] border-b border-slate-50 pb-1 ${theme === 'blueprint' || theme === 'royal' ? 'text-white/50' : 'text-slate-600'}`}>Document Terms</p>
-                  <p className="leading-relaxed">This invoice is generated based on validated operational booking reports. Standard logistics and reefer maintenance terms apply. Please process payment by the specified due date.</p>
-                </div>
-              )}
-              <div className="text-right flex flex-col justify-end">
-                <p className={`font-black text-4xl mb-1 tracking-tighter opacity-10 uppercase italic ${theme === 'blueprint' || theme === 'royal' ? 'text-white' : 'text-slate-900'}`}>Official Billing</p>
-                <p className="text-[8px] font-medium">Digital Copy - Integrity Verified</p>
-              </div>
+          <div key="footer" className={`mt-auto pt-4 text-[8px] ${theme === 'blueprint' || theme === 'royal' ? 'text-white/30' : 'text-slate-400'} border-t ${activeStyle.border} relative z-10`}>
+            <div className="flex justify-between items-end">
+               <div className="space-y-1">
+                  <p className="font-black uppercase tracking-[0.2em] text-slate-600">Document Terms</p>
+                  <p className="max-w-md leading-tight opacity-70">This bill of services is verified against operational logs. No modification of container data allowed without technical audit. Payment terms are net {invoice.dueDate}.</p>
+               </div>
+               <div className="text-right">
+                  <p className="font-black text-2xl opacity-5 uppercase italic">Certified Billing</p>
+               </div>
             </div>
           </div>
         );
@@ -326,7 +313,7 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice }) => {
     <div className={activeStyle.container}>
       {fields.showWatermark && profile.logoUrl && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
-          <img src={profile.logoUrl} alt="" className={`w-[70%] h-auto object-contain transition-all ${theme === 'blueprint' || theme === 'royal' ? 'opacity-[0.02] brightness-0 invert' : 'opacity-[0.04] grayscale'} -rotate-12`} />
+          <img src={profile.logoUrl} alt="" className={`w-[60%] h-auto object-contain opacity-[0.03] grayscale -rotate-12`} />
         </div>
       )}
       {config.sectionOrder.map(sectionId => renderSection(sectionId))}

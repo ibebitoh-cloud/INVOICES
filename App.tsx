@@ -7,15 +7,13 @@ import {
   FilePlus, ToggleLeft, ToggleRight, Settings as SettingsIcon,
   MapPin, Package, Truck, SlidersHorizontal, ChevronUp, ChevronDown, 
   ArrowRightLeft, Building2, User, Upload, ShieldCheck, Mail, CreditCard,
-  Briefcase, Hash, ExternalLink, TrendingUp, DollarSign
+  Briefcase, Hash, ExternalLink, TrendingUp, DollarSign, Info
 } from 'lucide-react';
 import { Booking, Invoice, InvoiceSectionId, TemplateConfig, UserProfile, SavedTemplate, InvoiceTheme, CustomerSettings, TemplateFields } from './types';
 import { parseCurrency, formatCurrency, exportToCSV } from './utils/formatters';
 import InvoiceDocument from './components/InvoiceDocument';
 
 const MAJOR_PORTS = ['ALEX', 'DAM', 'GOUDA', 'SCCT', 'SOKHNA'];
-
-// Default logo placeholder that matches the user's provided colors (Dark Blue and Gold/Tan)
 const DEFAULT_COMPANY_LOGO = "https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&q=80&w=300&h=300";
 
 const App: React.FC = () => {
@@ -31,6 +29,7 @@ const App: React.FC = () => {
   const [view, setView] = useState<'dashboard' | 'config' | 'invoice-preview' | 'profile' | 'portfolio' | 'operations' | 'field-master'>('dashboard');
   const [activeInvoice, setActiveInvoice] = useState<Invoice | null>(null);
   const [showManualAddModal, setShowManualAddModal] = useState(false);
+  const [selectedOperation, setSelectedOperation] = useState<Booking | null>(null);
 
   const [customerSettings, setCustomerSettings] = useState<Record<string, CustomerSettings>>(() => {
     const saved = localStorage.getItem('customer_settings');
@@ -79,7 +78,7 @@ const App: React.FC = () => {
   const [templateConfig, setTemplateConfig] = useState<TemplateConfig>({
     sectionOrder: ['header', 'parties', 'table', 'totals', 'signature', 'footer'],
     hiddenSections: new Set<InvoiceSectionId>(),
-    theme: 'modern',
+    theme: 'logistics-grid',
     fields: {
       showReefer: true,
       showGenset: true,
@@ -188,22 +187,52 @@ const App: React.FC = () => {
   const finalizeInvoice = useCallback(() => {
     const selectedItems = bookings.filter(b => selectedIds.has(b.id));
     if (selectedItems.length === 0) return;
+    
+    const firstItem = selectedItems[0];
+    const generatedInvNo = invConfig.number || `INV-${Date.now().toString().slice(-6)}`;
     const subtotal = selectedItems.reduce((acc, curr) => acc + curr.rateValue, 0);
     const tax = selectedItems.reduce((acc, curr) => acc + curr.vatValue, 0);
-    const firstItem = selectedItems[0];
     
-    setBookings(prev => prev.map(b => selectedIds.has(b.id) ? { ...b, invNo: invConfig.number } : b));
+    setBookings(prev => prev.map(b => selectedIds.has(b.id) ? { ...b, invNo: generatedInvNo } : b));
 
-    setActiveInvoice({
-      id: `INV-${Date.now()}`, invoiceNumber: invConfig.number, date: invConfig.date, dueDate: invConfig.dueDate,
-      customerName: firstItem.customer, customerAddress: invConfig.address, beneficiaryName: firstItem.beneficiaryName,
-      items: selectedItems, subtotal, tax, total: subtotal + tax, currency: invConfig.currency, notes: invConfig.notes,
-      templateConfig: { ...templateConfig, hiddenSections: new Set(templateConfig.hiddenSections) }, userProfile: profile
-    });
+    const newInvoice: Invoice = {
+      id: `INV-${Date.now()}`, 
+      invoiceNumber: generatedInvNo, 
+      date: invConfig.date, 
+      dueDate: invConfig.dueDate,
+      customerName: firstItem.customer, 
+      customerAddress: invConfig.address || firstItem.shipperAddress || '', 
+      beneficiaryName: firstItem.beneficiaryName,
+      items: selectedItems, 
+      subtotal, 
+      tax, 
+      total: subtotal + tax, 
+      currency: invConfig.currency, 
+      notes: invConfig.notes,
+      templateConfig: { ...templateConfig, hiddenSections: new Set(templateConfig.hiddenSections) }, 
+      userProfile: profile
+    };
 
+    setActiveInvoice(newInvoice);
+    setInvConfig(prev => ({ ...prev, number: generatedInvNo, address: newInvoice.customerAddress || '' }));
     setSelectedIds(new Set());
     setView('invoice-preview');
   }, [bookings, selectedIds, invConfig, templateConfig, profile]);
+
+  // Update active invoice when internal config changes in the preview sidebar
+  useEffect(() => {
+    if (activeInvoice && view === 'invoice-preview') {
+      setActiveInvoice(prev => prev ? {
+        ...prev,
+        invoiceNumber: invConfig.number,
+        date: invConfig.date,
+        dueDate: invConfig.dueDate,
+        customerAddress: invConfig.address,
+        notes: invConfig.notes,
+        currency: invConfig.currency
+      } : null);
+    }
+  }, [invConfig.number, invConfig.date, invConfig.dueDate, invConfig.address, invConfig.notes, invConfig.currency]);
 
   const handleManualAdd = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -223,8 +252,8 @@ const App: React.FC = () => {
       vat: '0',
       vatValue: 0,
       status: 'UNBILLED',
-      totalBooking: '', gops: '', dateOfClipOn: '', goPort: '', giPort: '', clipOffDate: '',
-      trucker: '', beneficiaryName: '', gensetNo: '', res: '', gaz: '', shipperAddress: '',
+      totalBooking: '', gops: '', dateOfClipOn: '', goPort: (formData.get('goPort') as string) || '', giPort: (formData.get('giPort') as string) || '', clipOffDate: '',
+      trucker: (formData.get('trucker') as string) || '', beneficiaryName: '', gensetNo: '', res: '', gaz: '', shipperAddress: '',
       remarks: '', gensetFaultDescription: '', invNo: '', invDate: '', invIssueDate: ''
     };
     
@@ -336,7 +365,7 @@ const App: React.FC = () => {
                     <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
                     <input type="text" placeholder="Search manifest by Client, Booking ID, Container, or PO..." className="w-full pl-14 pr-6 py-5 bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-[1.5rem] font-bold outline-none transition-all placeholder:text-slate-300 text-lg shadow-inner" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                   </div>
-                  <button disabled={selectedIds.size === 0} onClick={() => { const item = bookings.find(b => selectedIds.has(b.id)); if (item) { setInvConfig(prev => ({ ...prev, number: `INV-${Date.now().toString().slice(-6)}`, address: item.shipperAddress || '' })); setView('config'); } }} className="bg-slate-900 text-white px-10 py-5 rounded-[1.5rem] font-black disabled:opacity-30 disabled:grayscale transition-all hover:bg-blue-600 active:scale-95 shadow-xl uppercase tracking-widest text-sm h-full">Invoice Selection ({selectedIds.size})</button>
+                  <button disabled={selectedIds.size === 0} onClick={finalizeInvoice} className="bg-slate-900 text-white px-10 py-5 rounded-[1.5rem] font-black disabled:opacity-30 disabled:grayscale transition-all hover:bg-blue-600 active:scale-95 shadow-xl uppercase tracking-widest text-sm h-full">Generate Invoice ({selectedIds.size})</button>
                 </div>
               </div>
 
@@ -350,12 +379,13 @@ const App: React.FC = () => {
                       <th className="py-6 px-4">Port Path</th>
                       <th className="py-6 px-4 text-right">Service Rate</th>
                       <th className="py-6 px-4 text-center">Invoicing</th>
+                      <th className="py-6 px-4 text-center">Details</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
                     {filteredBookings.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="py-20 text-center">
+                        <td colSpan={7} className="py-20 text-center">
                           <div className="flex flex-col items-center gap-4">
                             <div className="bg-slate-100 p-6 rounded-full text-slate-300"><FileText size={48} /></div>
                             <p className="text-slate-400 font-bold text-lg">No shipments found. Upload a CSV manifest to begin.</p>
@@ -370,6 +400,7 @@ const App: React.FC = () => {
                         <td className="py-6 px-4"><div className="flex items-center gap-2"><span className="uppercase text-[10px] font-black bg-blue-50 px-2 py-1 rounded text-blue-700 border border-blue-100">{b.goPort || '---'}</span><ArrowRightLeft size={10} className="text-slate-300" /><span className="uppercase text-[10px] font-black bg-red-50 px-2 py-1 rounded text-red-700 border border-red-100">{b.giPort || '---'}</span></div></td>
                         <td className="py-6 px-4 text-right font-black text-slate-900 text-base">{b.rate}</td>
                         <td className="py-6 px-4 text-center"><span className={`font-mono text-[10px] px-2 py-1 rounded-full font-black uppercase ${b.invNo ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-amber-100 text-amber-700 border border-amber-200'}`}>{b.invNo ? `BILL: ${b.invNo}` : 'PENDING'}</span></td>
+                        <td className="py-6 px-4 text-center" onClick={(e) => e.stopPropagation()}><button onClick={() => setSelectedOperation(b)} className="p-2 text-slate-400 hover:text-blue-600 transition-all"><Info size={20} /></button></td>
                       </tr>
                     ))}
                   </tbody>
@@ -440,7 +471,7 @@ const App: React.FC = () => {
                         <th className="py-6 px-4">Equipment</th>
                         <th className="py-6 px-4">Ops Port</th>
                         <th className="py-6 px-4 text-right">Settled Amount</th>
-                        <th className="py-6 px-4 text-center">Receipt</th>
+                        <th className="py-6 px-4 text-center">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
@@ -459,7 +490,10 @@ const App: React.FC = () => {
                               <td className="py-6 px-4"><p className="font-mono text-xs text-slate-500">{b.reeferNumber || 'UNIT-X'}</p></td>
                               <td className="py-6 px-4"><span className="font-black text-[10px] uppercase text-slate-400">{b.goPort} → {b.giPort}</span></td>
                               <td className="py-6 px-4 text-right font-black text-slate-900">{b.rate}</td>
-                              <td className="py-6 px-4 text-center"><button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"><Printer size={18}/></button></td>
+                              <td className="py-6 px-4 text-center flex items-center justify-center gap-2">
+                                <button onClick={() => setSelectedOperation(b)} className="p-2 text-slate-400 hover:text-blue-600 rounded-lg transition-all"><Info size={18}/></button>
+                                <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"><Printer size={18}/></button>
+                              </td>
                            </tr>
                          ))
                        )}
@@ -531,7 +565,7 @@ const App: React.FC = () => {
           {view === 'field-master' && (
             <div className="space-y-10 animate-in fade-in duration-500 no-print">
                <div className="flex justify-between items-end">
-                  <div><h2 className="text-4xl font-black text-slate-900 tracking-tight">Invoice Templates</h2><p className="text-slate-500 font-medium text-lg text-lg">Switch between industry-standard visual themes.</p></div>
+                  <div><h2 className="text-4xl font-black text-slate-900 tracking-tight">Invoice Templates</h2><p className="text-slate-500 font-medium text-lg">Switch between industry-standard visual themes.</p></div>
                   <button onClick={() => setView('dashboard')} className="bg-blue-600 text-white px-10 py-4 rounded-2xl font-black shadow-xl uppercase tracking-widest text-xs">Exit Designer</button>
                </div>
 
@@ -539,13 +573,12 @@ const App: React.FC = () => {
                  <h3 className="text-xl font-black text-slate-900 flex items-center gap-3 uppercase tracking-widest text-sm opacity-60">Visual Themes</h3>
                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
                    {[
+                     { id: 'logistics-grid', label: 'Logistics Master', color: 'bg-emerald-600' },
                      { id: 'modern', label: 'Classic Pro', color: 'bg-blue-600' },
                      { id: 'minimalist', label: 'Swiss Minimal', color: 'bg-slate-900' },
                      { id: 'corporate', label: 'Executive Elite', color: 'bg-indigo-950' },
                      { id: 'elegant', label: 'Luxury Serif', color: 'bg-emerald-900' },
-                     { id: 'glass', label: 'Clean Glass', color: 'bg-sky-400' },
                      { id: 'technical-draft', label: 'Operation Draft', color: 'bg-blue-900' },
-                     { id: 'industrial', label: 'Raw Industrial', color: 'bg-orange-600' },
                      { id: 'blueprint', label: 'Navy Blueprint', color: 'bg-[#002b5c]' },
                      { id: 'royal', label: 'Midnight Gold', color: 'bg-amber-600' },
                    ].map(t => (
@@ -572,33 +605,136 @@ const App: React.FC = () => {
             </div>
           )}
 
-          {view === 'config' && (
-            <div className="max-w-4xl mx-auto space-y-10 animate-in fade-in duration-300">
-               <header className="flex justify-between items-center"><div><h2 className="text-4xl font-black text-slate-900 tracking-tight">Settlement Details</h2><p className="text-slate-500 font-medium text-lg">Define billing sequence and fiscal attributes.</p></div><button onClick={() => setView('dashboard')} className="p-4 bg-white border border-slate-100 rounded-[2rem] hover:text-red-500 transition-all shadow-md"><X size={32} /></button></header>
-               <div className="bg-white rounded-[3rem] shadow-2xl p-12 grid grid-cols-2 gap-10 border border-slate-100">
-                  <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Invoice Serial #</label><div className="relative"><Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18}/><input type="text" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-xl pl-12 pr-6 py-4 font-bold outline-none" value={invConfig.number} onChange={e => setInvConfig({...invConfig, number: e.target.value})} /></div></div>
-                  <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Settlement Currency</label><div className="relative"><CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18}/><select className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-xl pl-12 pr-6 py-4 font-bold outline-none appearance-none" value={invConfig.currency} onChange={e => setInvConfig({...invConfig, currency: e.target.value})}><option value="EGP">EGP - Egyptian Pound</option><option value="USD">USD - US Dollar</option><option value="EUR">EUR - Euro</option></select></div></div>
-                  <div className="space-y-2 col-span-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Client Billing Address (Consignee)</label><div className="relative"><MapPin className="absolute left-4 top-6 text-slate-300" size={18}/><textarea className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-xl pl-12 pr-6 py-4 font-bold outline-none min-h-[140px]" value={invConfig.address} onChange={e => setInvConfig({...invConfig, address: e.target.value})} /></div></div>
-                  <div className="space-y-2 col-span-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Additional Memorandums</label><input type="text" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 focus:bg-white rounded-xl px-6 py-4 font-bold outline-none" placeholder="Reference PO, Voyage #, or vessel name..." value={invConfig.notes} onChange={e => setInvConfig({...invConfig, notes: e.target.value})} /></div>
-                  <button onClick={finalizeInvoice} className="col-span-2 bg-blue-600 text-white py-6 rounded-[2rem] font-black text-lg hover:bg-slate-900 transition-all shadow-2xl active:scale-[0.98] uppercase tracking-widest">Generate Financial Document</button>
-               </div>
-            </div>
-          )}
-
           {view === 'invoice-preview' && activeInvoice && (
-            <div className="animate-in fade-in duration-500 pb-20">
-               <header className="no-print flex justify-between items-center mb-10 bg-white p-6 rounded-[2.5rem] shadow-xl border border-slate-100">
-                  <button onClick={() => setView('dashboard')} className="flex items-center gap-2 text-slate-600 font-bold hover:text-blue-600 transition-all px-4"><ChevronLeft size={20} /> Manifest Dashboard</button>
-                  <div className="flex gap-4">
-                    <button onClick={() => setView('config')} className="bg-slate-100 text-slate-900 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all">Adjust Settlement</button>
-                    <button onClick={() => window.print()} className="bg-blue-600 text-white px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl flex items-center gap-3 hover:bg-blue-700 active:scale-95 transition-all"><Printer size={20}/> Print A4 Export</button>
+            <div className="animate-in fade-in duration-500 pb-20 flex gap-8">
+               <div className="flex-1">
+                 <header className="no-print flex justify-between items-center mb-10 bg-white p-6 rounded-[2.5rem] shadow-xl border border-slate-100">
+                    <button onClick={() => setView('dashboard')} className="flex items-center gap-2 text-slate-600 font-bold hover:text-blue-600 transition-all px-4"><ChevronLeft size={20} /> Manifest Dashboard</button>
+                    <div className="flex gap-4">
+                      <button onClick={() => window.print()} className="bg-blue-600 text-white px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl flex items-center gap-3 hover:bg-blue-700 active:scale-95 transition-all"><Printer size={20}/> Print A4 Export</button>
+                    </div>
+                 </header>
+                 <InvoiceDocument invoice={activeInvoice} />
+               </div>
+
+               {/* Integrated Settlement Config Drawer */}
+               <div className="no-print w-96 space-y-6 animate-in slide-in-from-right duration-500">
+                  <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 space-y-6 sticky top-8">
+                    <h3 className="text-xl font-black text-slate-900 border-b pb-4">Settlement Config</h3>
+                    
+                    <div className="space-y-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Serial #</label>
+                        <input type="text" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 p-4 rounded-xl font-bold outline-none" value={invConfig.number} onChange={e => setInvConfig({...invConfig, number: e.target.value})} />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Issue Date</label>
+                        <input type="date" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 p-4 rounded-xl font-bold outline-none" value={invConfig.date} onChange={e => setInvConfig({...invConfig, date: e.target.value})} />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Due Date</label>
+                        <input type="date" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 p-4 rounded-xl font-bold outline-none" value={invConfig.dueDate} onChange={e => setInvConfig({...invConfig, dueDate: e.target.value})} />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Currency</label>
+                        <select className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 p-4 rounded-xl font-bold outline-none" value={invConfig.currency} onChange={e => setInvConfig({...invConfig, currency: e.target.value})}>
+                          <option value="EGP">EGP - Pounds</option>
+                          <option value="USD">USD - Dollars</option>
+                          <option value="EUR">EUR - Euros</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Billing Address</label>
+                        <textarea className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 p-4 rounded-xl font-bold outline-none text-xs min-h-[100px]" value={invConfig.address} onChange={e => setInvConfig({...invConfig, address: e.target.value})} />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Memorandums</label>
+                        <textarea className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 p-4 rounded-xl font-bold outline-none text-xs" placeholder="Add vessel, voyage, or notes..." value={invConfig.notes} onChange={e => setInvConfig({...invConfig, notes: e.target.value})} />
+                      </div>
+                    </div>
+
+                    <button onClick={() => setView('field-master')} className="w-full bg-slate-100 text-slate-600 py-4 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all flex items-center justify-center gap-2">
+                       <SettingsIcon size={16} /> Edit Visual Theme
+                    </button>
                   </div>
-               </header>
-               <InvoiceDocument invoice={activeInvoice} />
+               </div>
             </div>
           )}
         </div>
       </main>
+
+      {/* Operation Detail Modal */}
+      {selectedOperation && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/90 backdrop-blur-xl animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-4xl rounded-[3rem] shadow-2xl p-12 space-y-10 animate-in zoom-in-95 duration-300 relative">
+            <button onClick={() => setSelectedOperation(null)} className="absolute top-8 right-8 p-3 text-slate-300 hover:text-red-500 transition-all"><X size={32} /></button>
+            
+            <div className="flex items-center gap-6">
+              <div className="bg-blue-600 p-4 rounded-3xl text-white shadow-xl shadow-blue-600/20"><Anchor size={32} /></div>
+              <div>
+                <h3 className="text-3xl font-black text-slate-900 tracking-tight">Operation Detail</h3>
+                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">BK ID: {selectedOperation.bookingNo || '---'}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-10">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Consignee</label>
+                <p className="text-xl font-black text-slate-900">{selectedOperation.customer}</p>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Service Rate</label>
+                <p className="text-xl font-black text-blue-600">{selectedOperation.rate}</p>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">VAT (14%)</label>
+                <p className="text-xl font-black text-emerald-600">{selectedOperation.vat || '0'}</p>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Route Path</label>
+                <div className="flex items-center gap-2 font-black text-slate-900">
+                  <span className="bg-slate-100 px-3 py-1 rounded-lg">{selectedOperation.goPort || '---'}</span>
+                  <ArrowRightLeft size={16} className="text-slate-300" />
+                  <span className="bg-slate-100 px-3 py-1 rounded-lg">{selectedOperation.giPort || '---'}</span>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Equipment ID</label>
+                <p className="text-xl font-black text-slate-900 font-mono">{selectedOperation.reeferNumber || '---'}</p>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Transporter</label>
+                <p className="text-xl font-black text-slate-900">{selectedOperation.trucker || '---'}</p>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Customer Ref</label>
+                <p className="text-xl font-black text-slate-900">{selectedOperation.customerRef || '---'}</p>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Op Date</label>
+                <p className="text-xl font-black text-slate-900">{selectedOperation.bookingDate || '---'}</p>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Status</label>
+                <span className={`inline-block px-4 py-1.5 rounded-full font-black uppercase text-[10px] ${selectedOperation.invNo ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                  {selectedOperation.invNo ? `Settled (${selectedOperation.invNo})` : 'Pending Billing'}
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100">
+               <div className="flex items-center gap-3 mb-4"><Package size={20} className="text-slate-400"/> <h4 className="font-black text-slate-900 uppercase text-xs tracking-widest">Technical Specifications</h4></div>
+               <div className="grid grid-cols-2 gap-8 text-sm">
+                 <div><span className="text-slate-400 font-bold uppercase text-[10px]">Genset #</span><p className="font-black text-slate-700">{selectedOperation.gensetNo || 'N/A'}</p></div>
+                 <div><span className="text-slate-400 font-bold uppercase text-[10px]">Shipper Base</span><p className="font-black text-slate-700">{selectedOperation.shipperAddress || 'N/A'}</p></div>
+                 <div className="col-span-2"><span className="text-slate-400 font-bold uppercase text-[10px]">Remarks</span><p className="font-medium text-slate-700">{selectedOperation.remarks || 'No operational remarks logged.'}</p></div>
+               </div>
+            </div>
+
+            <div className="flex gap-4"><button onClick={() => setSelectedOperation(null)} className="flex-1 bg-slate-900 text-white py-6 rounded-[2rem] font-black uppercase tracking-widest active:scale-95 transition-all">Dismiss Detail</button></div>
+          </div>
+        </div>
+      )}
 
       {showManualAddModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-300">
@@ -609,8 +745,11 @@ const App: React.FC = () => {
               <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Booking ID</label><input name="bookingNo" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 p-4 rounded-xl font-bold outline-none" /></div>
               <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Customer PO</label><input name="ref" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 p-4 rounded-xl font-bold outline-none" /></div>
               <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Operational Date</label><input name="date" type="date" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 p-4 rounded-xl font-bold outline-none" /></div>
+              <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Port In</label><input name="goPort" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 p-4 rounded-xl font-bold outline-none" /></div>
+              <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Port Out</label><input name="giPort" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 p-4 rounded-xl font-bold outline-none" /></div>
               <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Container Number</label><input name="reefer" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 p-4 rounded-xl font-bold outline-none" /></div>
-              <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Service Rate</label><input name="rate" required className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 p-4 rounded-xl font-bold outline-none" /></div>
+              <div className="space-y-1"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Transporter</label><input name="trucker" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 p-4 rounded-xl font-bold outline-none" /></div>
+              <div className="space-y-1 col-span-2"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Service Rate</label><input name="rate" required className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-600 p-4 rounded-xl font-bold outline-none" /></div>
             </div>
             <div className="flex gap-4 pt-4"><button type="submit" className="flex-1 bg-blue-600 text-white py-5 rounded-2xl font-black shadow-xl hover:bg-slate-900 active:scale-95 transition-all uppercase text-xs tracking-widest">Commit Entry</button><button type="button" onClick={() => setShowManualAddModal(false)} className="flex-1 bg-slate-100 text-slate-500 py-5 rounded-2xl font-black hover:bg-slate-200 transition-all uppercase text-xs tracking-widest">Discard</button></div>
           </form>
