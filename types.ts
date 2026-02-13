@@ -28,10 +28,18 @@ export interface Booking {
   invNo: string;
   invDate: string;
   invIssueDate: string;
+  // New details
+  vesselName?: string;
+  voyageNo?: string;
+  sealNumber?: string;
+  weight?: string;
+  temperature?: string;
+  commodity?: string;
 }
 
 export type InvoiceSectionId = 'header' | 'parties' | 'table' | 'totals' | 'footer' | 'signature';
-export type InvoiceTheme = 'modern' | 'minimalist' | 'corporate' | 'industrial' | 'elegant' | 'blueprint' | 'glass' | 'royal' | 'sidebar-pro' | 'modern-cards' | 'technical-draft';
+export type InvoiceTheme = 'modern' | 'minimalist' | 'corporate' | 'industrial' | 'elegant' | 'blueprint' | 'glass' | 'royal' | 'sidebar-pro' | 'modern-cards' | 'technical-draft' | 'logistics-grid';
+export type GroupingType = 'unit' | 'shipper' | 'trucker' | 'booking';
 
 export interface TemplateFields {
   showReefer: boolean;
@@ -54,6 +62,12 @@ export interface TemplateFields {
   showDueDate: boolean;
   showNotes: boolean;
   showWatermark: boolean;
+  // New details fields
+  showVessel: boolean;
+  showSeal: boolean;
+  showWeight: boolean;
+  showTemp: boolean;
+  showCommodity: boolean;
 }
 
 export interface CustomerSettings {
@@ -66,6 +80,7 @@ export interface TemplateConfig {
   hiddenSections: Set<InvoiceSectionId>;
   fields: TemplateFields;
   theme: InvoiceTheme;
+  groupBy: GroupingType;
 }
 
 export interface SavedTemplate {
