@@ -3,7 +3,7 @@ import { Invoice, Booking, TemplateFields, InvoiceTheme } from '../types';
 import { formatCurrency } from '../utils/formatters';
 import { 
   ShieldCheck, Briefcase, Award, Boxes, Anchor, Landmark, Scale, Clock, Banknote, ShieldAlert,
-  Truck, MapPin, Package, Grid, Layout, List, Layers, CornerDownRight, Minus, Square
+  Truck, MapPin, Package, Grid, Layout, List, Layers, CornerDownRight, Minus, Square, ArrowRight
 } from 'lucide-react';
 
 interface InvoiceDocumentProps {
@@ -144,21 +144,21 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
     if (t.headerStyle === 'centered') {
       return (
         <div className="flex flex-col items-center text-center mb-4 relative z-10 w-full shrink-0">
-          {fields.showLogo && profile.logoUrl && <img src={profile.logoUrl} className="h-20 mb-4 object-contain" />}
-          <h1 className="text-4xl font-black uppercase tracking-tighter mb-1">{profile.companyName}</h1>
-          <p className="text-xs font-black uppercase tracking-[0.4em] opacity-40">Tax ID: {profile.taxId}</p>
-          <div className="flex gap-6 mt-4 border-y py-3 w-full border-slate-100">
+          {fields.showLogo && profile.logoUrl && <img src={profile.logoUrl} className="h-24 mb-4 object-contain" />}
+          <h1 className="text-5xl font-black uppercase tracking-tighter mb-1">{profile.companyName}</h1>
+          <p className="text-sm font-black uppercase tracking-[0.4em] opacity-40">Tax ID: {profile.taxId}</p>
+          <div className="flex gap-6 mt-6 border-y-2 py-4 w-full border-slate-100">
             <div className="flex-1 text-center">
-              <span className="text-[10px] font-black text-slate-400 uppercase block mb-1">Invoice Number</span>
-              <span className="text-xl font-black">{invoice.invoiceNumber}</span>
+              <span className="text-xs font-black text-slate-400 uppercase block mb-1">Invoice Number</span>
+              <span className="text-2xl font-black tracking-tight">{invoice.invoiceNumber}</span>
             </div>
-            <div className="flex-1 text-center border-x border-slate-100 px-4">
-              <span className="text-[10px] font-black text-slate-400 uppercase block mb-1">Issue Date</span>
-              <span className="text-sm font-bold">{invoice.date}</span>
+            <div className="flex-1 text-center border-x-2 border-slate-100 px-4">
+              <span className="text-xs font-black text-slate-400 uppercase block mb-1">Issue Date</span>
+              <span className="text-lg font-bold">{invoice.date}</span>
             </div>
             <div className="flex-1 text-center">
-              <span className="text-[10px] font-black text-slate-400 uppercase block mb-1">Due Date</span>
-              <span className="text-sm font-black text-red-600 underline">{invoice.dueDate}</span>
+              <span className="text-xs font-black text-slate-400 uppercase block mb-1">Due Date</span>
+              <span className="text-lg font-black text-red-600 underline decoration-2">{invoice.dueDate}</span>
             </div>
           </div>
         </div>
@@ -166,22 +166,22 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
     }
 
     return (
-      <div className="flex justify-between items-start mb-4 relative z-10 w-full shrink-0">
+      <div className="flex justify-between items-start mb-6 relative z-10 w-full shrink-0">
         <div className="flex-1">
-          {fields.showLogo && profile.logoUrl && <img src={profile.logoUrl} className="h-20 mb-4 object-contain" />}
-          <h1 className="text-3xl font-black uppercase tracking-tighter leading-none mb-2">{profile.companyName}</h1>
-          <div className="flex items-center gap-3">
-             <div className={`h-1 w-12 ${t.accent}`}></div>
-             <p className="text-xs font-black uppercase tracking-[0.3em] opacity-50">TAX ID: {profile.taxId}</p>
+          {fields.showLogo && profile.logoUrl && <img src={profile.logoUrl} className="h-24 mb-4 object-contain" />}
+          <h1 className="text-4xl font-black uppercase tracking-tighter leading-none mb-2">{profile.companyName}</h1>
+          <div className="flex items-center gap-4">
+             <div className={`h-1.5 w-16 ${t.accent}`}></div>
+             <p className="text-sm font-black uppercase tracking-[0.3em] opacity-50">TAX ID: {profile.taxId}</p>
           </div>
         </div>
         <div className="text-right">
-          <p className="text-6xl font-black uppercase tracking-tighter opacity-10 absolute -top-2 right-0 select-none">INVOICE</p>
-          <div className="relative pt-4">
-            <p className="text-2xl font-black uppercase tracking-tighter italic">No: <span className={t.secondary}>#{invoice.invoiceNumber}</span></p>
-            <div className="mt-2 text-xs font-black space-y-1 uppercase opacity-50 tracking-[0.2em]">
-              <p>Issue Date <span className={`ml-4 ${t.text}`}>{invoice.date}</span></p>
-              <p>Due Date <span className="ml-4 text-red-600 underline">{invoice.dueDate}</span></p>
+          <p className="text-7xl font-black uppercase tracking-tighter opacity-10 absolute -top-4 right-0 select-none">INVOICE</p>
+          <div className="relative pt-6">
+            <p className="text-3xl font-black uppercase tracking-tighter italic">No: <span className={t.secondary}>#{invoice.invoiceNumber}</span></p>
+            <div className="mt-4 text-sm font-black space-y-2 uppercase opacity-60 tracking-[0.2em]">
+              <p>Issue Date <span className={`ml-6 ${t.text} font-black`}>{invoice.date}</span></p>
+              <p>Due Date <span className="ml-6 text-red-600 font-black underline decoration-2">{invoice.dueDate}</span></p>
             </div>
           </div>
         </div>
@@ -191,42 +191,42 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
 
   const Parties = () => {
     return (
-      <div className={`grid grid-cols-2 gap-8 mb-4 relative z-10 py-4 border-y w-full shrink-0 ${isDark ? 'border-white/10' : 'border-slate-100'} ${t.layout === 'split' ? 'items-start' : 'items-stretch'}`}>
-        <div className="space-y-3">
-          <div className="flex items-center gap-3">
-            <div className={`p-1.5 ${t.radius} text-white ${t.accent}`}><Anchor size={14}/></div>
-            <p className="text-[11px] font-black uppercase tracking-[0.3em] opacity-40">Service Provider</p>
+      <div className={`grid grid-cols-2 gap-10 mb-6 relative z-10 py-6 border-y-2 w-full shrink-0 ${isDark ? 'border-white/10' : 'border-slate-100'} ${t.layout === 'split' ? 'items-start' : 'items-stretch'}`}>
+        <div className="space-y-4">
+          <div className="flex items-center gap-4">
+            <div className={`p-2 ${t.radius} text-white ${t.accent}`}><Anchor size={18}/></div>
+            <p className="text-xs font-black uppercase tracking-[0.3em] opacity-40">Service Provider</p>
           </div>
-          <p className="text-sm font-bold leading-relaxed whitespace-pre-wrap pl-2 max-w-xs">{profile.address}</p>
+          <p className="text-base font-bold leading-relaxed whitespace-pre-wrap pl-3 max-w-sm">{profile.address}</p>
         </div>
         
-        <div className="text-right space-y-4">
-          <div className="flex items-center gap-3 justify-end">
-            <p className="text-[11px] font-black uppercase tracking-[0.3em] opacity-40">Client Details</p>
-            <div className={`p-1.5 ${t.radius} text-white ${t.accent}`}><Briefcase size={14}/></div>
+        <div className="text-right space-y-6">
+          <div className="flex items-center gap-4 justify-end">
+            <p className="text-xs font-black uppercase tracking-[0.3em] opacity-40">Client Details</p>
+            <div className={`p-2 ${t.radius} text-white ${t.accent}`}><Briefcase size={18}/></div>
           </div>
-          <div className="pr-2 space-y-3">
+          <div className="pr-3 space-y-4">
             <div>
-              <p className="text-2xl font-black uppercase mb-1 leading-none tracking-tighter">{invoice.customerName}</p>
-              <p className="text-xs font-medium uppercase leading-relaxed opacity-60 whitespace-pre-wrap">{invoice.customerAddress}</p>
+              <p className="text-3xl font-black uppercase mb-2 leading-none tracking-tighter">{invoice.customerName}</p>
+              <p className="text-sm font-medium uppercase leading-relaxed opacity-60 whitespace-pre-wrap">{invoice.customerAddress}</p>
             </div>
 
-            <div className="flex flex-col gap-1.5 mt-2 items-end">
+            <div className="flex flex-col gap-2.5 mt-4 items-end">
               {fields.showShipperAddress && firstBooking?.shipperAddress && (
-                <div className={`w-full max-w-[320px] p-2.5 border ${t.radius} ${isDark ? 'bg-white/5 border-white/10' : 'bg-slate-50/50 border-slate-200'} flex items-center justify-between text-right`}>
-                  <div className={`p-1.5 ${isDark ? 'bg-white/10' : 'bg-white'} rounded shadow-sm text-slate-400`}><Package size={12}/></div>
-                  <div className="flex-1 px-3 overflow-hidden">
-                    <span className="text-[8px] font-black text-slate-300 uppercase block tracking-widest mb-0.5">Shipper Info</span>
-                    <span className="text-xs font-bold text-slate-500 uppercase leading-tight truncate block">{firstBooking.shipperAddress}</span>
+                <div className={`w-full max-w-[360px] p-3 border-2 ${t.radius} ${isDark ? 'bg-white/5 border-white/10' : 'bg-slate-50/50 border-slate-200'} flex items-center justify-between text-right`}>
+                  <div className={`p-2 ${isDark ? 'bg-white/10' : 'bg-white'} rounded-lg shadow-sm text-slate-400`}><Package size={16}/></div>
+                  <div className="flex-1 px-4 overflow-hidden">
+                    <span className="text-[10px] font-black text-slate-300 uppercase block tracking-widest mb-0.5">Shipper Info</span>
+                    <span className="text-sm font-bold text-slate-500 uppercase leading-tight truncate block">{firstBooking.shipperAddress}</span>
                   </div>
                 </div>
               )}
               {fields.showTrucker && firstBooking?.trucker && (
-                <div className={`w-full max-w-[320px] p-2.5 border ${t.radius} ${isDark ? 'bg-white/5 border-white/10' : 'bg-slate-50/50 border-slate-200'} flex items-center justify-between text-right`}>
-                  <div className={`p-1.5 ${isDark ? 'bg-white/10' : 'bg-white'} rounded shadow-sm text-slate-400`}><Truck size={12}/></div>
-                  <div className="flex-1 px-3 overflow-hidden">
-                    <span className="text-[8px] font-black text-slate-300 uppercase block tracking-widest mb-0.5">Carrier Service</span>
-                    <span className="text-xs font-bold text-slate-500 uppercase leading-tight truncate block">{firstBooking.trucker}</span>
+                <div className={`w-full max-w-[360px] p-3 border-2 ${t.radius} ${isDark ? 'bg-white/5 border-white/10' : 'bg-slate-50/50 border-slate-200'} flex items-center justify-between text-right`}>
+                  <div className={`p-2 ${isDark ? 'bg-white/10' : 'bg-white'} rounded-lg shadow-sm text-slate-400`}><Truck size={16}/></div>
+                  <div className="flex-1 px-4 overflow-hidden">
+                    <span className="text-[10px] font-black text-slate-300 uppercase block tracking-widest mb-0.5">Carrier Service</span>
+                    <span className="text-sm font-bold text-slate-500 uppercase leading-tight truncate block">{firstBooking.trucker}</span>
                   </div>
                 </div>
               )}
@@ -238,39 +238,54 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
   };
 
   const Table = () => {
-    const tableHeaderClass = `py-4 px-3 text-xs font-black uppercase tracking-[0.2em] ${isDark ? 'text-emerald-500' : 'text-slate-400'}`;
-    const rowBorder = isDark ? 'border-white/5' : 'border-slate-100';
+    const tableHeaderClass = `py-5 px-4 text-sm font-black uppercase tracking-[0.2em] ${isDark ? 'text-emerald-500' : 'text-slate-400'}`;
+    const rowBorder = isDark ? 'border-white/10' : 'border-slate-100';
     
     return (
-      <div className="flex-1 w-full relative z-10 py-2 overflow-hidden">
-        <table className={`w-full text-left table-auto border-collapse ${t.tableStyle === 'grid' ? 'border' : ''} ${t.tableStyle === 'heavy' ? 'border-t-4 border-slate-950' : ''}`}>
+      <div className="flex-1 w-full relative z-10 py-4 overflow-hidden">
+        <table className={`w-full text-left table-auto border-collapse ${t.tableStyle === 'grid' ? 'border-2' : ''} ${t.tableStyle === 'heavy' ? 'border-t-8 border-slate-950' : ''}`}>
           <thead className={t.tableStyle === 'striped' ? 'bg-slate-50' : ''}>
-            <tr className={`border-b-2 ${isDark ? 'border-white/20' : 'border-slate-900'}`}>
-              <th className={`${tableHeaderClass} w-[65%] pl-4`}>Operations Details</th>
-              <th className={`${tableHeaderClass} w-[35%] text-right pr-4`}>Valuation</th>
+            <tr className={`border-b-4 ${isDark ? 'border-white/20' : 'border-slate-950'}`}>
+              <th className={`${tableHeaderClass} w-[70%] pl-6`}>Logistics & Operational Details</th>
+              <th className={`${tableHeaderClass} w-[30%] text-right pr-6`}>Valuation</th>
             </tr>
           </thead>
           <tbody className={`divide-y-2 ${rowBorder}`}>
             {groupedItems.map((group, idx) => (
-              <tr key={idx} className={t.tableStyle === 'striped' && idx % 2 === 0 ? 'bg-slate-50/50' : ''}>
-                <td className="py-5 pl-4 align-top">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className={`w-1.5 h-10 rounded-full ${t.accent}`}></div>
+              <tr key={idx} className={t.tableStyle === 'striped' && idx % 2 === 0 ? 'bg-slate-50/20' : ''}>
+                <td className="py-6 pl-6 align-top">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className={`w-2 h-12 rounded-full ${t.accent}`}></div>
                     <div>
-                      <p className={`font-black text-xl uppercase tracking-tighter mb-0.5 ${isDark ? 'text-white' : 'text-slate-900'}`}>{group[0].bookingNo}</p>
+                      <div className="flex items-baseline gap-4">
+                        <p className={`font-black text-3xl uppercase tracking-tighter leading-none ${isDark ? 'text-white' : 'text-slate-900'}`}>{group[0].bookingNo}</p>
+                        
+                        {/* Port and Clip info */}
+                        <div className="flex items-center gap-4 py-1.5 px-4 bg-slate-50 border border-slate-100 rounded-xl shadow-sm">
+                          <div className="flex items-center gap-2 text-xs font-black text-slate-600">
+                             <span className="text-[9px] opacity-40">FROM</span> <span className="tracking-tight">{group[0].goPort}</span>
+                             <ArrowRight size={14} className="text-emerald-500 mx-1" />
+                             <span className="text-[9px] opacity-40">TO</span> <span className="tracking-tight">{group[0].giPort}</span>
+                          </div>
+                          <div className="w-px h-4 bg-slate-200"></div>
+                          <div className="flex items-center gap-2 text-xs font-black text-blue-700">
+                             <Clock size={12}/> <span className="bg-blue-100/50 px-2 py-0.5 rounded uppercase">{group[0].dateOfClipOn || 'N/A'}</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-2 ml-4">
+                  <div className="flex flex-wrap gap-3 ml-6 mt-2">
                     {group.map(u => (
-                      <div key={u.id} className={`flex items-center gap-2 text-[10px] font-black border-2 px-3 py-1.5 ${t.radius} shadow-sm ${isDark ? 'bg-white/5 border-white/10 text-white' : 'bg-white border-slate-100 text-slate-700'}`}>
-                        <Square size={10} className={isDark ? 'text-emerald-400' : 'text-emerald-500'} />
-                        <span className="font-mono-jb uppercase tracking-wider">{u.reeferNumber}</span>
+                      <div key={u.id} className={`flex items-center gap-2 text-xs font-black border-2 px-4 py-2 ${t.radius} shadow-md ${isDark ? 'bg-white/5 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-800'}`}>
+                        <Square size={12} className={isDark ? 'text-emerald-400' : 'text-emerald-600'} />
+                        <span className="font-mono-jb uppercase tracking-widest">{u.reeferNumber}</span>
                       </div>
                     ))}
                   </div>
                 </td>
-                <td className="py-5 pr-4 text-right align-top">
-                  <p className={`text-2xl font-black tracking-tighter leading-none ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                <td className="py-6 pr-6 text-right align-top">
+                  <p className={`text-3xl font-black tracking-tighter leading-none mt-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     {formatCurrency(group.reduce((a,c)=>a+c.rateValue,0), invoice.currency)}
                   </p>
                 </td>
@@ -286,62 +301,62 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
     const subLabelColor = isDark ? 'text-slate-500' : 'text-slate-400';
     
     return (
-      <div className={`mt-auto space-y-6 pt-6 border-t-2 w-full relative z-10 shrink-0 ${isDark ? 'border-white/10' : 'border-slate-100'}`}>
-        <div className="grid grid-cols-12 gap-8">
-          <div className="col-span-6 flex flex-col gap-6">
-            <div className={`p-5 ${t.radius} border w-full ${isDark ? 'border-white/10 bg-white/5 text-slate-300' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>
-              <p className={`text-xs font-black uppercase mb-3 flex items-center gap-2 ${isDark ? 'text-emerald-400' : 'text-slate-900'}`}>
-                <Scale size={14} className={isDark ? 'text-emerald-400' : 'text-emerald-600'} /> Terms & Compliance
+      <div className={`mt-auto space-y-8 pt-8 border-t-4 w-full relative z-10 shrink-0 ${isDark ? 'border-white/10' : 'border-slate-100'}`}>
+        <div className="grid grid-cols-12 gap-10">
+          <div className="col-span-6 flex flex-col gap-8">
+            <div className={`p-6 ${t.radius} border-2 w-full ${isDark ? 'border-white/10 bg-white/5 text-slate-300' : 'border-slate-200 bg-slate-50 text-slate-600 shadow-sm'}`}>
+              <p className={`text-sm font-black uppercase mb-4 flex items-center gap-3 ${isDark ? 'text-emerald-400' : 'text-slate-900'}`}>
+                <Scale size={18} className={isDark ? 'text-emerald-400' : 'text-emerald-600'} /> Terms & Compliance
               </p>
-              <div className={`grid grid-cols-1 gap-2 text-xs leading-tight`}>
-                <div className="flex gap-2 items-start"><Clock size={12} className="shrink-0 mt-0.5 opacity-50" /><p><span className="font-black text-slate-900 uppercase mr-1">Settlement:</span> Due <span className="font-black text-red-600">{invoice.dueDate}</span>.</p></div>
-                <div className="flex gap-2 items-start"><ShieldAlert size={12} className="shrink-0 mt-0.5 opacity-50" /><p>Standard carrier liability applies.</p></div>
+              <div className={`grid grid-cols-1 gap-3 text-sm leading-tight font-medium`}>
+                <div className="flex gap-3 items-start"><Clock size={16} className="shrink-0 mt-0.5 opacity-50" /><p><span className="font-black text-slate-900 uppercase mr-1">Settlement:</span> Due <span className="font-black text-red-600 underline decoration-2">{invoice.dueDate}</span>.</p></div>
+                <div className="flex gap-3 items-start"><ShieldAlert size={16} className="shrink-0 mt-0.5 opacity-50" /><p>Standard carrier liability and reefer conditions apply.</p></div>
               </div>
             </div>
             
-            <div className={`p-5 ${t.radius} border flex items-center gap-4 w-full ${isDark ? 'bg-white/5 border-white/10' : 'bg-white border-slate-100'}`}>
-              <div className={`p-2.5 rounded-xl ${t.accent} text-white`}><Landmark size={20} /></div>
+            <div className={`p-6 ${t.radius} border-2 flex items-center gap-6 w-full ${isDark ? 'bg-white/5 border-white/10' : 'bg-white border-slate-100 shadow-sm'}`}>
+              <div className={`p-3.5 rounded-2xl ${t.accent} text-white shadow-lg`}><Landmark size={28} /></div>
               <div className="flex-1">
-                <p className={`text-[10px] font-black uppercase tracking-[0.2em] mb-0.5 ${subLabelColor}`}>Bank Remittance</p>
-                <p className={`text-base font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{profile.companyName}</p>
+                <p className={`text-xs font-black uppercase tracking-[0.2em] mb-1 ${subLabelColor}`}>Bank Remittance Details</p>
+                <p className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{profile.companyName}</p>
               </div>
             </div>
           </div>
           
-          <div className="col-span-6 flex flex-col justify-end gap-6">
-            <div className={`p-6 ${t.radius} space-y-3 border-b-8 w-full bg-transparent ${isDark ? 'border-emerald-500/30' : 'border-slate-200 border-b-emerald-600 shadow-lg'}`}>
-              <div className={`flex justify-between items-center text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'opacity-40 text-white' : 'text-slate-400'}`}>
+          <div className="col-span-6 flex flex-col justify-end gap-10">
+            <div className={`p-8 ${t.radius} space-y-4 border-b-8 w-full bg-transparent ${isDark ? 'border-emerald-500/30' : 'border-slate-200 border-b-emerald-600 shadow-xl'}`}>
+              <div className={`flex justify-between items-center text-xs font-black uppercase tracking-[0.2em] ${isDark ? 'opacity-40 text-white' : 'text-slate-400'}`}>
                 <span>Net Subtotal</span>
-                <span className={isDark ? 'text-white font-bold' : 'text-slate-900 font-bold'}>{formatCurrency(invoice.subtotal, invoice.currency)}</span>
+                <span className={isDark ? 'text-white font-black' : 'text-slate-900 font-black'}>{formatCurrency(invoice.subtotal, invoice.currency)}</span>
               </div>
               {fields.showVat && (
-                <div className={`flex justify-between items-center text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'opacity-40 text-white' : 'text-slate-400'}`}>
-                  <span>VAT (14%)</span>
-                  <span className={isDark ? 'text-white font-bold' : 'text-slate-900 font-bold'}>{formatCurrency(invoice.tax, invoice.currency)}</span>
+                <div className={`flex justify-between items-center text-xs font-black uppercase tracking-[0.2em] ${isDark ? 'opacity-40 text-white' : 'text-slate-400'}`}>
+                  <span>VAT (14.00%)</span>
+                  <span className={isDark ? 'text-white font-black' : 'text-slate-900 font-black'}>{formatCurrency(invoice.tax, invoice.currency)}</span>
                 </div>
               )}
-              <div className={`pt-3 border-t-2 flex flex-col items-end gap-1 ${isDark ? 'border-white/10' : 'border-slate-950'}`}>
-                <span className={`text-[10px] font-black uppercase tracking-[0.4em] ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>BALANCE DUE</span>
-                <span className={`text-4xl font-black tracking-tighter leading-none ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              <div className={`pt-4 border-t-4 flex flex-col items-end gap-1.5 ${isDark ? 'border-white/20' : 'border-slate-950'}`}>
+                <span className={`text-xs font-black uppercase tracking-[0.5em] ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>BALANCE DUE</span>
+                <span className={`text-5xl font-black tracking-tighter leading-none ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     {formatCurrency(invoice.total, invoice.currency)}
                 </span>
               </div>
             </div>
             
-            <div className={`mt-4 pt-6 border-t-4 ${isDark ? 'border-white/30' : 'border-slate-900'} w-full relative`}>
-               <div className="flex items-end justify-between gap-4">
-                 <div className="relative flex-1">
+            <div className={`mt-6 pt-10 border-t-8 ${isDark ? 'border-white/30' : 'border-slate-900'} w-full relative`}>
+               <div className="flex items-end justify-between gap-10">
+                 <div className="relative flex-1 flex justify-center items-end min-h-[160px]">
                     {profile.signatureUrl && (
                       <img 
                         src={profile.signatureUrl} 
-                        className={`h-40 w-auto max-w-full object-contain mb-[-12px] ${!isDark ? 'mix-blend-multiply' : 'brightness-200'}`} 
+                        className={`h-56 w-auto max-w-full object-contain mb-[-24px] z-10 ${!isDark ? 'mix-blend-multiply' : 'brightness-200'}`} 
                         alt="signature" 
                       />
                     )}
                  </div>
-                 <div className="text-right pb-1 flex-1">
-                   <p className={`text-3xl font-black uppercase leading-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>{profile.name}</p>
-                   <p className="text-[11px] font-black uppercase tracking-[0.3em] opacity-40 mt-1">Authorized Official Signature</p>
+                 <div className="text-right pb-4 flex-1">
+                   <p className={`text-4xl font-black uppercase leading-none tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`}>{profile.name}</p>
+                   <p className="text-sm font-black uppercase tracking-[0.4em] opacity-40 mt-4 leading-relaxed">Authorized Operations Manager<br/>Official Signature</p>
                  </div>
                </div>
             </div>
@@ -352,7 +367,7 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
   };
 
   return (
-    <div className={`invoice-container shadow-2xl relative print:p-0 p-[15mm] ${t.bg} ${t.font} ${t.text} ${isActivePrint ? 'active-print' : ''}`}>
+    <div className={`invoice-container shadow-2xl relative print:p-0 p-[20mm] ${t.bg} ${t.font} ${t.text} ${isActivePrint ? 'active-print' : ''}`}>
       <WatermarkLayer />
       <Header />
       <Parties />
