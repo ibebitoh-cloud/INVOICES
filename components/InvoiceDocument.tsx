@@ -4,7 +4,7 @@ import { formatCurrency } from '../utils/formatters';
 import { 
   ShieldCheck, Briefcase, Award, Boxes, Anchor, Landmark, Scale, Clock, Banknote, ShieldAlert,
   Truck, MapPin, Package, Grid, Layout, List, Layers, CornerDownRight, Minus, Square, ArrowRight,
-  Info, Shield, Heart, Zap, Sparkles
+  Info, Shield, Heart, Zap, Sparkles, Users, Smartphone, FileText
 } from 'lucide-react';
 
 interface InvoiceDocumentProps {
@@ -145,9 +145,10 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
     if (t.headerStyle === 'centered') {
       return (
         <div className="flex flex-col items-center text-center mb-4 relative z-10 w-full shrink-0">
-          {fields.showLogo && profile.logoUrl && <img src={profile.logoUrl} className="h-24 mb-4 object-contain" />}
-          <h1 className="text-5xl font-black uppercase tracking-tighter mb-1">{profile.companyName}</h1>
-          <p className="text-sm font-black uppercase tracking-[0.4em] opacity-40">Tax ID: {profile.taxId}</p>
+          {fields.showLogo && profile.logoUrl && <img src={profile.logoUrl} className="h-20 mb-3 object-contain" />}
+          <h1 className="text-4xl font-black uppercase tracking-tighter leading-none">{profile.companyName}</h1>
+          <p className="text-[11px] font-black uppercase tracking-[0.2em] opacity-60 mt-1">Sherif Hegazy</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-40 mt-2">Tax ID: {profile.taxId}</p>
           <div className="flex gap-6 mt-6 border-y-2 py-4 w-full border-slate-100">
             <div className="flex-1 text-center">
               <span className="text-xs font-black text-slate-400 uppercase block mb-1">Invoice Number</span>
@@ -169,11 +170,14 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
     return (
       <div className="flex justify-between items-start mb-6 relative z-10 w-full shrink-0">
         <div className="flex-1">
-          {fields.showLogo && profile.logoUrl && <img src={profile.logoUrl} className="h-24 mb-4 object-contain" />}
-          <h1 className="text-4xl font-black uppercase tracking-tighter leading-none mb-2">{profile.companyName}</h1>
-          <div className="flex items-center gap-4">
-             <div className={`h-1.5 w-16 ${t.accent}`}></div>
-             <p className="text-sm font-black uppercase tracking-[0.3em] opacity-50">TAX ID: {profile.taxId}</p>
+          {fields.showLogo && profile.logoUrl && <img src={profile.logoUrl} className="h-20 mb-3 object-contain" />}
+          <div className="space-y-1">
+            <h1 className="text-3xl font-black uppercase tracking-tighter leading-none">{profile.companyName}</h1>
+            <p className="text-[11px] font-black uppercase tracking-[0.2em] opacity-60">Sherif Hegazy</p>
+          </div>
+          <div className="flex items-center gap-4 mt-3">
+             <div className={`h-1.5 w-12 ${t.accent}`}></div>
+             <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-50">TAX ID: {profile.taxId}</p>
           </div>
         </div>
         <div className="text-right">
@@ -300,98 +304,81 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
   };
 
   const Footer = () => {
-    const subLabelColor = isDark ? 'text-slate-500' : 'text-slate-400';
-    
     return (
-      <div className={`mt-auto space-y-8 pt-8 border-t-4 w-full relative z-10 shrink-0 ${isDark ? 'border-white/10' : 'border-slate-100'}`}>
+      <div className={`mt-auto space-y-6 pt-6 border-t-2 w-full relative z-10 shrink-0 ${isDark ? 'border-white/10' : 'border-slate-100'}`}>
         <div className="grid grid-cols-12 gap-10">
-          <div className="col-span-6 flex flex-col gap-6">
-            {/* Friendly Contextual Terms */}
-            <div className={`relative p-6 border-l-4 ${t.accent.replace('bg-', 'border-')} ${isDark ? 'bg-white/5' : 'bg-slate-50'} rounded-r-2xl shadow-sm`}>
-              <div className="flex items-center gap-3 mb-4">
-                <Heart size={16} className={isDark ? 'text-emerald-400' : 'text-rose-500'} />
-                <h4 className={`text-xs font-black uppercase tracking-[0.2em] ${isDark ? 'text-emerald-400' : 'text-slate-900'}`}>A Note from Nile Fleet</h4>
+          <div className="col-span-6 flex flex-col gap-4">
+            {/* Nile Fleet Note */}
+            <div className={`relative p-5 border-l-4 ${t.accent.replace('bg-', 'border-')} ${isDark ? 'bg-white/5' : 'bg-slate-50'} rounded-r-2xl shadow-sm`}>
+              <div className="flex items-center gap-3 mb-2">
+                <Heart size={14} className={isDark ? 'text-emerald-400' : 'text-rose-500'} />
+                <h4 className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-emerald-400' : 'text-slate-900'}`}>A Note from Nile Fleet</h4>
               </div>
-              <p className={`text-[11px] leading-relaxed font-bold mb-4 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                Thank you for choosing Nile Fleet Company for your Genset rental needs. We appreciate your partnership!
+              <p className={`text-[10px] leading-relaxed font-bold mb-2 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                Thank you for choosing Nile Fleet Company for your Genset rental needs.
               </p>
-              <ul className={`space-y-4 text-[10px] leading-relaxed font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                <li className="flex gap-3 items-start">
-                  <div className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${t.accent}`}></div>
-                  <p>Please ensure payment is settled by <span className="font-black text-slate-900 underline decoration-2">{invoice.dueDate}</span> to keep your account in good standing.</p>
-                </li>
-                <li className="flex gap-3 items-start">
-                  <div className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 bg-amber-400`}></div>
-                  <p>To ensure administrative accuracy, any adjustments or edit requests must be submitted within <span className="font-black text-slate-900 italic">7 days of receipt</span>. After this period, the invoice is considered final.</p>
+              <ul className={`space-y-2 text-[9px] leading-relaxed font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                <li className="flex gap-2 items-start">
+                  <div className={`w-1 h-1 rounded-full mt-1 shrink-0 ${t.accent}`}></div>
+                  <p>Settlement required by <span className="font-black text-slate-900 underline">{invoice.dueDate}</span>.</p>
                 </li>
               </ul>
             </div>
-            
-            <div className={`p-6 ${t.radius} border-2 flex items-center gap-6 w-full ${isDark ? 'bg-white/5 border-white/10' : 'bg-white border-slate-100 shadow-sm'}`}>
-              <div className={`p-3.5 rounded-2xl ${t.accent} text-white shadow-lg`}><Landmark size={28} /></div>
-              <div className="flex-1">
-                <p className={`text-xs font-black uppercase tracking-[0.2em] mb-1 ${subLabelColor}`}>Remittance Instructions</p>
-                <p className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{profile.companyName}</p>
+
+            {/* Studio Notes - The dynamic notes field */}
+            {fields.showNotes && invoice.notes && (
+              <div className={`p-5 border-2 ${t.radius} ${isDark ? 'bg-white/5 border-white/10' : 'bg-amber-50/30 border-amber-100'}`}>
+                <div className="flex items-center gap-2 mb-2 opacity-60">
+                  <FileText size={14} />
+                  <span className="text-[10px] font-black uppercase tracking-widest">Operational Remarks</span>
+                </div>
+                <p className="text-[10px] font-bold leading-relaxed whitespace-pre-wrap">{invoice.notes}</p>
               </div>
-            </div>
+            )}
           </div>
           
-          <div className="col-span-6 flex flex-col justify-end gap-10">
-            <div className={`p-8 ${t.radius} space-y-4 border-b-8 w-full bg-transparent ${isDark ? 'border-emerald-500/30' : 'border-slate-200 border-b-emerald-600 shadow-xl'}`}>
-              <div className={`flex justify-between items-center text-xs font-black uppercase tracking-[0.2em] ${isDark ? 'opacity-40 text-white' : 'text-slate-400'}`}>
-                <span>Net Subtotal</span>
-                <span className={isDark ? 'text-white font-black' : 'text-slate-900 font-black'}>{formatCurrency(invoice.subtotal, invoice.currency)}</span>
-              </div>
-              {fields.showVat && (
-                <div className={`flex justify-between items-center text-xs font-black uppercase tracking-[0.2em] ${isDark ? 'opacity-40 text-white' : 'text-slate-400'}`}>
-                  <span>VAT (14.00%)</span>
-                  <span className={isDark ? 'text-white font-black' : 'text-slate-900 font-black'}>{formatCurrency(invoice.tax, invoice.currency)}</span>
+          <div className="col-span-6 flex flex-col justify-end">
+            <div className={`p-4 border-t-4 flex flex-col items-end gap-1 ${isDark ? 'border-white/20' : 'border-slate-950'}`}>
+              <span className={`text-[10px] font-black uppercase tracking-[0.3em] ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>TOTAL DUE</span>
+              <span className={`text-4xl font-black tracking-tighter leading-none ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                  {formatCurrency(invoice.total, invoice.currency)}
+              </span>
+            </div>
+
+            {/* Signature Section - Improved visibility */}
+            {fields.showSignature && (
+              <div className="mt-8 pt-4 border-t border-slate-100 flex flex-col items-end">
+                <div className="h-24 w-full flex justify-end items-end relative overflow-visible">
+                  {profile.signatureUrl && (
+                    <img 
+                      src={profile.signatureUrl} 
+                      className={`h-32 w-auto max-w-[200px] object-contain mb-[-12px] z-20 pointer-events-none ${!isDark ? 'mix-blend-darken' : 'brightness-125'}`} 
+                      alt="Manager Signature" 
+                    />
+                  )}
                 </div>
-              )}
-              <div className={`pt-4 border-t-4 flex flex-col items-end gap-1.5 ${isDark ? 'border-white/20' : 'border-slate-950'}`}>
-                <span className={`text-xs font-black uppercase tracking-[0.5em] ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>BALANCE DUE</span>
-                <span className={`text-5xl font-black tracking-tighter leading-none ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                    {formatCurrency(invoice.total, invoice.currency)}
-                </span>
+                <div className="text-right mt-2">
+                  <p className={`text-lg font-black uppercase tracking-tighter leading-none ${isDark ? 'text-white' : 'text-slate-900'}`}>{profile.name}</p>
+                  <p className="text-[8px] font-black uppercase tracking-[0.3em] opacity-40 mt-1">Authorized Operations Manager</p>
+                </div>
               </div>
-            </div>
-            
-            <div className={`mt-6 pt-10 border-t-8 ${isDark ? 'border-white/30' : 'border-slate-900'} w-full relative`}>
-               <div className="flex items-end justify-between gap-10">
-                 <div className="relative flex-1 flex justify-center items-end min-h-[160px]">
-                    {profile.signatureUrl && (
-                      <img 
-                        src={profile.signatureUrl} 
-                        className={`h-56 w-auto max-w-full object-contain mb-[-24px] z-10 ${!isDark ? 'mix-blend-multiply' : 'brightness-200'}`} 
-                        alt="signature" 
-                      />
-                    )}
-                 </div>
-                 <div className="text-right pb-4 flex-1">
-                   <p className={`text-4xl font-black uppercase leading-none tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`}>{profile.name}</p>
-                   <p className="text-sm font-black uppercase tracking-[0.4em] opacity-40 mt-4 leading-relaxed">Authorized Operations Manager<br/>Official Signature</p>
-                 </div>
-               </div>
-            </div>
+            )}
           </div>
         </div>
-        {/* App Signature */}
-        <div className="pt-8 flex justify-center w-full no-print">
-          <p className="text-[10px] font-black uppercase tracking-[0.6em] text-slate-300 italic flex items-center gap-3">
-            Powered by <span className="text-slate-400 flex items-center gap-1.5"><Sparkles size={12}/> Bebito APPS</span>
+
+        {/* Brand Signature - Smaller as requested */}
+        <div className="pt-4 mt-4 flex flex-col items-center justify-center w-full border-t border-slate-50">
+          <p className="text-[7px] font-black uppercase tracking-[0.4em] text-slate-300 italic select-none">
+            Powered by <span className="text-slate-400">Bebito</span>
           </p>
-        </div>
-        <div className="hidden print:flex pt-4 justify-center w-full opacity-30">
-          <p className="text-[8px] font-black uppercase tracking-[0.6em] text-slate-400 italic">
-            Powered by Bebito APPS
-          </p>
+          <p className="text-[6px] font-bold tracking-[0.2em] text-slate-300 mt-0.5">+201146475759</p>
         </div>
       </div>
     );
   };
 
   return (
-    <div className={`invoice-container shadow-2xl relative print:p-0 p-[20mm] ${t.bg} ${t.font} ${t.text} ${isActivePrint ? 'active-print' : ''}`}>
+    <div className={`invoice-container shadow-2xl relative print:p-0 p-[15mm] ${t.bg} ${t.font} ${t.text} ${isActivePrint ? 'active-print' : ''}`}>
       <WatermarkLayer />
       <Header />
       <Parties />
