@@ -10,10 +10,10 @@ import {
   FileDown, Zap, Grid3X3, Square, BookOpen, Cloud, Leaf, Sun, Contrast,
   Waves, Heart, Gem, Map as MapPinIcon, StickyNote, Type, Rainbow, ScrollText, Newspaper, List,
   Users, Hash, Plus, ArrowRight, PenTool, Check, Eye, EyeOff, GripVertical,
-  Info
+  Info, Filter, Truck, MapPin, Package, RotateCcw, FileSpreadsheet
 } from 'lucide-react';
 import { Booking, Invoice, InvoiceSectionId, TemplateConfig, UserProfile, TemplateFields, GroupingType, InvoiceTheme, CustomerConfig } from './types';
-import { parseCurrency, formatCurrency } from './utils/formatters';
+import { parseCurrency, formatCurrency, exportToCSV } from './utils/formatters';
 import InvoiceDocument from './components/InvoiceDocument';
 
 const DEFAULT_COMPANY_LOGO = "https://images.unsplash.com/photo-1586611292717-f828b167408c?auto=format&fit=crop&q=80&w=200&h=200";
@@ -29,6 +29,11 @@ const App: React.FC = () => {
   });
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState('');
+  
+  const [filterCustomer, setFilterCustomer] = useState<string>('');
+  const [filterTrucker, setFilterTrucker] = useState<string>('');
+  const [filterShipper, setFilterShipper] = useState<string>('');
+
   const [view, setView] = useState<'dashboard' | 'operations' | 'invoice-preview' | 'profile' | 'edit-invoice' | 'settings' | 'batch-review' | 'customers'>('dashboard');
   
   const [activeInvoice, setActiveInvoice] = useState<Invoice | null>(null);
@@ -89,6 +94,14 @@ const App: React.FC = () => {
     const toSave = { ...templateConfig, hiddenSections: Array.from(templateConfig.hiddenSections) };
     localStorage.setItem('template_config', JSON.stringify(toSave));
   }, [templateConfig]);
+
+  const uniqueValues = useMemo(() => {
+    return {
+      customers: Array.from(new Set(bookings.map(b => b.customer))).filter(Boolean).sort(),
+      truckers: Array.from(new Set(bookings.map(b => b.trucker))).filter(v => v && v !== '---').sort(),
+      shippers: Array.from(new Set(bookings.map(b => b.shipperAddress))).filter(v => v && v !== '---').sort(),
+    };
+  }, [bookings]);
 
   const handleToggleBookingGroup = (booking: Booking) => {
     const targetNo = booking.bookingNo;
@@ -193,7 +206,6 @@ const App: React.FC = () => {
         };
       });
 
-      // Auto-collect unique customers not already in the config
       const existingNames = new Set(customerConfigs.map(c => c.name.toLowerCase()));
       const newConfigs: CustomerConfig[] = [];
       newlyFoundCustomers.forEach(name => {
@@ -311,11 +323,20 @@ const App: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
-  const filteredBookings = useMemo(() => bookings.filter(b => 
-    b.bookingNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    b.reeferNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    b.customer?.toLowerCase().includes(searchTerm.toLowerCase())
-  ), [bookings, searchTerm]);
+  const filteredBookings = useMemo(() => {
+    return bookings.filter(b => {
+      const matchesSearch = 
+        b.bookingNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        b.reeferNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        b.customer?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesCustomer = !filterCustomer || b.customer === filterCustomer;
+      const matchesTrucker = !filterTrucker || b.trucker === filterTrucker;
+      const matchesShipper = !filterShipper || b.shipperAddress === filterShipper;
+      
+      return matchesSearch && matchesCustomer && matchesTrucker && matchesShipper;
+    });
+  }, [bookings, searchTerm, filterCustomer, filterTrucker, filterShipper]);
 
   const bookingCounts = useMemo(() => {
     const c: Record<string, number> = {};
@@ -347,6 +368,34 @@ const App: React.FC = () => {
       const start = parseInt(prompt("Enter starting number:", "1") || "1");
       setCustomerConfigs([...customerConfigs, { id: Date.now().toString(), name, prefix, nextNumber: isNaN(start) ? 1 : start }]);
     }
+  };
+
+  const resetFilters = () => {
+    setSearchTerm('');
+    setFilterCustomer('');
+    setFilterTrucker('');
+    setFilterShipper('');
+  };
+
+  // NEW: Download/Print helpers
+  const handleDownloadPDF = (inv: Invoice) => {
+    const oldTitle = document.title;
+    document.title = inv.invoiceNumber;
+    window.print();
+    document.title = oldTitle;
+  };
+
+  const handleDownloadCSV = (inv: Invoice) => {
+    exportToCSV(inv.items, `${inv.invoiceNumber}`);
+  };
+
+  const handleBatchDownloadCSV = () => {
+    batchInvoices.forEach((inv, idx) => {
+      // Small timeout to prevent browser blocking multiple rapid downloads
+      setTimeout(() => {
+        handleDownloadCSV(inv);
+      }, idx * 300);
+    });
   };
 
   return (
@@ -396,14 +445,45 @@ const App: React.FC = () => {
                 </div>
               </header>
 
-              <div className="bg-white rounded-[2.5rem] shadow-xl border border-slate-100 p-6 flex flex-col md:flex-row items-center gap-4">
-                <div className="flex-1 relative w-full">
-                  <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
-                  <input type="text" placeholder="Search manifest..." className="w-full pl-14 pr-6 py-5 bg-slate-50 border-2 border-transparent focus:border-emerald-600 rounded-[1.5rem] font-bold outline-none" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              <div className="bg-white rounded-[2.5rem] shadow-xl border border-slate-100 p-8 space-y-6">
+                <div className="flex flex-col md:flex-row items-center gap-4">
+                  <div className="flex-1 relative w-full">
+                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
+                    <input type="text" placeholder="Quick search reefer or booking..." className="w-full pl-14 pr-6 py-5 bg-slate-50 border-2 border-transparent focus:border-emerald-600 rounded-[1.5rem] font-bold outline-none" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                  </div>
+                  <div className="flex gap-2 w-full md:w-auto">
+                    <button disabled={selectedIds.size === 0} onClick={() => processInvoices('grouped')} className="flex-1 bg-slate-900 text-white px-8 py-5 rounded-[1.5rem] font-black disabled:opacity-30 transition-all uppercase text-[10px] tracking-widest shadow-lg flex items-center justify-center gap-2 whitespace-nowrap"><Layers size={18}/> Consolidate ({selectedIds.size})</button>
+                    <button disabled={selectedIds.size === 0} onClick={() => processInvoices('individual')} className="flex-1 bg-emerald-600 text-white px-8 py-5 rounded-[1.5rem] font-black disabled:opacity-30 transition-all uppercase text-[10px] tracking-widest shadow-lg flex items-center justify-center gap-2 whitespace-nowrap"><FileStack size={18}/> Individual Batch</button>
+                  </div>
                 </div>
-                <div className="flex gap-2 w-full md:w-auto">
-                  <button disabled={selectedIds.size === 0} onClick={() => processInvoices('grouped')} className="flex-1 bg-slate-900 text-white px-8 py-5 rounded-[1.5rem] font-black disabled:opacity-30 transition-all uppercase text-[10px] tracking-widest shadow-lg flex items-center justify-center gap-2 whitespace-nowrap"><Layers size={18}/> Consolidate ({selectedIds.size})</button>
-                  <button disabled={selectedIds.size === 0} onClick={() => processInvoices('individual')} className="flex-1 bg-emerald-600 text-white px-8 py-5 rounded-[1.5rem] font-black disabled:opacity-30 transition-all uppercase text-[10px] tracking-widest shadow-lg flex items-center justify-center gap-2 whitespace-nowrap"><FileStack size={18}/> Individual Batch</button>
+
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4 border-t border-slate-50">
+                   <div className="space-y-2">
+                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><Users size={12}/> Client</label>
+                     <select value={filterCustomer} onChange={(e) => setFilterCustomer(e.target.value)} className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none text-sm appearance-none">
+                       <option value="">All Clients</option>
+                       {uniqueValues.customers.map(c => <option key={c} value={c}>{c}</option>)}
+                     </select>
+                   </div>
+                   <div className="space-y-2">
+                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><Truck size={12}/> Trucker</label>
+                     <select value={filterTrucker} onChange={(e) => setFilterTrucker(e.target.value)} className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none text-sm appearance-none">
+                       <option value="">All Truckers</option>
+                       {uniqueValues.truckers.map(t => <option key={t} value={t}>{t}</option>)}
+                     </select>
+                   </div>
+                   <div className="space-y-2">
+                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><MapPin size={12}/> Shipper</label>
+                     <select value={filterShipper} onChange={(e) => setFilterShipper(e.target.value)} className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none text-sm appearance-none">
+                       <option value="">All Shippers</option>
+                       {uniqueValues.shippers.map(s => <option key={s} value={s}>{s}</option>)}
+                     </select>
+                   </div>
+                   <div className="flex items-end">
+                     <button onClick={resetFilters} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 p-4 rounded-xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 transition-all">
+                       <RotateCcw size={14}/> Reset Filters
+                     </button>
+                   </div>
                 </div>
               </div>
               
@@ -420,16 +500,20 @@ const App: React.FC = () => {
                       <tr><th className="py-6 px-8 w-16 text-center">#</th><th className="py-6 px-4">Client</th><th className="py-6 px-4">Booking</th><th className="py-6 px-4">Container</th><th className="py-6 px-4">Rate</th><th className="py-6 px-4 text-center">Status</th></tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
-                      {filteredBookings.map(b => (
-                        <tr key={b.id} className={`hover:bg-slate-50 cursor-pointer ${selectedIds.has(b.id) ? 'bg-emerald-50' : ''}`} onClick={() => handleToggleBookingGroup(b)}>
-                          <td className="py-6 px-8 text-center" onClick={(e) => e.stopPropagation()}><input type="checkbox" className="w-5 h-5 rounded cursor-pointer accent-emerald-600" checked={selectedIds.has(b.id)} onChange={() => handleToggleBookingGroup(b)} /></td>
-                          <td className="py-6 px-4 font-bold text-slate-900">{b.customer}</td>
-                          <td className="py-6 px-4 font-mono font-black flex items-center gap-2">{b.bookingNo}{bookingCounts[b.bookingNo] > 1 && <span className="bg-amber-100 text-amber-700 text-[9px] px-2 py-0.5 rounded-full font-black uppercase"><Layers size={10} className="inline mr-1"/>Group</span>}</td>
-                          <td className="py-6 px-4 font-mono font-bold text-emerald-600">{b.reeferNumber}</td>
-                          <td className="py-6 px-4 font-black text-slate-900">{formatCurrency(b.rateValue, invConfig.currency)}</td>
-                          <td className="py-6 px-4 text-center">{b.invNo ? <span className="text-[10px] px-3 py-1 rounded-full font-black uppercase bg-emerald-100 text-emerald-700">BILLED</span> : <span className="text-[10px] px-3 py-1 rounded-full font-black uppercase bg-slate-100 text-slate-400">PENDING</span>}</td>
-                        </tr>
-                      ))}
+                      {filteredBookings.length === 0 ? (
+                        <tr><td colSpan={6} className="py-20 text-center text-slate-300 font-black uppercase tracking-widest">No entries match filters</td></tr>
+                      ) : (
+                        filteredBookings.map(b => (
+                          <tr key={b.id} className={`hover:bg-slate-50 cursor-pointer ${selectedIds.has(b.id) ? 'bg-emerald-50' : ''}`} onClick={() => handleToggleBookingGroup(b)}>
+                            <td className="py-6 px-8 text-center" onClick={(e) => e.stopPropagation()}><input type="checkbox" className="w-5 h-5 rounded cursor-pointer accent-emerald-600" checked={selectedIds.has(b.id)} onChange={() => handleToggleBookingGroup(b)} /></td>
+                            <td className="py-6 px-4 font-bold text-slate-900">{b.customer}</td>
+                            <td className="py-6 px-4 font-mono font-black flex items-center gap-2">{b.bookingNo}{bookingCounts[b.bookingNo] > 1 && <span className="bg-amber-100 text-amber-700 text-[9px] px-2 py-0.5 rounded-full font-black uppercase"><Layers size={10} className="inline mr-1"/>Group</span>}</td>
+                            <td className="py-6 px-4 font-mono font-bold text-emerald-600">{b.reeferNumber}</td>
+                            <td className="py-6 px-4 font-black text-slate-900">{formatCurrency(b.rateValue, invConfig.currency)}</td>
+                            <td className="py-6 px-4 text-center">{b.invNo ? <span className="text-[10px] px-3 py-1 rounded-full font-black uppercase bg-emerald-100 text-emerald-700">BILLED</span> : <span className="text-[10px] px-3 py-1 rounded-full font-black uppercase bg-slate-100 text-slate-400">PENDING</span>}</td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -522,33 +606,44 @@ const App: React.FC = () => {
           )}
 
           {view === 'batch-review' && (
-             <div className="space-y-8 animate-in fade-in duration-500">
-               <header className="flex justify-between items-center">
+             <div className="space-y-8 animate-in fade-in duration-500 pb-32">
+               <header className="flex justify-between items-center no-print">
                  <div><h2 className="text-4xl font-black text-slate-900 tracking-tight">Batch Review</h2><p className="text-slate-500 font-medium mt-1">Reviewing {batchInvoices.length} individual invoices for {batchInvoices[0]?.customerName}.</p></div>
-                 <button onClick={() => setView('dashboard')} className="flex items-center gap-2 text-slate-400 hover:text-slate-900 font-black uppercase text-xs transition-colors"><ChevronLeft size={20}/> Back to Manifest</button>
+                 <div className="flex items-center gap-4">
+                   <button onClick={handleBatchDownloadCSV} className="bg-white border-2 border-slate-200 text-slate-700 px-6 py-4 rounded-2xl font-black uppercase text-xs flex items-center gap-3 hover:bg-slate-50 transition-all"><FileSpreadsheet size={20}/> Download All (CSV)</button>
+                   <button onClick={() => setView('dashboard')} className="flex items-center gap-2 text-slate-400 hover:text-slate-900 font-black uppercase text-xs transition-colors"><ChevronLeft size={20}/> Back to Manifest</button>
+                 </div>
                </header>
-               <div className="space-y-12">
+               <div className="space-y-16">
                  {batchInvoices.map((inv, idx) => (
-                   <div key={inv.id} className="relative group">
-                     <div className="absolute -left-4 top-0 bottom-0 w-1 bg-emerald-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                   <div key={inv.id} className="relative group page-break-after-always">
+                     <div className="no-print absolute -left-12 top-0 bottom-0 w-2 bg-emerald-500/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                     <div className="no-print flex justify-between items-center mb-4 px-4">
+                        <span className="text-xs font-black text-slate-400 uppercase">Invoice #{idx + 1} of {batchInvoices.length} — {inv.invoiceNumber}</span>
+                        <div className="flex gap-2">
+                           <button onClick={() => handleDownloadPDF(inv)} className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200" title="Download PDF"><Printer size={16}/></button>
+                           <button onClick={() => handleDownloadCSV(inv)} className="p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100" title="Download CSV"><FileSpreadsheet size={16}/></button>
+                        </div>
+                     </div>
                      <InvoiceDocument invoice={inv} />
                    </div>
                  ))}
                </div>
-               <div className="fixed bottom-10 right-10 flex gap-4 no-print">
-                 <button onClick={() => window.print()} className="bg-slate-900 text-white px-12 py-5 rounded-2xl font-black uppercase text-xs shadow-2xl flex items-center gap-3"><Printer size={20}/> Print All ({batchInvoices.length})</button>
+               <div className="fixed bottom-10 right-10 flex gap-4 no-print z-[60]">
+                 <button onClick={() => window.print()} className="bg-slate-900 text-white px-12 py-5 rounded-2xl font-black uppercase text-xs shadow-2xl flex items-center gap-3 active:scale-95 transition-all"><Printer size={20}/> Print All PDF ({batchInvoices.length})</button>
                </div>
              </div>
           )}
 
           {view === 'invoice-preview' && activeInvoice && (
-             <div className="animate-in fade-in duration-500 pb-20">
+             <div className="animate-in fade-in duration-500 pb-32">
                <div className="no-print bg-slate-900 p-6 rounded-[2rem] shadow-2xl mb-8 border-b-4 border-emerald-600 overflow-hidden">
                   <div className="p-4 flex flex-col md:flex-row items-center justify-between w-full gap-6">
                     <div className="flex items-center gap-4"><div className="bg-emerald-500 p-3 rounded-2xl text-white shadow-lg"><Palette size={24}/></div><div><h4 className="text-white font-black text-lg">Style Studio</h4><p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Select manifest layout style</p></div></div>
                     <div className="flex items-center gap-3">
-                      <button onClick={() => window.print()} className="bg-emerald-600 text-white px-8 py-3 rounded-xl font-black uppercase text-xs flex items-center gap-2 hover:bg-emerald-700 transition-all"><Printer size={18}/> Print A4</button>
-                      <button onClick={() => setView('dashboard')} className="p-3 bg-white/5 rounded-xl text-slate-400 hover:text-white"><X size={24}/></button>
+                      <button onClick={() => handleDownloadPDF(activeInvoice)} className="bg-emerald-600 text-white px-8 py-3 rounded-xl font-black uppercase text-xs flex items-center gap-2 hover:bg-emerald-700 transition-all shadow-lg active:scale-95"><Printer size={18}/> Download PDF</button>
+                      <button onClick={() => handleDownloadCSV(activeInvoice)} className="bg-slate-700 text-white px-8 py-3 rounded-xl font-black uppercase text-xs flex items-center gap-2 hover:bg-slate-600 transition-all shadow-lg active:scale-95"><FileSpreadsheet size={18}/> Download CSV</button>
+                      <button onClick={() => setView('dashboard')} className="p-3 bg-white/5 rounded-xl text-slate-400 hover:text-white transition-colors"><X size={24}/></button>
                     </div>
                   </div>
                   <div className="w-full grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-10 gap-3 p-6 border-t border-white/5 max-h-48 overflow-y-auto bg-slate-950/50">
@@ -640,11 +735,11 @@ const App: React.FC = () => {
           )}
 
           {view === 'edit-invoice' && activeInvoice && (
-            <div className="space-y-10 animate-in fade-in duration-500">
-              <header className="flex justify-between items-center bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100"><div className="flex items-center gap-4"><button onClick={() => setView('dashboard')} className="p-3 bg-slate-50 rounded-2xl text-slate-400"><ChevronLeft size={24} /></button><div><h2 className="text-3xl font-black text-slate-900">Finalize Billing</h2><p className="text-slate-500 font-bold uppercase text-[10px]">Serial: {activeInvoice.invoiceNumber}</p></div></div><button onClick={handleSaveInvoice} className="bg-emerald-600 text-white px-12 py-4 rounded-2xl font-black shadow-xl uppercase text-xs">Confirm & Save</button></header>
+            <div className="space-y-10 animate-in fade-in duration-500 pb-20">
+              <header className="flex justify-between items-center bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100"><div className="flex items-center gap-4"><button onClick={() => setView('dashboard')} className="p-3 bg-slate-50 rounded-2xl text-slate-400"><ChevronLeft size={24} /></button><div><h2 className="text-3xl font-black text-slate-900">Finalize Billing</h2><p className="text-slate-500 font-bold uppercase text-[10px]">Serial: {activeInvoice.invoiceNumber}</p></div></div><button onClick={handleSaveInvoice} className="bg-emerald-600 text-white px-12 py-4 rounded-2xl font-black shadow-xl uppercase text-xs active:scale-95 transition-all">Confirm & Save</button></header>
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                <div className="lg:col-span-1 bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 space-y-6"><h3 className="text-xl font-black text-slate-900 pb-4 border-b">Bill Info</h3><div className="space-y-4"><div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Invoice Number</label><input className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={activeInvoice.invoiceNumber} onChange={e => setActiveInvoice({...activeInvoice, invoiceNumber: e.target.value})} /></div><div className="grid grid-cols-2 gap-4"><div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Issue Date</label><input type="date" className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={activeInvoice.date} onChange={e => setActiveInvoice({...activeInvoice, date: e.target.value})} /></div><div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Due Date</label><input type="date" className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-red-600 outline-none" value={activeInvoice.dueDate} onChange={e => setActiveInvoice({...activeInvoice, dueDate: e.target.value})} /></div></div></div></div>
-                <div className="lg:col-span-2 bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100"><h3 className="text-xl font-black text-slate-900 pb-4 border-b mb-6">Line Items</h3><div className="space-y-4">{activeInvoice.items.map((item, idx) => (<div key={item.id} className="p-6 bg-slate-50 rounded-2xl border border-slate-100 grid grid-cols-4 gap-4 items-center"><div className="col-span-2"><p className="text-[9px] font-black text-slate-400 uppercase">Ref: {item.bookingNo}</p><p className="font-mono font-black text-emerald-600">{item.reeferNumber}</p></div><div><label className="text-[10px] font-black text-slate-400 uppercase">Rate</label><input type="number" className="w-full bg-white p-2 rounded-lg font-black border border-slate-200 outline-none text-sm" value={item.rateValue} onChange={e => { const val = parseFloat(e.target.value) || 0; const newItems = [...activeInvoice.items]; newItems[idx] = { ...item, rateValue: val, rate: val.toString() }; const sub = newItems.reduce((acc, curr) => acc + curr.rateValue, 0); setActiveInvoice({...activeInvoice, items: newItems, subtotal: sub, tax: sub * 0.14, total: sub * 1.14}); }} /></div><button onClick={() => { const newItems = activeInvoice.items.filter((_, i) => i !== idx); if(newItems.length === 0) {setView('dashboard'); return;} const sub = newItems.reduce((acc, curr) => acc + curr.rateValue, 0); setActiveInvoice({...activeInvoice, items: newItems, subtotal: sub, tax: sub * 0.14, total: sub * 1.14}); }} className="p-3 text-red-300 ml-auto"><Trash2 size={20}/></button></div>))}</div></div>
+                <div className="lg:col-span-1 bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 space-y-6 h-fit"><h3 className="text-xl font-black text-slate-900 pb-4 border-b uppercase tracking-tighter">Bill Configuration</h3><div className="space-y-4"><div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Invoice Number</label><input className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={activeInvoice.invoiceNumber} onChange={e => setActiveInvoice({...activeInvoice, invoiceNumber: e.target.value})} /></div><div className="grid grid-cols-2 gap-4"><div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Issue Date</label><input type="date" className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={activeInvoice.date} onChange={e => setActiveInvoice({...activeInvoice, date: e.target.value})} /></div><div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Due Date</label><input type="date" className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-red-600 outline-none" value={activeInvoice.dueDate} onChange={e => setActiveInvoice({...activeInvoice, dueDate: e.target.value})} /></div></div></div></div>
+                <div className="lg:col-span-2 bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100"><h3 className="text-xl font-black text-slate-900 pb-4 border-b mb-6 uppercase tracking-tighter">Line Valuation</h3><div className="space-y-4">{activeInvoice.items.map((item, idx) => (<div key={item.id} className="p-6 bg-slate-50 rounded-2xl border border-slate-100 grid grid-cols-4 gap-4 items-center"><div className="col-span-2"><p className="text-[9px] font-black text-slate-400 uppercase">Ref: {item.bookingNo}</p><p className="font-mono font-black text-emerald-600 tracking-wider uppercase">{item.reeferNumber}</p></div><div><label className="text-[10px] font-black text-slate-400 uppercase">Rate</label><input type="number" className="w-full bg-white p-2 rounded-lg font-black border border-slate-200 outline-none text-sm" value={item.rateValue} onChange={e => { const val = parseFloat(e.target.value) || 0; const newItems = [...activeInvoice.items]; newItems[idx] = { ...item, rateValue: val, rate: val.toString() }; const sub = newItems.reduce((acc, curr) => acc + curr.rateValue, 0); setActiveInvoice({...activeInvoice, items: newItems, subtotal: sub, tax: sub * 0.14, total: sub * 1.14}); }} /></div><button onClick={() => { const newItems = activeInvoice.items.filter((_, i) => i !== idx); if(newItems.length === 0) {setView('dashboard'); return;} const sub = newItems.reduce((acc, curr) => acc + curr.rateValue, 0); setActiveInvoice({...activeInvoice, items: newItems, subtotal: sub, tax: sub * 0.14, total: sub * 1.14}); }} className="p-3 text-red-300 hover:text-red-500 transition-colors ml-auto"><Trash2 size={20}/></button></div>))}</div></div>
               </div>
             </div>
           )}
@@ -654,9 +749,15 @@ const App: React.FC = () => {
       {showActionModal && activeInvoice && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/90 backdrop-blur-xl animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl p-12 space-y-10 relative">
-            <button onClick={() => setShowActionModal(false)} className="absolute top-8 right-8 text-slate-300 hover:text-red-500"><X size={32} /></button>
+            <button onClick={() => setShowActionModal(false)} className="absolute top-8 right-8 text-slate-300 hover:text-red-500 transition-colors"><X size={32} /></button>
             <div className="flex items-center gap-6"><div className="bg-emerald-600 p-4 rounded-3xl text-white shadow-xl"><FileCheck size={32} /></div><div><h3 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Manifest Logged</h3><p className="text-slate-400 font-bold uppercase text-xs">Official Records Updated</p></div></div>
-            <div className="flex flex-col gap-4 pt-6"><button onClick={() => {setShowActionModal(false); setView('invoice-preview');}} className="w-full bg-slate-100 py-6 rounded-2xl font-black uppercase text-sm">Review Layout</button><button onClick={() => window.print()} className="w-full bg-emerald-600 text-white py-6 rounded-2xl font-black uppercase text-sm shadow-xl">Print Now</button></div>
+            <div className="flex flex-col gap-4 pt-6">
+              <button onClick={() => {setShowActionModal(false); setView('invoice-preview');}} className="w-full bg-slate-100 py-6 rounded-2xl font-black uppercase text-sm hover:bg-slate-200 transition-all">Review Design Layout</button>
+              <div className="grid grid-cols-2 gap-4">
+                 <button onClick={() => handleDownloadPDF(activeInvoice)} className="bg-slate-900 text-white py-6 rounded-2xl font-black uppercase text-sm shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all"><Printer size={20}/> Download PDF</button>
+                 <button onClick={() => handleDownloadCSV(activeInvoice)} className="bg-emerald-600 text-white py-6 rounded-2xl font-black uppercase text-sm shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all"><FileSpreadsheet size={20}/> Download CSV</button>
+              </div>
+            </div>
           </div>
         </div>
       )}

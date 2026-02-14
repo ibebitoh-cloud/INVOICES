@@ -4,11 +4,9 @@ export const parseCurrency = (val: any): number => {
   let str = String(val).trim();
   if (!str || str === 'N/A' || str === '-' || str.toLowerCase() === 'null') return 0;
   
-  // Remove currency codes (EGP, USD, etc.), symbols, and any non-numeric characters except decimal point and minus sign
-  // This version is more robust against different separators (e.g. spaces, commas as thousands separators)
   const clean = str
-    .replace(/[a-zA-Z$€£¥]/g, '') // Remove currency symbols and letters
-    .replace(/,/g, '')            // Remove commas (assuming they are thousands separators)
+    .replace(/[a-zA-Z$€£¥]/g, '') 
+    .replace(/,/g, '')            
     .trim();
     
   const parsed = parseFloat(clean);
@@ -23,7 +21,6 @@ export const formatCurrency = (amount: number, currency: string = 'EGP'): string
       minimumFractionDigits: 2
     }).format(amount);
   } catch (e) {
-    // Fallback if currency code is invalid
     return `${amount.toFixed(2)} ${currency}`;
   }
 };
@@ -35,20 +32,26 @@ export const formatDate = (dateStr: string): string => {
 
 export const exportToCSV = (data: any[], filename: string) => {
   if (data.length === 0) return;
+  
+  // Clean data for CSV - filter out internal IDs or complex objects if necessary
+  // but keep core logistics fields
   const headers = Object.keys(data[0]).join(',');
   const rows = data.map(obj => 
     Object.values(obj).map(val => {
-      const s = String(val).replace(/"/g, '""');
-      return s.includes(',') ? `"${s}"` : s;
+      const s = String(val === null || val === undefined ? '' : val).replace(/"/g, '""');
+      return s.includes(',') || s.includes('\n') ? `"${s}"` : s;
     }).join(',')
   ).join('\n');
   
-  const csvContent = `data:text/csv;charset=utf-8,${headers}\n${rows}`;
-  const encodedUri = encodeURI(csvContent);
+  const csvContent = `${headers}\n${rows}`;
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  
   const link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", filename);
+  link.setAttribute("href", url);
+  link.setAttribute("download", filename.endsWith('.csv') ? filename : `${filename}.csv`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 };
