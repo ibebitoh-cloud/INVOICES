@@ -2,6 +2,7 @@ export interface Booking {
   id: string;
   totalBooking: string;
   customer: string;
+  shipper: string;
   bookingDate: string;
   customerRef: string;
   gops: string;

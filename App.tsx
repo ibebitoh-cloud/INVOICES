@@ -10,13 +10,25 @@ import {
   FileDown, Zap, Grid3X3, Square, BookOpen, Cloud, Leaf, Sun, Contrast,
   Waves, Heart, Gem, Map as MapPinIcon, StickyNote, Type, Rainbow, ScrollText, Newspaper, List,
   Users, Hash, Plus, ArrowRight, PenTool, Check, Eye, EyeOff, GripVertical,
-  Info, Filter, Truck, MapPin, Package, RotateCcw, FileSpreadsheet, Files
+  Info, Filter, Truck, MapPin, Package, RotateCcw, FileSpreadsheet, Files,
+  Copy, Archive, Share2, Send, Wand2
 } from 'lucide-react';
 import { Booking, Invoice, InvoiceSectionId, TemplateConfig, UserProfile, TemplateFields, GroupingType, InvoiceTheme, CustomerConfig } from './types';
 import { parseCurrency, formatCurrency, exportToCSV } from './utils/formatters';
 import InvoiceDocument from './components/InvoiceDocument';
 
 const DEFAULT_COMPANY_LOGO = "https://images.unsplash.com/photo-1586611292717-f828b167408c?auto=format&fit=crop&q=80&w=200&h=200";
+
+const THEMES: { id: InvoiceTheme, label: string, desc: string, icon: any, color: string }[] = [
+  { id: 'logistics-grid', label: 'Classic Logistics', desc: 'Heavy borders, official grid layout', icon: TableIcon, color: 'bg-emerald-600' },
+  { id: 'corporate', label: 'Corporate Clean', desc: 'Minimal, business-standard style', icon: Briefcase, color: 'bg-slate-900' },
+  { id: 'swiss-modern', label: 'Swiss Modern', desc: 'High contrast, bold grotesk font', icon: Grid3X3, color: 'bg-red-600' },
+  { id: 'brutalist', label: 'Brutalist Heavy', desc: 'Raw, industrial, black & white', icon: Square, color: 'bg-black' },
+  { id: 'glass', label: 'Digital Glass', desc: 'Semi-transparent modern gradients', icon: Droplets, color: 'bg-blue-400' },
+  { id: 'midnight-pro', label: 'Midnight Night', desc: 'Premium dark mode for screens', icon: Wind, color: 'bg-slate-950' },
+  { id: 'elegant', label: 'Elegant Serif', desc: 'Refined serif for luxury clients', icon: Award, color: 'bg-stone-800' },
+  { id: 'technical-draft', label: 'Technical Draft', desc: 'Monospace, blueprint technical look', icon: Terminal, color: 'bg-slate-600' }
+];
 
 const App: React.FC = () => {
   const [bookings, setBookings] = useState<Booking[]>(() => {
@@ -100,7 +112,7 @@ const App: React.FC = () => {
     return {
       customers: Array.from(new Set(bookings.map(b => b.customer))).filter(Boolean).sort(),
       truckers: Array.from(new Set(bookings.map(b => b.trucker))).filter(v => v && v !== '---').sort(),
-      shippers: Array.from(new Set(bookings.map(b => b.shipperAddress))).filter(v => v && v !== '---').sort(),
+      shippers: Array.from(new Set(bookings.map(b => b.shipper))).filter(v => v && v !== '---').sort(),
     };
   }, [bookings]);
 
@@ -125,11 +137,36 @@ const App: React.FC = () => {
     });
   };
 
+  const handleDuplicateSelected = () => {
+    const toDup = bookings.filter(b => selectedIds.has(b.id));
+    const newItems = toDup.map(item => ({
+      ...item,
+      id: `booking-dup-${Date.now()}-${Math.random()}`,
+      invNo: '',
+      status: 'PENDING'
+    }));
+    setBookings(prev => [...prev, ...newItems]);
+    setSelectedIds(new Set());
+  };
+
+  const handleArchiveSelected = () => {
+    const updated = bookings.filter(b => !selectedIds.has(b.id));
+    setBookings(updated);
+    setSelectedIds(new Set());
+  };
+
+  const handleClearManifest = () => {
+    if(confirm("Are you sure you want to clear ALL entries? This cannot be undone.")) {
+      setBookings([]);
+      setSelectedIds(new Set());
+    }
+  };
+
   const handleDownloadSample = () => {
-    const csvContent = "Booking No,Container No,Customer,Shipper Address,Trucker,Rate,VAT,Date,Go Port,Gi Port,Clip On Date,Clip Off Date,Genset No\n" +
-      "BK778899,REEU1234567,Global Logistics Inc,Alexandria Port,Captain Jack,4500,630,2024-05-10,Sokhna,Alexandria,2024-05-10,2024-05-15,GS-102\n" +
-      "BK778899,REEU9876543,Global Logistics Inc,Alexandria Port,Captain Jack,4500,630,2024-05-10,Sokhna,Alexandria,2024-05-10,2024-05-15,GS-105\n" +
-      "BK112233,UNIT5544332,Nile Traders,Cairo West,Driver Sam,3200,448,2024-05-11,Damietta,Port Said,2024-05-11,2024-05-14,GS-088";
+    const csvContent = "Booking No,Container No,Customer,Shipper,Shipper Address,Trucker,Rate,VAT,Date,Go Port,Gi Port,Clip On Date,Clip Off Date,Genset No\n" +
+      "BK778899,REEU1234567,Global Logistics Inc,Egypt Export Co,Alexandria Port,Captain Jack,4500,630,2024-05-10,Sokhna,Alexandria,2024-05-10,2024-05-15,GS-102\n" +
+      "BK778899,REEU9876543,Global Logistics Inc,Egypt Export Co,Alexandria Port,Captain Jack,4500,630,2024-05-10,Sokhna,Alexandria,2024-05-10,2024-05-15,GS-105\n" +
+      "BK112233,UNIT5544332,Nile Traders,Cairo Foods,Cairo West,Driver Sam,3200,448,2024-05-11,Damietta,Port Said,2024-05-11,2024-05-14,GS-088";
     
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -158,7 +195,8 @@ const App: React.FC = () => {
       const mapping = {
         bookingNo: findCol(['booking', 'bk no']), 
         reefer: findCol(['container', 'unit', 'reefer']),
-        shipper: findCol(['shipper', 'address']), 
+        shipper: findCol(['shipper']), 
+        shipperAddress: findCol(['shipper address', 'address']), 
         trucker: findCol(['trucker', 'driver']),
         rate: findCol(['rate', 'amount']), 
         customer: findCol(['customer', 'consignee']),
@@ -183,9 +221,10 @@ const App: React.FC = () => {
         return {
           id: `booking-${idx}-${Date.now()}`,
           customer: custName,
+          shipper: clean(mapping.shipper) || '---',
           bookingNo: clean(mapping.bookingNo) || '---',
           reeferNumber: clean(mapping.reefer) || '---',
-          shipperAddress: clean(mapping.shipper) || '---',
+          shipperAddress: clean(mapping.shipperAddress) || '---',
           trucker: clean(mapping.trucker) || '---',
           rate: clean(mapping.rate) || '0',
           rateValue: rVal,
@@ -329,11 +368,12 @@ const App: React.FC = () => {
       const matchesSearch = 
         b.bookingNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         b.reeferNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        b.customer?.toLowerCase().includes(searchTerm.toLowerCase());
+        b.customer?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        b.shipper?.toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesCustomer = !filterCustomer || b.customer === filterCustomer;
       const matchesTrucker = !filterTrucker || b.trucker === filterTrucker;
-      const matchesShipper = !filterShipper || b.shipperAddress === filterShipper;
+      const matchesShipper = !filterShipper || b.shipper === filterShipper;
       
       return matchesSearch && matchesCustomer && matchesTrucker && matchesShipper;
     });
@@ -378,7 +418,6 @@ const App: React.FC = () => {
     setFilterShipper('');
   };
 
-  // NEW: Download/Print helpers
   const handleDownloadPDF = (inv: Invoice) => {
     const oldTitle = document.title;
     document.title = inv.invoiceNumber;
@@ -398,7 +437,6 @@ const App: React.FC = () => {
     });
   };
 
-  // NEW: Batch Individual PDF Download
   const handleBatchDownloadPDF = async () => {
     document.body.classList.add('printing-individual');
     const oldTitle = document.title;
@@ -407,8 +445,6 @@ const App: React.FC = () => {
       const inv = batchInvoices[i];
       setBatchPrintingId(inv.id);
       document.title = inv.invoiceNumber;
-      
-      // Delay slightly to ensure state update is reflected in the DOM for print
       await new Promise(r => setTimeout(r, 100));
       window.print();
     }
@@ -460,6 +496,7 @@ const App: React.FC = () => {
               <header className="flex justify-between items-end">
                 <div><h2 className="text-4xl font-black text-slate-900 tracking-tight">Manifest</h2><p className="text-slate-500 font-medium mt-1">Select entries for billing.</p></div>
                 <div className="flex gap-4">
+                  <button onClick={handleClearManifest} className="bg-red-50 text-red-600 px-6 py-4 rounded-2xl hover:bg-red-100 transition-all font-black text-sm flex items-center gap-3 uppercase tracking-widest active:scale-95 border border-red-100"><Trash2 size={20} /> Clear</button>
                   <button onClick={handleDownloadSample} className="bg-slate-100 text-slate-900 px-6 py-4 rounded-2xl hover:bg-slate-200 transition-all font-black text-sm shadow-sm flex items-center gap-3 uppercase tracking-widest active:scale-95 border border-slate-200"><FileDown size={20} /> Sample CSV</button>
                   <label className="cursor-pointer bg-emerald-600 text-white px-8 py-4 rounded-2xl hover:bg-emerald-700 transition-all font-black text-sm shadow-xl flex items-center gap-3 uppercase tracking-widest active:scale-95"><FileUp size={20} /> Import CSV<input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} /></label>
                 </div>
@@ -469,7 +506,7 @@ const App: React.FC = () => {
                 <div className="flex flex-col md:flex-row items-center gap-4">
                   <div className="flex-1 relative w-full">
                     <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
-                    <input type="text" placeholder="Quick search reefer or booking..." className="w-full pl-14 pr-6 py-5 bg-slate-50 border-2 border-transparent focus:border-emerald-600 rounded-[1.5rem] font-bold outline-none" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                    <input type="text" placeholder="Quick search reefer, booking or shipper..." className="w-full pl-14 pr-6 py-5 bg-slate-50 border-2 border-transparent focus:border-emerald-600 rounded-[1.5rem] font-bold outline-none" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                   </div>
                   <div className="flex gap-2 w-full md:w-auto">
                     <button disabled={selectedIds.size === 0} onClick={() => processInvoices('grouped')} className="flex-1 bg-slate-900 text-white px-8 py-5 rounded-[1.5rem] font-black disabled:opacity-30 transition-all uppercase text-[10px] tracking-widest shadow-lg flex items-center justify-center gap-2 whitespace-nowrap"><Layers size={18}/> Consolidate ({selectedIds.size})</button>
@@ -477,32 +514,28 @@ const App: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4 border-t border-slate-50">
-                   <div className="space-y-2">
-                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><Users size={12}/> Client</label>
-                     <select value={filterCustomer} onChange={(e) => setFilterCustomer(e.target.value)} className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none text-sm appearance-none">
-                       <option value="">All Clients</option>
-                       {uniqueValues.customers.map(c => <option key={c} value={c}>{c}</option>)}
-                     </select>
+                <div className="flex flex-wrap gap-4 items-center justify-between pt-4 border-t border-slate-50">
+                   <div className="flex gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Client</label>
+                        <select value={filterCustomer} onChange={(e) => setFilterCustomer(e.target.value)} className="bg-slate-50 px-4 py-3 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none text-xs appearance-none min-w-[140px]">
+                          <option value="">All Clients</option>
+                          {uniqueValues.customers.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Shipper</label>
+                        <select value={filterShipper} onChange={(e) => setFilterShipper(e.target.value)} className="bg-slate-50 px-4 py-3 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none text-xs appearance-none min-w-[140px]">
+                          <option value="">All Shippers</option>
+                          {uniqueValues.shippers.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      </div>
                    </div>
-                   <div className="space-y-2">
-                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><Truck size={12}/> Trucker</label>
-                     <select value={filterTrucker} onChange={(e) => setFilterTrucker(e.target.value)} className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none text-sm appearance-none">
-                       <option value="">All Truckers</option>
-                       {uniqueValues.truckers.map(t => <option key={t} value={t}>{t}</option>)}
-                     </select>
-                   </div>
-                   <div className="space-y-2">
-                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><MapPin size={12}/> Shipper</label>
-                     <select value={filterShipper} onChange={(e) => setFilterShipper(e.target.value)} className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none text-sm appearance-none">
-                       <option value="">All Shippers</option>
-                       {uniqueValues.shippers.map(s => <option key={s} value={s}>{s}</option>)}
-                     </select>
-                   </div>
-                   <div className="flex items-end">
-                     <button onClick={resetFilters} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 p-4 rounded-xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 transition-all">
-                       <RotateCcw size={14}/> Reset Filters
-                     </button>
+
+                   <div className="flex gap-2">
+                      <button disabled={selectedIds.size === 0} onClick={handleDuplicateSelected} className="flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-3 rounded-xl font-black uppercase text-[9px] hover:bg-blue-100 transition-colors disabled:opacity-30"><Copy size={14}/> Duplicate</button>
+                      <button disabled={selectedIds.size === 0} onClick={handleArchiveSelected} className="flex items-center gap-2 bg-amber-50 text-amber-600 px-4 py-3 rounded-xl font-black uppercase text-[9px] hover:bg-amber-100 transition-colors disabled:opacity-30"><Archive size={14}/> Archive</button>
+                      <button onClick={resetFilters} className="bg-slate-100 text-slate-400 px-4 py-3 rounded-xl font-black uppercase text-[9px] hover:bg-slate-200 transition-colors"><RotateCcw size={14}/></button>
                    </div>
                 </div>
               </div>
@@ -517,16 +550,17 @@ const App: React.FC = () => {
                 <div className="bg-white rounded-[2.5rem] shadow-xl border border-slate-100 overflow-hidden">
                   <table className="w-full text-left text-sm">
                     <thead className="bg-slate-50 border-b font-black text-slate-400 uppercase tracking-[0.2em] text-[10px]">
-                      <tr><th className="py-6 px-8 w-16 text-center">#</th><th className="py-6 px-4">Client</th><th className="py-6 px-4">Booking</th><th className="py-6 px-4">Container</th><th className="py-6 px-4">Rate</th><th className="py-6 px-4 text-center">Status</th></tr>
+                      <tr><th className="py-6 px-8 w-16 text-center">#</th><th className="py-6 px-4">Client</th><th className="py-6 px-4">Shipper</th><th className="py-6 px-4">Booking</th><th className="py-6 px-4">Container</th><th className="py-6 px-4">Rate</th><th className="py-6 px-4 text-center">Status</th></tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
                       {filteredBookings.length === 0 ? (
-                        <tr><td colSpan={6} className="py-20 text-center text-slate-300 font-black uppercase tracking-widest">No entries match filters</td></tr>
+                        <tr><td colSpan={7} className="py-20 text-center text-slate-300 font-black uppercase tracking-widest">No entries match filters</td></tr>
                       ) : (
                         filteredBookings.map(b => (
                           <tr key={b.id} className={`hover:bg-slate-50 cursor-pointer ${selectedIds.has(b.id) ? 'bg-emerald-50' : ''}`} onClick={() => handleToggleBookingGroup(b)}>
                             <td className="py-6 px-8 text-center" onClick={(e) => e.stopPropagation()}><input type="checkbox" className="w-5 h-5 rounded cursor-pointer accent-emerald-600" checked={selectedIds.has(b.id)} onChange={() => handleToggleBookingGroup(b)} /></td>
                             <td className="py-6 px-4 font-bold text-slate-900">{b.customer}</td>
+                            <td className="py-6 px-4 font-medium text-slate-500 italic">{b.shipper}</td>
                             <td className="py-6 px-4 font-mono font-black flex items-center gap-2">{b.bookingNo}{bookingCounts[b.bookingNo] > 1 && <span className="bg-amber-100 text-amber-700 text-[9px] px-2 py-0.5 rounded-full font-black uppercase"><Layers size={10} className="inline mr-1"/>Group</span>}</td>
                             <td className="py-6 px-4 font-mono font-bold text-emerald-600">{b.reeferNumber}</td>
                             <td className="py-6 px-4 font-black text-slate-900">{formatCurrency(b.rateValue, invConfig.currency)}</td>
@@ -539,6 +573,49 @@ const App: React.FC = () => {
                 </div>
               )}
             </div>
+          )}
+
+          {view === 'invoice-preview' && activeInvoice && (
+             <div className="animate-in fade-in duration-500 pb-32">
+               <div className="no-print bg-white p-10 rounded-[3rem] shadow-2xl mb-12 border-2 border-slate-100">
+                  <div className="flex flex-col lg:flex-row gap-12">
+                    <div className="lg:w-1/3 space-y-8">
+                       <div className="flex items-center gap-4">
+                          <div className="bg-emerald-600 p-4 rounded-3xl text-white shadow-xl"><Palette size={32}/></div>
+                          <div><h3 className="text-2xl font-black text-slate-900 tracking-tight">Design Gallery</h3><p className="text-slate-400 text-xs font-bold uppercase">Select your brand style</p></div>
+                       </div>
+                       <div className="grid grid-cols-1 gap-3 max-h-[500px] overflow-y-auto pr-2 custom-scroll">
+                          {THEMES.map(t => (
+                            <button key={t.id} onClick={() => updateActiveInvoiceTheme(t.id)} className={`flex items-center gap-4 p-5 rounded-2xl transition-all text-left border-2 active:scale-[0.98] ${templateConfig.theme === t.id ? 'bg-emerald-50 border-emerald-500 shadow-md' : 'bg-slate-50 border-transparent hover:border-slate-200'}`}>
+                               <div className={`p-3 rounded-xl ${t.color} text-white shadow-lg`}><t.icon size={20}/></div>
+                               <div><p className={`font-black text-sm ${templateConfig.theme === t.id ? 'text-emerald-900' : 'text-slate-700'}`}>{t.label}</p><p className="text-[10px] font-medium text-slate-400">{t.desc}</p></div>
+                               {templateConfig.theme === t.id && <CheckCircle size={20} className="ml-auto text-emerald-600" />}
+                            </button>
+                          ))}
+                       </div>
+                    </div>
+
+                    <div className="lg:w-2/3 flex flex-col justify-between">
+                       <div className="space-y-6">
+                          <h3 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">Action Command Center <Wand2 className="text-emerald-500" size={24}/></h3>
+                          <div className="grid grid-cols-2 gap-4">
+                             <button onClick={() => handleDownloadPDF(activeInvoice)} className="col-span-2 bg-slate-900 text-white p-8 rounded-3xl font-black uppercase text-xl flex items-center justify-center gap-6 shadow-2xl hover:bg-black active:scale-[0.97] transition-all"><Printer size={32}/> Download Official PDF</button>
+                             <button onClick={() => handleDownloadCSV(activeInvoice)} className="bg-emerald-600 text-white p-6 rounded-3xl font-black uppercase text-sm flex items-center justify-center gap-4 shadow-xl hover:bg-emerald-700 active:scale-[0.97] transition-all"><FileSpreadsheet size={24}/> Export CSV Data</button>
+                             <button onClick={() => { alert("Share link generated: https://cargo.bill/share/" + activeInvoice.id); }} className="bg-blue-600 text-white p-6 rounded-3xl font-black uppercase text-sm flex items-center justify-center gap-4 shadow-xl hover:bg-blue-700 active:scale-[0.97] transition-all"><Share2 size={24}/> Share View Link</button>
+                             <button onClick={() => { alert("Invoice sent to " + activeInvoice.customerName); }} className="bg-slate-100 text-slate-600 p-6 rounded-3xl font-black uppercase text-sm flex items-center justify-center gap-4 border-2 border-slate-200 hover:bg-white active:scale-[0.97] transition-all"><Send size={24}/> Send to Client</button>
+                             <button onClick={() => setView('dashboard')} className="bg-white text-slate-400 p-6 rounded-3xl font-black uppercase text-sm flex items-center justify-center gap-4 border-2 border-slate-100 hover:bg-slate-50 active:scale-[0.97] transition-all"><X size={24}/> Close Preview</button>
+                          </div>
+                       </div>
+
+                       <div className="bg-emerald-50 p-8 rounded-[2rem] border-2 border-emerald-100 mt-10">
+                          <div className="flex items-center gap-4 mb-3"><Sparkles className="text-emerald-600" size={20}/><h4 className="text-emerald-900 font-black uppercase text-xs">Smart Layout Tip</h4></div>
+                          <p className="text-emerald-700 text-sm font-bold leading-relaxed">Your Nile Fleet terms are locked to a 7-day edit restriction to ensure high-compliance logistics operations. Use the 'Official Signature' upload in your profile to brand your final PDF.</p>
+                       </div>
+                    </div>
+                  </div>
+               </div>
+               <InvoiceDocument invoice={activeInvoice} />
+             </div>
           )}
 
           {view === 'customers' && (
@@ -584,130 +661,6 @@ const App: React.FC = () => {
             </div>
           )}
 
-          {view === 'settings' && (
-             <div className="space-y-10 animate-in fade-in duration-500">
-                <header>
-                  <h2 className="text-4xl font-black text-slate-900 tracking-tight">Templates</h2>
-                  <p className="text-slate-500 font-medium mt-1">Configure default fields and layout logic for all invoices.</p>
-                </header>
-                
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                  <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100">
-                    <h3 className="text-xl font-black text-slate-900 mb-8 border-b pb-4 flex items-center gap-3 uppercase tracking-tighter"><LayoutPanelLeft className="text-emerald-500"/> Visibility Controls</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {Object.entries(templateConfig.fields).map(([key, value]) => (
-                        <button key={key} onClick={() => toggleField(key as keyof TemplateFields)} className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${value ? 'bg-emerald-50 border-emerald-500 text-emerald-900' : 'bg-slate-50 border-transparent text-slate-400'}`}>
-                          <span className="text-[10px] font-black uppercase tracking-widest">{key.replace('show', '').replace(/([A-Z])/g, ' $1')}</span>
-                          {value ? <Eye size={16}/> : <EyeOff size={16}/>}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100">
-                    <h3 className="text-xl font-black text-slate-900 mb-8 border-b pb-4 flex items-center gap-3 uppercase tracking-tighter"><Palette className="text-emerald-500"/> Global Style</h3>
-                    <div className="space-y-6">
-                      <div className="space-y-3">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Grouping Logic</label>
-                        <div className="flex gap-2">
-                          {['booking', 'unit', 'trucker'].map(g => (
-                            <button key={g} onClick={() => setTemplateConfig({...templateConfig, groupBy: g as GroupingType})} className={`flex-1 py-4 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all ${templateConfig.groupBy === g ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>{g}</button>
-                          ))}
-                        </div>
-                      </div>
-                      
-                      <div className="p-8 bg-emerald-50 rounded-3xl border border-emerald-100">
-                        <p className="text-xs font-bold text-emerald-800 leading-relaxed"><Info size={16} className="inline mr-2 mb-1"/> These settings apply to all newly generated invoices. You can still override the theme individually in the preview screen.</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-             </div>
-          )}
-
-          {view === 'batch-review' && (
-             <div className="space-y-8 animate-in fade-in duration-500 pb-32">
-               <header className="flex justify-between items-center no-print">
-                 <div><h2 className="text-4xl font-black text-slate-900 tracking-tight">Batch Review</h2><p className="text-slate-500 font-medium mt-1">Reviewing {batchInvoices.length} individual invoices for {batchInvoices[0]?.customerName}.</p></div>
-                 <div className="flex items-center gap-4">
-                   <button onClick={handleBatchDownloadCSV} className="bg-white border-2 border-slate-200 text-slate-700 px-6 py-4 rounded-2xl font-black uppercase text-xs flex items-center gap-3 hover:bg-slate-50 transition-all"><FileSpreadsheet size={20}/> Download All (CSV)</button>
-                   <button onClick={() => setView('dashboard')} className="flex items-center gap-2 text-slate-400 hover:text-slate-900 font-black uppercase text-xs transition-colors"><ChevronLeft size={20}/> Back to Manifest</button>
-                 </div>
-               </header>
-               <div className="space-y-16">
-                 {batchInvoices.map((inv, idx) => (
-                   <div key={inv.id} className={`relative group page-break-after-always ${batchPrintingId === inv.id ? 'active-print' : ''}`}>
-                     <div className="no-print absolute -left-12 top-0 bottom-0 w-2 bg-emerald-500/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                     <div className="no-print flex justify-between items-center mb-4 px-4">
-                        <span className="text-xs font-black text-slate-400 uppercase">Invoice #{idx + 1} of {batchInvoices.length} — {inv.invoiceNumber}</span>
-                        <div className="flex gap-2">
-                           <button onClick={() => handleDownloadPDF(inv)} className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200" title="Download PDF"><Printer size={16}/></button>
-                           <button onClick={() => handleDownloadCSV(inv)} className="p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100" title="Download CSV"><FileSpreadsheet size={16}/></button>
-                        </div>
-                     </div>
-                     <InvoiceDocument invoice={inv} isActivePrint={batchPrintingId === inv.id} />
-                   </div>
-                 ))}
-               </div>
-               <div className="fixed bottom-10 right-10 flex gap-4 no-print z-[60]">
-                 <button onClick={handleBatchDownloadPDF} className="bg-white border-2 border-slate-900 text-slate-900 px-8 py-5 rounded-2xl font-black uppercase text-xs shadow-2xl flex items-center gap-3 active:scale-95 transition-all"><Files size={20}/> Download Individually (PDF)</button>
-                 <button onClick={() => window.print()} className="bg-slate-900 text-white px-12 py-5 rounded-2xl font-black uppercase text-xs shadow-2xl flex items-center gap-3 active:scale-95 transition-all"><Printer size={20}/> Print All PDF ({batchInvoices.length})</button>
-               </div>
-             </div>
-          )}
-
-          {view === 'invoice-preview' && activeInvoice && (
-             <div className="animate-in fade-in duration-500 pb-32">
-               <div className="no-print bg-slate-900 p-6 rounded-[2rem] shadow-2xl mb-8 border-b-4 border-emerald-600 overflow-hidden">
-                  <div className="p-4 flex flex-col md:flex-row items-center justify-between w-full gap-6">
-                    <div className="flex items-center gap-4"><div className="bg-emerald-500 p-3 rounded-2xl text-white shadow-lg"><Palette size={24}/></div><div><h4 className="text-white font-black text-lg">Style Studio</h4><p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Select manifest layout style</p></div></div>
-                    <div className="flex items-center gap-3">
-                      <button onClick={() => handleDownloadPDF(activeInvoice)} className="bg-emerald-600 text-white px-8 py-3 rounded-xl font-black uppercase text-xs flex items-center gap-2 hover:bg-emerald-700 transition-all shadow-lg active:scale-95"><Printer size={18}/> Download PDF</button>
-                      <button onClick={() => handleDownloadCSV(activeInvoice)} className="bg-slate-700 text-white px-8 py-3 rounded-xl font-black uppercase text-xs flex items-center gap-2 hover:bg-slate-600 transition-all shadow-lg active:scale-95"><FileSpreadsheet size={18}/> Download CSV</button>
-                      <button onClick={() => setView('dashboard')} className="p-3 bg-white/5 rounded-xl text-slate-400 hover:text-white transition-colors"><X size={24}/></button>
-                    </div>
-                  </div>
-                  <div className="w-full grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-10 gap-3 p-6 border-t border-white/5 max-h-48 overflow-y-auto bg-slate-950/50">
-                    {[
-                      { id: 'logistics-grid', label: 'Classic', icon: TableIcon, color: 'bg-emerald-600' },
-                      { id: 'swiss-modern', label: 'Swiss', icon: Grid3X3, color: 'bg-red-600' },
-                      { id: 'brutalist', label: 'Brutal', icon: Square, color: 'bg-zinc-900' },
-                      { id: 'minimalist', label: 'Minimal', icon: Feather, color: 'bg-slate-300 text-slate-900' },
-                      { id: 'neon-glow', label: 'Neon', icon: Zap, color: 'bg-cyan-500' },
-                      { id: 'blueprint', label: 'Draft', icon: DraftingCompass, color: 'bg-blue-700' },
-                      { id: 'vintage', label: 'Vintage', icon: ScrollText, color: 'bg-amber-800' },
-                      { id: 'industrial', label: 'Factory', icon: HardHat, color: 'bg-yellow-500 text-slate-900' },
-                      { id: 'glass', label: 'Glass', icon: Droplets, color: 'bg-blue-400' },
-                      { id: 'royal', icon: ShieldCheck, label: 'Royal', color: 'bg-purple-800' },
-                      { id: 'midnight-pro', label: 'Night', icon: Wind, color: 'bg-slate-950' },
-                      { id: 'modern-cards', label: 'Cards', icon: Activity, color: 'bg-red-500' },
-                      { id: 'corporate', label: 'Corp', icon: Briefcase, color: 'bg-slate-900' },
-                      { id: 'elegant', label: 'Elegant', icon: Award, color: 'bg-amber-100 text-amber-900' },
-                      { id: 'soft-clay', label: 'Clay', icon: Cloud, color: 'bg-rose-200 text-rose-900' },
-                      { id: 'eco-green', label: 'Eco', icon: Leaf, color: 'bg-green-600' },
-                      { id: 'sunset-vibe', label: 'Sunset', icon: Sun, color: 'bg-orange-500' },
-                      { id: 'high-contrast', label: 'Sharp', icon: Contrast, color: 'bg-black text-white' },
-                      { id: 'deep-ocean', label: 'Ocean', icon: Waves, color: 'bg-blue-900' },
-                      { id: 'pastel-dream', label: 'Pastel', icon: Heart, color: 'bg-pink-300 text-pink-900' },
-                      { id: 'luxury-gold', label: 'Gold', icon: Gem, color: 'bg-yellow-600' },
-                      { id: 'urban-street', label: 'Urban', icon: MapPinIcon, color: 'bg-slate-500' },
-                      { id: 'paper-texture', label: 'Parch', icon: StickyNote, color: 'bg-orange-100 text-orange-900' },
-                      { id: 'monochrome', label: 'Mono', icon: Newspaper, color: 'bg-zinc-800' },
-                      { id: 'vivid-spectrum', label: 'Spectrum', icon: Rainbow, color: 'bg-indigo-600' },
-                      { id: 'classic-ledger', label: 'Ledger', icon: List, color: 'bg-teal-700' },
-                      { id: 'modern-serif', label: 'Serif', icon: Type, color: 'bg-stone-800' },
-                      { id: 'compact-list', label: 'Slim', icon: Layout, color: 'bg-sky-600' },
-                      { id: 'technical-draft', label: 'Tech', icon: Terminal, color: 'bg-slate-700' },
-                      { id: 'sidebar-pro', label: 'Side', icon: LayoutPanelLeft, color: 'bg-indigo-600' }
-                    ].map(t => (
-                      <button key={t.id} onClick={() => updateActiveInvoiceTheme(t.id as InvoiceTheme)} className={`group relative flex flex-col items-center gap-2 p-3 rounded-2xl transition-all active:scale-95 shrink-0 ${templateConfig.theme === t.id ? 'bg-white/10 ring-2 ring-emerald-500' : 'hover:bg-white/5'}`}><div className={`p-2 rounded-lg ${t.color} text-white shadow-lg group-hover:scale-110 transition-transform`}><t.icon size={16}/></div><span className={`text-[9px] font-black uppercase tracking-tighter ${templateConfig.theme === t.id ? 'text-white' : 'text-slate-500'}`}>{t.label}</span></button>
-                    ))}
-                  </div>
-               </div>
-               <InvoiceDocument invoice={activeInvoice} />
-             </div>
-          )}
-
           {view === 'profile' && (
             <div className="max-w-4xl mx-auto space-y-10 animate-in fade-in duration-500">
                <div className="flex justify-between items-end"><div><h2 className="text-4xl font-black text-slate-900 tracking-tight">Identity</h2><p className="text-slate-500 font-medium mt-1">Brand assets and official watermark.</p></div><button onClick={() => {localStorage.setItem('user_profile', JSON.stringify(profile)); alert('Identity Saved!');}} className="bg-emerald-600 text-white px-10 py-4 rounded-2xl font-black shadow-xl uppercase text-xs">Save Identity</button></div>
@@ -732,24 +685,6 @@ const App: React.FC = () => {
                       {profile.signatureUrl ? <img src={profile.signatureUrl} className="h-32 w-full object-contain shadow-inner rounded-2xl border-2 border-slate-50 p-4 bg-white" /> : <div className="h-32 w-full bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300"><PenTool size={48}/></div>}
                       <label className="cursor-pointer bg-slate-100 px-6 py-3 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all hover:bg-emerald-600 hover:text-white">Upload Signature<input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'signature')} /></label>
                     </div>
-
-                    <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100 flex flex-col items-center gap-6">
-                      <div className="w-full flex justify-between items-center mb-2">
-                        <p className="text-[10px] font-black text-slate-400 uppercase">Watermark Layer</p>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold text-slate-400">{(profile.watermarkOpacity * 100).toFixed(0)}%</span>
-                          <input type="range" min="0" max="0.3" step="0.01" value={profile.watermarkOpacity} onChange={e => setProfile({...profile, watermarkOpacity: parseFloat(e.target.value)})} className="w-24 accent-emerald-600" />
-                        </div>
-                      </div>
-                      {profile.watermarkUrl ? (
-                        <div className="relative h-40 w-full bg-slate-50 rounded-2xl flex items-center justify-center border-2 border-dashed border-slate-200 overflow-hidden">
-                          <img src={profile.watermarkUrl} style={{ opacity: profile.watermarkOpacity }} className="max-h-full max-w-full object-contain grayscale" />
-                        </div>
-                      ) : (
-                        <div className="h-40 w-full bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 border-2 border-dashed border-slate-200"><Sparkles size={48}/></div>
-                      )}
-                      <label className="cursor-pointer bg-slate-100 px-6 py-3 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all hover:bg-emerald-600 hover:text-white">Upload Watermark<input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'watermark')} /></label>
-                    </div>
                   </div>
                </div>
             </div>
@@ -773,9 +708,9 @@ const App: React.FC = () => {
             <button onClick={() => setShowActionModal(false)} className="absolute top-8 right-8 text-slate-300 hover:text-red-500 transition-colors"><X size={32} /></button>
             <div className="flex items-center gap-6"><div className="bg-emerald-600 p-4 rounded-3xl text-white shadow-xl"><FileCheck size={32} /></div><div><h3 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Manifest Logged</h3><p className="text-slate-400 font-bold uppercase text-xs">Official Records Updated</p></div></div>
             <div className="flex flex-col gap-4 pt-6">
-              <button onClick={() => {setShowActionModal(false); setView('invoice-preview');}} className="w-full bg-slate-100 py-6 rounded-2xl font-black uppercase text-sm hover:bg-slate-200 transition-all">Review Design Layout</button>
+              <button onClick={() => {setShowActionModal(false); setView('invoice-preview');}} className="w-full bg-slate-900 text-white py-10 rounded-3xl font-black uppercase text-xl shadow-2xl hover:bg-black transition-all flex items-center justify-center gap-4">Go to Design Studio <ArrowRight size={24}/></button>
               <div className="grid grid-cols-2 gap-4">
-                 <button onClick={() => handleDownloadPDF(activeInvoice)} className="bg-slate-900 text-white py-6 rounded-2xl font-black uppercase text-sm shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all"><Printer size={20}/> Download PDF</button>
+                 <button onClick={() => handleDownloadPDF(activeInvoice)} className="bg-slate-100 text-slate-900 py-6 rounded-2xl font-black uppercase text-sm border-2 border-slate-200 flex items-center justify-center gap-2 active:scale-95 transition-all"><Printer size={20}/> Download PDF</button>
                  <button onClick={() => handleDownloadCSV(activeInvoice)} className="bg-emerald-600 text-white py-6 rounded-2xl font-black uppercase text-sm shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all"><FileSpreadsheet size={20}/> Download CSV</button>
               </div>
             </div>

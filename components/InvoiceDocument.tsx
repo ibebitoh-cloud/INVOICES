@@ -3,7 +3,8 @@ import { Invoice, Booking, TemplateFields, InvoiceTheme } from '../types';
 import { formatCurrency } from '../utils/formatters';
 import { 
   ShieldCheck, Briefcase, Award, Boxes, Anchor, Landmark, Scale, Clock, Banknote, ShieldAlert,
-  Truck, MapPin, Package, Grid, Layout, List, Layers, CornerDownRight, Minus, Square, ArrowRight
+  Truck, MapPin, Package, Grid, Layout, List, Layers, CornerDownRight, Minus, Square, ArrowRight,
+  Info, Shield, Heart, Zap, Sparkles
 } from 'lucide-react';
 
 interface InvoiceDocumentProps {
@@ -217,7 +218,8 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
                   <div className={`p-2 ${isDark ? 'bg-white/10' : 'bg-white'} rounded-lg shadow-sm text-slate-400`}><Package size={16}/></div>
                   <div className="flex-1 px-4 overflow-hidden">
                     <span className="text-[10px] font-black text-slate-300 uppercase block tracking-widest mb-0.5">Shipper Info</span>
-                    <span className="text-sm font-bold text-slate-500 uppercase leading-tight truncate block">{firstBooking.shipperAddress}</span>
+                    <span className="text-sm font-black text-slate-900 uppercase block leading-tight truncate mb-0.5">{firstBooking.shipper}</span>
+                    <span className="text-[11px] font-bold text-slate-500 uppercase leading-tight block truncate">{firstBooking.shipperAddress}</span>
                   </div>
                 </div>
               )}
@@ -303,21 +305,32 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
     return (
       <div className={`mt-auto space-y-8 pt-8 border-t-4 w-full relative z-10 shrink-0 ${isDark ? 'border-white/10' : 'border-slate-100'}`}>
         <div className="grid grid-cols-12 gap-10">
-          <div className="col-span-6 flex flex-col gap-8">
-            <div className={`p-6 ${t.radius} border-2 w-full ${isDark ? 'border-white/10 bg-white/5 text-slate-300' : 'border-slate-200 bg-slate-50 text-slate-600 shadow-sm'}`}>
-              <p className={`text-sm font-black uppercase mb-4 flex items-center gap-3 ${isDark ? 'text-emerald-400' : 'text-slate-900'}`}>
-                <Scale size={18} className={isDark ? 'text-emerald-400' : 'text-emerald-600'} /> Terms & Compliance
-              </p>
-              <div className={`grid grid-cols-1 gap-3 text-sm leading-tight font-medium`}>
-                <div className="flex gap-3 items-start"><Clock size={16} className="shrink-0 mt-0.5 opacity-50" /><p><span className="font-black text-slate-900 uppercase mr-1">Settlement:</span> Due <span className="font-black text-red-600 underline decoration-2">{invoice.dueDate}</span>.</p></div>
-                <div className="flex gap-3 items-start"><ShieldAlert size={16} className="shrink-0 mt-0.5 opacity-50" /><p>Standard carrier liability and reefer conditions apply.</p></div>
+          <div className="col-span-6 flex flex-col gap-6">
+            {/* Friendly Contextual Terms */}
+            <div className={`relative p-6 border-l-4 ${t.accent.replace('bg-', 'border-')} ${isDark ? 'bg-white/5' : 'bg-slate-50'} rounded-r-2xl shadow-sm`}>
+              <div className="flex items-center gap-3 mb-4">
+                <Heart size={16} className={isDark ? 'text-emerald-400' : 'text-rose-500'} />
+                <h4 className={`text-xs font-black uppercase tracking-[0.2em] ${isDark ? 'text-emerald-400' : 'text-slate-900'}`}>A Note from Nile Fleet</h4>
               </div>
+              <p className={`text-[11px] leading-relaxed font-bold mb-4 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                Thank you for choosing Nile Fleet Company for your Genset rental needs. We appreciate your partnership!
+              </p>
+              <ul className={`space-y-4 text-[10px] leading-relaxed font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                <li className="flex gap-3 items-start">
+                  <div className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${t.accent}`}></div>
+                  <p>Please ensure payment is settled by <span className="font-black text-slate-900 underline decoration-2">{invoice.dueDate}</span> to keep your account in good standing.</p>
+                </li>
+                <li className="flex gap-3 items-start">
+                  <div className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 bg-amber-400`}></div>
+                  <p>To ensure administrative accuracy, any adjustments or edit requests must be submitted within <span className="font-black text-slate-900 italic">7 days of receipt</span>. After this period, the invoice is considered final.</p>
+                </li>
+              </ul>
             </div>
             
             <div className={`p-6 ${t.radius} border-2 flex items-center gap-6 w-full ${isDark ? 'bg-white/5 border-white/10' : 'bg-white border-slate-100 shadow-sm'}`}>
               <div className={`p-3.5 rounded-2xl ${t.accent} text-white shadow-lg`}><Landmark size={28} /></div>
               <div className="flex-1">
-                <p className={`text-xs font-black uppercase tracking-[0.2em] mb-1 ${subLabelColor}`}>Bank Remittance Details</p>
+                <p className={`text-xs font-black uppercase tracking-[0.2em] mb-1 ${subLabelColor}`}>Remittance Instructions</p>
                 <p className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{profile.companyName}</p>
               </div>
             </div>
@@ -361,6 +374,17 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
                </div>
             </div>
           </div>
+        </div>
+        {/* App Signature */}
+        <div className="pt-8 flex justify-center w-full no-print">
+          <p className="text-[10px] font-black uppercase tracking-[0.6em] text-slate-300 italic flex items-center gap-3">
+            Powered by <span className="text-slate-400 flex items-center gap-1.5"><Sparkles size={12}/> Bebito APPS</span>
+          </p>
+        </div>
+        <div className="hidden print:flex pt-4 justify-center w-full opacity-30">
+          <p className="text-[8px] font-black uppercase tracking-[0.6em] text-slate-400 italic">
+            Powered by Bebito APPS
+          </p>
         </div>
       </div>
     );
