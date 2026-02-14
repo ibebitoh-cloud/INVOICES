@@ -10,7 +10,7 @@ import {
   FileDown, Zap, Grid3X3, Square, BookOpen, Cloud, Leaf, Sun, Contrast,
   Waves, Heart, Gem, Map as MapPinIcon, StickyNote, Type, Rainbow, ScrollText, Newspaper, List,
   Users, Hash, Plus, ArrowRight, PenTool, Check, Eye, EyeOff, GripVertical,
-  Info, Filter, Truck, MapPin, Package, RotateCcw, FileSpreadsheet
+  Info, Filter, Truck, MapPin, Package, RotateCcw, FileSpreadsheet, Files
 } from 'lucide-react';
 import { Booking, Invoice, InvoiceSectionId, TemplateConfig, UserProfile, TemplateFields, GroupingType, InvoiceTheme, CustomerConfig } from './types';
 import { parseCurrency, formatCurrency, exportToCSV } from './utils/formatters';
@@ -39,6 +39,7 @@ const App: React.FC = () => {
   const [activeInvoice, setActiveInvoice] = useState<Invoice | null>(null);
   const [batchInvoices, setBatchInvoices] = useState<Invoice[]>([]);
   const [showActionModal, setShowActionModal] = useState(false);
+  const [batchPrintingId, setBatchPrintingId] = useState<string | null>(null);
 
   const [profile, setProfile] = useState<UserProfile>(() => {
     const saved = localStorage.getItem('user_profile');
@@ -391,11 +392,30 @@ const App: React.FC = () => {
 
   const handleBatchDownloadCSV = () => {
     batchInvoices.forEach((inv, idx) => {
-      // Small timeout to prevent browser blocking multiple rapid downloads
       setTimeout(() => {
         handleDownloadCSV(inv);
       }, idx * 300);
     });
+  };
+
+  // NEW: Batch Individual PDF Download
+  const handleBatchDownloadPDF = async () => {
+    document.body.classList.add('printing-individual');
+    const oldTitle = document.title;
+    
+    for (let i = 0; i < batchInvoices.length; i++) {
+      const inv = batchInvoices[i];
+      setBatchPrintingId(inv.id);
+      document.title = inv.invoiceNumber;
+      
+      // Delay slightly to ensure state update is reflected in the DOM for print
+      await new Promise(r => setTimeout(r, 100));
+      window.print();
+    }
+    
+    setBatchPrintingId(null);
+    document.body.classList.remove('printing-individual');
+    document.title = oldTitle;
   };
 
   return (
@@ -616,7 +636,7 @@ const App: React.FC = () => {
                </header>
                <div className="space-y-16">
                  {batchInvoices.map((inv, idx) => (
-                   <div key={inv.id} className="relative group page-break-after-always">
+                   <div key={inv.id} className={`relative group page-break-after-always ${batchPrintingId === inv.id ? 'active-print' : ''}`}>
                      <div className="no-print absolute -left-12 top-0 bottom-0 w-2 bg-emerald-500/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
                      <div className="no-print flex justify-between items-center mb-4 px-4">
                         <span className="text-xs font-black text-slate-400 uppercase">Invoice #{idx + 1} of {batchInvoices.length} — {inv.invoiceNumber}</span>
@@ -630,6 +650,7 @@ const App: React.FC = () => {
                  ))}
                </div>
                <div className="fixed bottom-10 right-10 flex gap-4 no-print z-[60]">
+                 <button onClick={handleBatchDownloadPDF} className="bg-white border-2 border-slate-900 text-slate-900 px-8 py-5 rounded-2xl font-black uppercase text-xs shadow-2xl flex items-center gap-3 active:scale-95 transition-all"><Files size={20}/> Download Individually (PDF)</button>
                  <button onClick={() => window.print()} className="bg-slate-900 text-white px-12 py-5 rounded-2xl font-black uppercase text-xs shadow-2xl flex items-center gap-3 active:scale-95 transition-all"><Printer size={20}/> Print All PDF ({batchInvoices.length})</button>
                </div>
              </div>
