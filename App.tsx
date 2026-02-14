@@ -645,7 +645,7 @@ const App: React.FC = () => {
                            <button onClick={() => handleDownloadCSV(inv)} className="p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100" title="Download CSV"><FileSpreadsheet size={16}/></button>
                         </div>
                      </div>
-                     <InvoiceDocument invoice={inv} />
+                     <InvoiceDocument invoice={inv} isActivePrint={batchPrintingId === inv.id} />
                    </div>
                  ))}
                </div>
