@@ -156,13 +156,19 @@ const App: React.FC = () => {
         clipOffDate: findCol(['clip off date', 'clip-off date', 'gate in date']),
         gensetNo: findCol(['genset', 'genset no', 'generator'])
       };
+      
+      const newlyFoundCustomers = new Set<string>();
+      
       const parsed: Booking[] = allRows.slice(headerIdx + 1).map((row, idx) => {
         const clean = (valIdx: number) => (valIdx !== -1 && row[valIdx]) ? row[valIdx].replace(/"/g, '').trim() : '';
+        const custName = clean(mapping.customer) || 'Unnamed Client';
+        newlyFoundCustomers.add(custName);
+        
         const rVal = parseCurrency(clean(mapping.rate));
         const vVal = parseCurrency(clean(mapping.vat));
         return {
           id: `booking-${idx}-${Date.now()}`,
-          customer: clean(mapping.customer) || 'Unnamed Client',
+          customer: custName,
           bookingNo: clean(mapping.bookingNo) || '---',
           reeferNumber: clean(mapping.reefer) || '---',
           shipperAddress: clean(mapping.shipper) || '---',
@@ -186,6 +192,25 @@ const App: React.FC = () => {
           invDate: '', invIssueDate: ''
         };
       });
+
+      // Auto-collect unique customers not already in the config
+      const existingNames = new Set(customerConfigs.map(c => c.name.toLowerCase()));
+      const newConfigs: CustomerConfig[] = [];
+      newlyFoundCustomers.forEach(name => {
+        if (!existingNames.has(name.toLowerCase())) {
+          newConfigs.push({
+            id: `cust-${Date.now()}-${Math.random()}`,
+            name: name,
+            prefix: 'GS',
+            nextNumber: 1
+          });
+        }
+      });
+
+      if (newConfigs.length > 0) {
+        setCustomerConfigs(prev => [...prev, ...newConfigs]);
+      }
+      
       setBookings(prev => [...prev, ...parsed]);
     };
     reader.readAsText(file);
@@ -334,13 +359,19 @@ const App: React.FC = () => {
           </div>
           <div className="space-y-2">
             {[
-              { id: 'dashboard', icon: Layout, label: 'Manifest' },
-              { id: 'customers', icon: Users, label: 'Customers' },
+              { id: 'dashboard', icon: Layout, label: 'Manifest', badge: bookings.filter(b => !b.invNo).length },
+              { id: 'customers', icon: Users, label: 'Customers', badge: customerConfigs.length },
               { id: 'settings', icon: SettingsIcon, label: 'Templates' },
               { id: 'profile', icon: UserCircle, label: 'Identity' }
             ].map(item => (
-              <button key={item.id} onClick={() => setView(item.id as any)} className={`flex items-center gap-3 w-full px-5 py-3.5 rounded-2xl transition-all font-bold text-sm ${view === item.id || (view === 'batch-review' && item.id === 'dashboard') || (view === 'edit-invoice' && item.id === 'dashboard') || (view === 'invoice-preview' && item.id === 'dashboard') ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}>
-                <item.icon size={20} /> {item.label}
+              <button key={item.id} onClick={() => setView(item.id as any)} className={`relative flex items-center gap-3 w-full px-5 py-3.5 rounded-2xl transition-all font-bold text-sm ${view === item.id || (view === 'batch-review' && item.id === 'dashboard') || (view === 'edit-invoice' && item.id === 'dashboard') || (view === 'invoice-preview' && item.id === 'dashboard') ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}>
+                <item.icon size={20} /> 
+                {item.label}
+                {item.badge !== undefined && item.badge > 0 && (
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/10 text-[10px] px-2 py-0.5 rounded-full font-black">
+                    {item.badge}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -416,7 +447,7 @@ const App: React.FC = () => {
               {customerConfigs.length === 0 ? (
                 <div className="bg-white rounded-[2.5rem] p-20 text-center border-2 border-dashed border-slate-200 flex flex-col items-center gap-6">
                   <div className="bg-slate-50 p-6 rounded-full text-slate-200"><Users size={64}/></div>
-                  <div><h3 className="text-xl font-black text-slate-900">No customers registered</h3><p className="text-slate-500 mt-2">Add customers to automatically manage their unique invoice serials.</p></div>
+                  <div><h3 className="text-xl font-black text-slate-900">No customers registered</h3><p className="text-slate-500 mt-2">Upload a CSV or add customers manually to manage their unique invoice serials.</p></div>
                   <button onClick={addCustomer} className="bg-slate-900 text-white px-8 py-4 rounded-xl font-black uppercase text-[10px] tracking-widest">Register First Client</button>
                 </div>
               ) : (
