@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Logistics Invoice Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@300;500;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <style>
         :root {
             --a4-width: 210mm;
@@ -18,23 +17,21 @@
             margin: 0;
             padding: 0;
             -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
         }
-        /* Screen View Styles */
+        
         .invoice-container {
             width: var(--a4-width);
             min-height: var(--a4-height);
             background: white;
-            margin: 20px auto;
-            padding: 15mm;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            margin: 40px auto;
             position: relative;
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
         }
 
-        /* Standard A4 Print Styles */
         @media print {
             @page {
                 size: A4;
@@ -49,46 +46,25 @@
                 display: none !important;
             }
             .invoice-container {
-                width: 100% !important;
-                min-height: 100vh !important;
+                width: 210mm !important;
+                height: 297mm !important;
                 margin: 0 !important;
-                padding: 15mm !important;
+                padding: 0 !important;
                 box-shadow: none !important;
                 border: none !important;
                 page-break-after: always;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
-            /* Portfolio report specific printing */
-            .portfolio-report-print {
-                display: block !important;
-                width: 100% !important;
-                padding: 15mm !important;
-            }
-            table {
-                page-break-inside: auto;
-            }
-            tr {
-                page-break-inside: avoid;
-                page-break-after: auto;
-            }
-            thead {
-                display: table-header-group;
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
         }
 
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #d1d5db;
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #9ca3af;
-        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
     </style>
 <script type="importmap">
 {
@@ -105,7 +81,6 @@
 </head>
 <body>
     <div id="root"></div>
-    <!-- Explicitly load the entry point module -->
     <script type="module" src="index.tsx"></script>
 </body>
 </html>

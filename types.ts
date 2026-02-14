@@ -1,4 +1,3 @@
-
 export interface Booking {
   id: string;
   totalBooking: string;
@@ -28,17 +27,24 @@ export interface Booking {
   invNo: string;
   invDate: string;
   invIssueDate: string;
-  // New details
-  vesselName?: string;
-  voyageNo?: string;
-  sealNumber?: string;
-  weight?: string;
-  temperature?: string;
-  commodity?: string;
+}
+
+export interface CustomerConfig {
+  id: string;
+  name: string;
+  prefix: string;
+  nextNumber: number;
 }
 
 export type InvoiceSectionId = 'header' | 'parties' | 'table' | 'totals' | 'footer' | 'signature';
-export type InvoiceTheme = 'modern' | 'minimalist' | 'corporate' | 'industrial' | 'elegant' | 'blueprint' | 'glass' | 'royal' | 'sidebar-pro' | 'modern-cards' | 'technical-draft' | 'logistics-grid';
+export type InvoiceTheme = 
+  | 'logistics-grid' | 'corporate' | 'technical-draft' | 'minimalist' | 'industrial' 
+  | 'elegant' | 'blueprint' | 'glass' | 'royal' | 'modern-cards' 
+  | 'midnight-pro' | 'sidebar-pro' | 'neon-glow' | 'swiss-modern' | 'brutalist' 
+  | 'vintage' | 'soft-clay' | 'eco-green' | 'sunset-vibe' | 'high-contrast'
+  | 'deep-ocean' | 'pastel-dream' | 'luxury-gold' | 'urban-street' | 'paper-texture'
+  | 'monochrome' | 'vivid-spectrum' | 'classic-ledger' | 'modern-serif' | 'compact-list';
+
 export type GroupingType = 'unit' | 'shipper' | 'trucker' | 'booking';
 
 export interface TemplateFields {
@@ -62,17 +68,6 @@ export interface TemplateFields {
   showDueDate: boolean;
   showNotes: boolean;
   showWatermark: boolean;
-  // New details fields
-  showVessel: boolean;
-  showSeal: boolean;
-  showWeight: boolean;
-  showTemp: boolean;
-  showCommodity: boolean;
-}
-
-export interface CustomerSettings {
-  prefix: string;
-  nextSerial: number;
 }
 
 export interface TemplateConfig {
@@ -83,17 +78,6 @@ export interface TemplateConfig {
   groupBy: GroupingType;
 }
 
-export interface SavedTemplate {
-  id: string;
-  name: string;
-  config: {
-    sectionOrder: InvoiceSectionId[];
-    hiddenSections: InvoiceSectionId[];
-    fields: TemplateFields;
-    theme: InvoiceTheme;
-  };
-}
-
 export interface UserProfile {
   name: string;
   companyName: string;
@@ -102,6 +86,8 @@ export interface UserProfile {
   email: string;
   signatureUrl: string | null;
   logoUrl: string | null;
+  watermarkUrl: string | null;
+  watermarkOpacity: number;
 }
 
 export interface Invoice {
