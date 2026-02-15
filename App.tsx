@@ -12,18 +12,15 @@ import {
   Copy, Archive, Share2, Send, Wand2, Zap, Grid3X3, Award, Smartphone, FileDown,
   ExternalLink, MousePointerClick, Banknote, AlertTriangle, Info, ListChecks,
   Maximize2, Minimize2, MoveHorizontal, MoveVertical,
-  Image, PlusCircle, Compass, Leaf, Sunrise, ScrollText, FlaskConical, Beaker
+  PlusCircle, Compass, Leaf, Sunrise, ScrollText, FlaskConical, Beaker,
+  ShieldCheck, Key, Cpu, Paintbrush, Building2, Hash, Edit3,
+  // Add missing FileText icon import
+  FileText
 } from 'lucide-react';
 import { Booking, Invoice, InvoiceSectionId, TemplateConfig, UserProfile, TemplateFields, GroupingType, InvoiceTheme, CustomerConfig, CustomTheme } from './types';
 import { parseCurrency, formatCurrency, exportToCSV } from './utils/formatters';
 import InvoiceDocument from './components/InvoiceDocument';
 import { GoogleGenAI, Type } from "@google/genai";
-
-import { GoogleGenAI } from "@google/genai";
-
-const ai = new GoogleGenAI({
-  apiKey: import.meta.env.VITE_GEMINI_API_KEY,
-});
 
 const DEFAULT_COMPANY_LOGO = "https://images.unsplash.com/photo-1586611292717-f828b167408c?auto=format&fit=crop&q=80&w=200&h=200";
 
@@ -66,6 +63,7 @@ const App: React.FC = () => {
   const [showActionModal, setShowActionModal] = useState(false);
   const [showOperationModal, setShowOperationModal] = useState(false);
   const [showManualEntryModal, setShowManualEntryModal] = useState(false);
+  const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
   const [duplicateAlert, setDuplicateAlert] = useState<{ count: number } | null>(null);
   
   // Theme Creator State
@@ -86,6 +84,28 @@ const App: React.FC = () => {
   const [aiPrompt, setAiPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
 
+  // API Management State
+  const [apiActive, setApiActive] = useState(false);
+
+  useEffect(() => {
+    const checkApiStatus = async () => {
+      if (window.aistudio?.hasSelectedApiKey) {
+        const hasKey = await window.aistudio.hasSelectedApiKey();
+        setApiActive(hasKey);
+      }
+    };
+    checkApiStatus();
+  }, []);
+
+  const handleOpenApiKeyDialog = async () => {
+    if (window.aistudio?.openSelectKey) {
+      await window.aistudio.openSelectKey();
+      setApiActive(true);
+    } else {
+      alert("API Activation is available through the secure AI Studio project selector.");
+    }
+  };
+
   const [manualBooking, setManualBooking] = useState<Partial<Booking>>({
     bookingNo: '',
     reeferNumber: '',
@@ -96,6 +116,12 @@ const App: React.FC = () => {
     trucker: '',
     shipperAddress: '',
     customer: ''
+  });
+
+  const [newCustomer, setNewCustomer] = useState<Partial<CustomerConfig>>({
+    name: '',
+    prefix: 'INV',
+    nextNumber: 1
   });
 
   const [profile, setProfile] = useState<UserProfile>(() => {
@@ -158,7 +184,8 @@ const App: React.FC = () => {
     if (!aiPrompt) return;
     setIsGenerating(true);
     try {
-      const response = await ai.models.generateContent({
+      const localAi = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const response = await localAi.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: `Generate a JSON object for an invoice theme based on the following description: "${aiPrompt}". 
         Return ONLY valid JSON with these keys: 
@@ -198,8 +225,12 @@ const App: React.FC = () => {
         ...data,
         label: `AI: ${aiPrompt.slice(0, 15)}...`
       }));
-    } catch (error) {
+    } catch (error: any) {
       console.error("AI Generation failed", error);
+      if (error.message?.includes("Requested entity was not found")) {
+        setApiActive(false);
+        alert("API Configuration reset required. Please select a valid Project Key.");
+      }
     } finally {
       setIsGenerating(false);
     }
@@ -237,104 +268,83 @@ const App: React.FC = () => {
     });
   };
 
-  const handleDuplicateSelected = () => {
-    const toDup = bookings.filter(b => selectedIds.has(b.id));
-    const newSelectedIds = new Set<string>();
-    const newItems = toDup.map(item => {
-      const newId = `booking-dup-${Date.now()}-${Math.random()}`;
-      newSelectedIds.add(newId);
-      return { ...item, id: newId, invNo: '', status: 'PENDING' };
-    });
-    setBookings(prev => [...newItems, ...prev]);
-    setSelectedIds(newSelectedIds);
-    setDuplicateAlert({ count: toDup.length });
-  };
-
-  const handleArchiveSelected = () => {
-    const updated = bookings.filter(b => !selectedIds.has(b.id));
-    setBookings(updated);
-    setSelectedIds(new Set());
-  };
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (!file) return;
+
     const reader = new FileReader();
-    reader.onload = (e) => {
-      const text = e.target?.result as string;
-      const allRows = text.split('\n').filter(l => l.trim()).map(row => row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/));
-      if (allRows.length === 0) return;
-      const headers = allRows[0].map(h => h.replace(/"/g, '').trim().toLowerCase());
-      const findCol = (keys: string[]) => headers.findIndex(h => keys.some(k => h.includes(k)));
-      const mapping = {
-        bookingNo: findCol(['booking', 'bk no']), 
-        reefer: findCol(['container', 'unit', 'reefer']),
-        shipper: findCol(['shipper']), 
-        shipperAddress: findCol(['shipper address', 'address']), 
-        trucker: findCol(['trucker']),
-        rate: findCol(['rate', 'amount']), 
-        customer: findCol(['customer', 'consignee']),
-        vat: findCol(['vat', 'tax']), 
-        date: findCol(['date']),
-        goPort: findCol(['go port', 'origin']),
-        giPort: findCol(['gi port', 'destination'])
-      };
-      
-      const newBookings: Booking[] = [];
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      if (!content) return;
+
+      const rows = content.split('\n').filter(row => row.trim());
+      if (rows.length < 2) return;
+
+      const headers = rows[0].split(',').map(h => h.trim().replace(/"/g, ''));
+      const newEntries: Booking[] = [];
       const newCustomersToRegister = new Set<string>();
-      let duplicateCount = 0;
 
-      allRows.slice(1).forEach((row, idx) => {
-        const clean = (valIdx: number) => (valIdx !== -1 && row[valIdx]) ? row[valIdx].replace(/"/g, '').trim() : '';
-        const rVal = parseCurrency(clean(mapping.rate));
-        const vVal = parseCurrency(clean(mapping.vat));
-        const custName = clean(mapping.customer) || 'Unnamed Client';
-        const bkNo = clean(mapping.bookingNo) || '---';
-        const rfNo = clean(mapping.reefer) || '---';
+      for (let i = 1; i < rows.length; i++) {
+        const values = rows[i].split(',').map(v => v.trim().replace(/"/g, ''));
+        const booking: any = {
+          id: `booking-csv-${Date.now()}-${i}`,
+          status: 'PENDING',
+          gensetNo: '---',
+          trucker: '---',
+          shipper: '---',
+          goPort: '---',
+          giPort: '---',
+          reeferNumber: '---',
+          bookingNo: '---',
+          customer: 'Unnamed Client',
+          bookingDate: new Date().toISOString().split('T')[0],
+          rateValue: 0,
+          vatValue: 0,
+          shipperAddress: ''
+        };
 
-        const isDuplicate = bookings.some(b => b.bookingNo === bkNo && b.reeferNumber === rfNo);
-        if (isDuplicate) duplicateCount++;
-
-        newCustomersToRegister.add(custName);
-
-        newBookings.push({
-          id: `booking-${idx}-${Date.now()}`,
-          customer: custName,
-          shipper: clean(mapping.shipper) || '---',
-          bookingNo: bkNo,
-          reeferNumber: rfNo,
-          shipperAddress: clean(mapping.shipperAddress) || '---',
-          trucker: clean(mapping.trucker) || '---',
-          rate: clean(mapping.rate) || '0',
-          rateValue: rVal,
-          vat: clean(mapping.vat) || '0',
-          vatValue: vVal,
-          bookingDate: clean(mapping.date) || new Date().toISOString().split('T')[0],
-          status: 'PENDING', 
-          goPort: clean(mapping.goPort) || '---', 
-          giPort: clean(mapping.giPort) || '---', 
-          totalBooking: '', customerRef: '', gops: '', dateOfClipOn: '', clipOffDate: '', 
-          beneficiaryName: '', gensetNo: '---', res: '', gaz: '', remarks: '', 
-          gensetFaultDescription: '', invNo: '', invDate: '', invIssueDate: ''
+        headers.forEach((header, index) => {
+          if (index < values.length) {
+            const val = values[index];
+            if (header === 'rateValue' || header === 'vatValue') {
+              booking[header] = parseCurrency(val);
+            } else {
+              booking[header] = val || booking[header];
+            }
+          }
         });
-      });
+
+        if (booking.bookingNo && booking.bookingNo !== '---') {
+          if (!booking.vatValue && booking.rateValue) {
+            booking.vatValue = booking.rateValue * 0.14;
+            booking.vat = booking.vatValue.toString();
+          }
+          if (booking.rateValue) {
+            booking.rate = booking.rateValue.toString();
+          }
+          newEntries.push(booking as Booking);
+          newCustomersToRegister.add(booking.customer);
+        }
+      }
 
       setCustomerConfigs(prev => {
         const existingNames = new Set(prev.map(c => c.name.toLowerCase()));
         const toAdd: CustomerConfig[] = [];
         newCustomersToRegister.forEach(name => {
           if (!existingNames.has(name.toLowerCase())) {
-            toAdd.push({ id: `cust-${Date.now()}-${Math.random()}`, name, prefix: 'GS', nextNumber: 1 });
+            toAdd.push({ id: `cust-${Date.now()}-${Math.random()}`, name, prefix: 'INV', nextNumber: 1 });
           }
         });
         return [...prev, ...toAdd];
       });
 
-      setBookings(prev => [...newBookings, ...prev]);
-      if (duplicateCount > 0) setDuplicateAlert({ count: duplicateCount });
+      if (newEntries.length > 0) {
+        setBookings(prev => [...newEntries, ...prev]);
+        alert(`Successfully imported ${newEntries.length} manifest records.`);
+      }
     };
     reader.readAsText(file);
-    event.target.value = '';
+    e.target.value = '';
   };
 
   const handleManualBookingSubmit = (e: React.FormEvent) => {
@@ -365,8 +375,43 @@ const App: React.FC = () => {
       beneficiaryName: '', gensetNo: '---', res: '', gaz: '', remarks: '', 
       gensetFaultDescription: '', invNo: '', invDate: '', invIssueDate: ''
     };
+    
+    // Register customer if new
+    setCustomerConfigs(prev => {
+      if (prev.some(c => c.name === newEntry.customer)) return prev;
+      return [...prev, { id: `cust-${Date.now()}`, name: newEntry.customer, prefix: 'INV', nextNumber: 1 }];
+    });
+
     setBookings(prev => [newEntry, ...prev]);
     setShowManualEntryModal(false);
+  };
+
+  const handleAddCustomer = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCustomer.name) return;
+    const cust: CustomerConfig = {
+      id: `cust-${Date.now()}`,
+      name: newCustomer.name,
+      prefix: newCustomer.prefix || 'INV',
+      nextNumber: newCustomer.nextNumber || 1
+    };
+    setCustomerConfigs(prev => [...prev, cust]);
+    setShowAddCustomerModal(false);
+    setNewCustomer({ name: '', prefix: 'INV', nextNumber: 1 });
+  };
+
+  const deleteCustomer = (id: string) => {
+    if (confirm("Are you sure you want to remove this customer configuration? Manifest entries will not be deleted.")) {
+      setCustomerConfigs(prev => prev.filter(c => c.id !== id));
+    }
+  };
+
+  const updateCustomerPrefix = (id: string, prefix: string) => {
+    setCustomerConfigs(prev => prev.map(c => c.id === id ? { ...c, prefix } : c));
+  };
+
+  const updateCustomerNextNumber = (id: string, num: number) => {
+    setCustomerConfigs(prev => prev.map(c => c.id === id ? { ...c, nextNumber: num } : c));
   };
 
   const triggerOperation = () => {
@@ -380,14 +425,29 @@ const App: React.FC = () => {
       groups.set(key, existing);
     });
     const generatedInvoices: Invoice[] = [];
-    let idx = 0;
+    
+    // We'll update the customer next number sequentially
+    const updatedCustomerConfigs = [...customerConfigs];
+
     groups.forEach((items, bkNo) => {
       const firstItem = items[0];
       const subtotal = items.reduce((acc, curr) => acc + curr.rateValue, 0);
       const tax = items.reduce((acc, curr) => acc + curr.vatValue, 0);
+      
+      const custIdx = updatedCustomerConfigs.findIndex(c => c.name === firstItem.customer);
+      let prefix = 'INV';
+      let nextNum = Math.floor(Math.random() * 1000);
+      
+      if (custIdx !== -1) {
+        const c = updatedCustomerConfigs[custIdx];
+        prefix = c.prefix;
+        nextNum = c.nextNumber;
+        updatedCustomerConfigs[custIdx].nextNumber += 1;
+      }
+
       generatedInvoices.push({
         id: `INV-${bkNo}-${Date.now()}`,
-        invoiceNumber: `${customerConfigs.find(c => c.name === firstItem.customer)?.prefix || 'INV'}${customerConfigs.find(c => c.name === firstItem.customer)?.nextNumber || Math.floor(Math.random()*1000) + idx++}`,
+        invoiceNumber: `${prefix}-${nextNum.toString().padStart(4, '0')}`,
         date: invConfig.date,
         dueDate: invConfig.dueDate,
         customerName: firstItem.customer,
@@ -403,6 +463,9 @@ const App: React.FC = () => {
         userProfile: profile
       });
     });
+
+    setCustomerConfigs(updatedCustomerConfigs);
+
     if (generatedInvoices.length > 1) {
       setBatchInvoices(generatedInvoices);
       setView('batch-summary');
@@ -451,6 +514,12 @@ const App: React.FC = () => {
     notes: 'Preview of your custom style.',
     templateConfig: { ...templateConfig, theme: editingTheme.id, customThemeData: editingTheme },
     userProfile: profile
+  };
+
+  const handleImageUpload = (file: File, field: 'logoUrl' | 'signatureUrl' | 'watermarkUrl') => {
+    const reader = new FileReader();
+    reader.onload = (event) => setProfile(prev => ({ ...prev, [field]: event.target?.result as string }));
+    reader.readAsDataURL(file);
   };
 
   return (
@@ -531,6 +600,106 @@ const App: React.FC = () => {
             </div>
           )}
 
+          {view === 'customers' && (
+            <div className="space-y-8 animate-in fade-in duration-500">
+               <header className="flex justify-between items-end">
+                 <div>
+                   <h2 className="text-3xl font-black text-slate-900 tracking-tight">Customer Directory</h2>
+                   <p className="text-slate-500 font-medium mt-1">Configure automated invoice numbering and prefixes.</p>
+                 </div>
+                 <button onClick={() => setShowAddCustomerModal(true)} className="bg-emerald-600 text-white px-6 py-3 rounded-xl font-black text-xs flex items-center gap-2 shadow-xl hover:bg-emerald-700 transition-all">
+                    <Plus size={16}/> New Client
+                 </button>
+               </header>
+
+               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                 {customerConfigs.length === 0 ? (
+                   <div className="col-span-full py-20 text-center bg-white rounded-[3rem] border-2 border-dashed border-slate-100">
+                     <Building2 size={48} className="mx-auto text-slate-200 mb-4" />
+                     <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">No customers configured yet</p>
+                   </div>
+                 ) : customerConfigs.map((cust) => (
+                   <div key={cust.id} className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 space-y-6 group">
+                     <div className="flex justify-between items-start">
+                       <div className="bg-slate-50 p-3 rounded-2xl text-emerald-600 group-hover:scale-110 transition-transform">
+                         <Building2 size={24} />
+                       </div>
+                       <button onClick={() => deleteCustomer(cust.id)} className="p-2 text-slate-300 hover:text-red-500 transition-colors">
+                         <Trash2 size={18} />
+                       </button>
+                     </div>
+                     <div>
+                       <h3 className="text-lg font-black text-slate-900 leading-tight">{cust.name}</h3>
+                       <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">ID: {cust.id.split('-')[1]}</p>
+                     </div>
+                     <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-50">
+                       <div className="space-y-1">
+                         <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1"><Hash size={8}/> Prefix</label>
+                         <input 
+                           className="w-full bg-slate-50 border-none rounded-lg px-3 py-2 text-xs font-black outline-none focus:ring-2 ring-emerald-500/20" 
+                           value={cust.prefix} 
+                           onChange={(e) => updateCustomerPrefix(cust.id, e.target.value)}
+                         />
+                       </div>
+                       <div className="space-y-1">
+                         <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1"><ListChecks size={8}/> Next #</label>
+                         <input 
+                           type="number"
+                           className="w-full bg-slate-50 border-none rounded-lg px-3 py-2 text-xs font-black outline-none focus:ring-2 ring-emerald-500/20" 
+                           value={cust.nextNumber} 
+                           onChange={(e) => updateCustomerNextNumber(cust.id, parseInt(e.target.value) || 1)}
+                         />
+                       </div>
+                     </div>
+                     <div className="bg-emerald-50 p-3 rounded-2xl flex items-center justify-between">
+                       <span className="text-[9px] font-black text-emerald-700 uppercase tracking-widest">Latest Sample</span>
+                       <span className="text-[10px] font-mono font-bold text-emerald-600">{cust.prefix}-{(cust.nextNumber).toString().padStart(4, '0')}</span>
+                     </div>
+                   </div>
+                 ))}
+               </div>
+            </div>
+          )}
+
+          {view === 'batch-summary' && (
+            <div className="space-y-8 animate-in fade-in duration-500">
+               <header className="flex justify-between items-end">
+                 <div>
+                   <h2 className="text-3xl font-black text-slate-900 tracking-tight">Batch Generation Complete</h2>
+                   <p className="text-slate-500 font-medium mt-1">{batchInvoices.length} documents have been synthesized.</p>
+                 </div>
+                 <button onClick={() => setView('dashboard')} className="p-3 bg-slate-100 rounded-xl text-slate-600 font-black uppercase text-xs flex items-center gap-2 hover:bg-slate-200 transition-all">
+                   <ChevronLeft size={18}/> Back to Manifest
+                 </button>
+               </header>
+
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 {batchInvoices.map((inv) => (
+                   <div key={inv.id} className="bg-white p-6 rounded-[2rem] shadow-xl border border-slate-100 flex items-center justify-between group">
+                     <div className="flex items-center gap-4">
+                       <div className="bg-slate-50 p-4 rounded-2xl text-emerald-600">
+                         <FileText size={24} />
+                       </div>
+                       <div>
+                         <h4 className="text-sm font-black text-slate-900">{inv.invoiceNumber}</h4>
+                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{inv.customerName}</p>
+                       </div>
+                     </div>
+                     <div className="flex items-center gap-3">
+                       <div className="text-right">
+                         <p className="text-xs font-black text-slate-900">{formatCurrency(inv.total, inv.currency)}</p>
+                         <p className="text-[9px] font-bold text-slate-400">{inv.items.length} Units</p>
+                       </div>
+                       <button onClick={() => { setActiveInvoice(inv); setView('invoice-preview'); }} className="bg-slate-900 text-white p-3 rounded-xl hover:bg-black transition-all">
+                         <Eye size={16} />
+                       </button>
+                     </div>
+                   </div>
+                 ))}
+               </div>
+            </div>
+          )}
+
           {view === 'settings' && (
             <div className="space-y-12 animate-in fade-in duration-500">
                <header className="flex justify-between items-end">
@@ -589,7 +758,6 @@ const App: React.FC = () => {
 
                <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
                   <div className="lg:col-span-5 space-y-6">
-                    {/* Gemini AI Lab */}
                     <div className="bg-slate-900 p-8 rounded-[2.5rem] shadow-2xl space-y-6">
                        <div className="flex items-center gap-3 text-emerald-400">
                           <Sparkles size={24}/>
@@ -620,20 +788,6 @@ const App: React.FC = () => {
                                 </select>
                              </div>
                           </div>
-
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 uppercase">Table Aesthetic</label>
-                                <select className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent outline-none focus:border-emerald-600" value={editingTheme.tableStyle} onChange={e => setEditingTheme({...editingTheme, tableStyle: e.target.value as any})}>
-                                   {['grid', 'clean', 'striped', 'heavy', 'glass'].map(s => <option key={s} value={s}>{s.toUpperCase()}</option>)}
-                                </select>
-                             </div>
-                             <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 uppercase">Header Logic</label>
-                                <select className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent outline-none focus:border-emerald-600" value={editingTheme.headerStyle} onChange={e => setEditingTheme({...editingTheme, headerStyle: e.target.value as any})}>
-                                   {['standard', 'centered', 'badge'].map(h => <option key={h} value={h}>{h.toUpperCase()}</option>)}
-                                </select>
-                             </div>
-                          </div>
-
                           <div className="space-y-4 pt-4 border-t">
                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tailwind Style Definitions</p>
                              <div className="grid grid-cols-2 gap-3">
@@ -646,12 +800,105 @@ const App: React.FC = () => {
                        </div>
                     </div>
                   </div>
-
                   <div className="lg:col-span-7 space-y-4">
                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Live Result Preview</p>
                      <div className="bg-slate-200 p-8 rounded-[3rem] shadow-inner overflow-hidden flex justify-center scale-90 origin-top">
                         <InvoiceDocument invoice={previewInvoiceData} />
                      </div>
+                  </div>
+               </div>
+            </div>
+          )}
+
+          {view === 'profile' && (
+            <div className="max-w-6xl mx-auto space-y-12 animate-in fade-in duration-500">
+               <div className="flex justify-between items-end">
+                 <div>
+                   <h2 className="text-4xl font-black text-slate-900 tracking-tight">Identity & Brand</h2>
+                   <p className="text-slate-500 font-medium mt-1">Manage official brand assets and system activation.</p>
+                 </div>
+                 <button onClick={() => {localStorage.setItem('user_profile', JSON.stringify(profile)); alert('Identity Synced Successfully!');}} className="bg-emerald-600 text-white px-10 py-4 rounded-2xl font-black shadow-xl uppercase text-xs active:scale-95 transition-all">Sync Identity</button>
+               </div>
+
+               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  {/* Business Details */}
+                  <div className="lg:col-span-7 space-y-8">
+                    <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100 space-y-8">
+                       <h3 className="text-xl font-black text-slate-900 pb-4 border-b uppercase tracking-tight flex items-center gap-3">
+                         <Briefcase size={22} className="text-emerald-500"/> Official Profile
+                       </h3>
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Entity Name</label><input className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={profile.companyName} onChange={e => setProfile({...profile, companyName: e.target.value})} /></div>
+                          <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Tax Identifier</label><input className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={profile.taxId} onChange={e => setProfile({...profile, taxId: e.target.value})} /></div>
+                          <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Authorized Manager</label><input className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={profile.name} onChange={e => setProfile({...profile, name: e.target.value})} /></div>
+                          <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Official Email</label><input className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={profile.email} onChange={e => setProfile({...profile, email: e.target.value})} /></div>
+                       </div>
+                       <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Primary Headquarters Address</label><textarea rows={3} className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none resize-none" value={profile.address} onChange={e => setProfile({...profile, address: e.target.value})} /></div>
+                    </div>
+
+                    <div className="bg-slate-950 p-10 rounded-[3rem] shadow-2xl space-y-8 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+                          <Cpu size={120} className="text-emerald-400" />
+                        </div>
+                        <div className="relative z-10 space-y-6">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="bg-emerald-500/20 p-3 rounded-2xl"><ShieldCheck size={28} className="text-emerald-400" /></div>
+                              <div>
+                                <h3 className="text-lg font-black text-white uppercase tracking-tight">AI Access Formula</h3>
+                                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-0.5">Gemini Intelligence System</p>
+                              </div>
+                            </div>
+                            <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${apiActive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                              <div className={`w-2 h-2 rounded-full ${apiActive ? 'bg-emerald-400' : 'bg-red-400'}`}></div>
+                              {apiActive ? 'Active' : 'Locked'}
+                            </div>
+                          </div>
+                          <p className="text-slate-300 text-sm font-medium leading-relaxed max-w-sm">Select and confirm your Google Cloud Project key to activate automated style synthesis and manifest intelligence.</p>
+                          <button onClick={handleOpenApiKeyDialog} className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl transition-all active:scale-95 flex items-center justify-center gap-3">
+                            <Key size={18} /> {apiActive ? 'Sync Project Access' : 'Connect Project Key'}
+                          </button>
+                        </div>
+                    </div>
+                  </div>
+
+                  {/* Brand Assets */}
+                  <div className="lg:col-span-5 space-y-8">
+                    <div className="bg-white p-8 rounded-[3rem] shadow-xl border border-slate-100 space-y-6">
+                      <div className="flex items-center justify-between w-full">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Brand Logo</p>
+                        <label className="cursor-pointer text-emerald-600 font-black text-[10px] uppercase hover:underline decoration-2"><input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], 'logoUrl')} />Change</label>
+                      </div>
+                      <div className="h-40 w-full bg-slate-50 rounded-3xl flex items-center justify-center shadow-inner overflow-hidden border-2 border-slate-100">
+                        {profile.logoUrl ? <img src={profile.logoUrl} className="h-full w-full object-contain p-4" /> : <ImageIcon size={48} className="text-slate-200" />}
+                      </div>
+                    </div>
+
+                    <div className="bg-white p-8 rounded-[3rem] shadow-xl border border-slate-100 space-y-6">
+                      <div className="flex items-center justify-between w-full">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Manager Signature</p>
+                        <label className="cursor-pointer text-emerald-600 font-black text-[10px] uppercase hover:underline decoration-2"><input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], 'signatureUrl')} />Upload</label>
+                      </div>
+                      <div className="h-28 w-full bg-slate-50 rounded-2xl flex items-center justify-center shadow-inner overflow-hidden border-2 border-slate-100">
+                        {profile.signatureUrl ? <img src={profile.signatureUrl} className="h-full w-auto object-contain p-4 mix-blend-multiply" /> : <PenTool size={32} className="text-slate-200" />}
+                      </div>
+                    </div>
+
+                    <div className="bg-white p-8 rounded-[3rem] shadow-xl border border-slate-100 space-y-6">
+                      <div className="flex items-center justify-between w-full">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">A4 Watermark</p>
+                        <label className="cursor-pointer text-emerald-600 font-black text-[10px] uppercase hover:underline decoration-2"><input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], 'watermarkUrl')} />Upload</label>
+                      </div>
+                      <div className="space-y-4">
+                        <div className="h-28 w-full bg-slate-50 rounded-2xl flex items-center justify-center shadow-inner overflow-hidden border-2 border-slate-100 relative">
+                           {profile.watermarkUrl ? <img src={profile.watermarkUrl} style={{ opacity: profile.watermarkOpacity }} className="h-full w-auto object-contain p-4" /> : <Droplets size={32} className="text-slate-200" />}
+                        </div>
+                        <div className="px-2 space-y-2">
+                           <div className="flex justify-between text-[8px] font-black text-slate-400 uppercase"><span>Opacity</span><span>{Math.round(profile.watermarkOpacity * 100)}%</span></div>
+                           <input type="range" min="0" max="0.5" step="0.01" value={profile.watermarkOpacity} onChange={e => setProfile({...profile, watermarkOpacity: parseFloat(e.target.value)})} className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-emerald-600" />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                </div>
             </div>
@@ -666,15 +913,12 @@ const App: React.FC = () => {
                       <div><h3 className="text-2xl font-black text-slate-900 tracking-tight">Document Preview</h3><p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">{activeInvoice.invoiceNumber}</p></div>
                     </div>
                     <div className="flex gap-3">
-                      <button onClick={() => setView('edit-invoice')} className="bg-slate-100 text-slate-600 px-6 py-3 rounded-xl font-black uppercase text-xs flex items-center gap-2 hover:bg-slate-200 transition-all"><Wand2 size={18}/> Studio</button>
                       <button onClick={() => window.print()} className="bg-slate-900 text-white px-8 py-3 rounded-xl font-black uppercase text-xs flex items-center gap-2 shadow-xl hover:bg-black transition-all active:scale-95"><Printer size={18}/> Print PDF</button>
                     </div>
                   </div>
-                  
                   <div className="pt-6 border-t border-slate-50">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Choose Visual Style</p>
                     <div className="flex gap-2 overflow-x-auto pb-2 custom-scroll no-scrollbar">
-                       {/* Mix standard and custom themes for selection */}
                        {[...STANDARD_THEMES.map(t => ({...t, isCustom: false})), ...customThemes.map(t => ({id: t.id, label: t.label, icon: Wand2, color: t.accent, isCustom: true, data: t}))].map(t => {
                          const isActive = (activeInvoice.templateConfig?.theme || templateConfig.theme) === t.id;
                          return (
@@ -689,36 +933,6 @@ const App: React.FC = () => {
                </div>
                <InvoiceDocument invoice={activeInvoice} />
              </div>
-          )}
-
-          {/* ... existing views (profile, customers, batch, modals) ... */}
-          {view === 'profile' && (
-            <div className="max-w-5xl mx-auto space-y-10 animate-in fade-in duration-500">
-               <div className="flex justify-between items-end"><div><h2 className="text-4xl font-black text-slate-900 tracking-tight">Identity</h2><p className="text-slate-500 font-medium mt-1">Brand assets and official watermark.</p></div><button onClick={() => {localStorage.setItem('user_profile', JSON.stringify(profile)); alert('Identity Saved!');}} className="bg-emerald-600 text-white px-10 py-4 rounded-2xl font-black shadow-xl uppercase text-xs active:scale-95 transition-all">Save Identity</button></div>
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100 space-y-6 h-fit">
-                    <h3 className="text-xl font-black text-slate-900 pb-4 border-b uppercase tracking-tight">Business Profile</h3>
-                    <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Entity Name</label><input className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={profile.companyName} onChange={e => setProfile({...profile, companyName: e.target.value})} /></div>
-                    <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Tax Identifier</label><input className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={profile.taxId} onChange={e => setProfile({...profile, taxId: e.target.value})} /></div>
-                    <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Manager Name</label><input className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={profile.name} onChange={e => setProfile({...profile, name: e.target.value})} /></div>
-                    <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Address</label><textarea rows={3} className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none resize-none" value={profile.address} onChange={e => setProfile({...profile, address: e.target.value})} /></div>
-                  </div>
-                  
-                  <div className="space-y-8">
-                    <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100 flex flex-col items-center gap-6 group relative">
-                      <p className="text-[10px] font-black text-slate-400 uppercase w-full">Brand Logo</p>
-                      {profile.logoUrl ? <img src={profile.logoUrl} className="h-40 w-full object-contain shadow-inner rounded-3xl border-2 border-slate-50 p-6" /> : <div className="h-40 w-full bg-slate-50 rounded-3xl flex items-center justify-center text-slate-200"><ImageIcon size={64}/></div>}
-                      <label className="cursor-pointer bg-slate-900 text-white px-8 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all hover:bg-emerald-600 shadow-xl"><FileUp size={16} className="inline mr-2"/> Upload Logo<input type="file" className="hidden" accept="image/*" onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        const reader = new FileReader();
-                        reader.onload = (event) => setProfile(prev => ({ ...prev, logoUrl: event.target?.result as string }));
-                        reader.readAsDataURL(file);
-                      }} /></label>
-                    </div>
-                  </div>
-               </div>
-            </div>
           )}
         </div>
       </main>
@@ -750,6 +964,37 @@ const App: React.FC = () => {
                    <input type="number" className="w-full bg-slate-50 p-3 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={manualBooking.rateValue} onChange={e => setManualBooking({...manualBooking, rateValue: parseFloat(e.target.value) || 0})} />
                 </div>
                 <button type="submit" className="col-span-2 bg-emerald-600 text-white py-4 rounded-2xl font-black uppercase text-xs shadow-xl hover:bg-emerald-700 transition-all active:scale-[0.98] mt-4">Save Entry</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Customer Modal */}
+      {showAddCustomerModal && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden border border-slate-100 animate-in zoom-in-95 duration-300">
+            <div className="p-10 space-y-8">
+              <div className="flex justify-between items-center">
+                <h3 className="text-3xl font-black text-slate-900 tracking-tight">Register Client</h3>
+                <button onClick={() => setShowAddCustomerModal(false)} className="p-2 text-slate-300 hover:text-red-500 transition-colors"><X size={24}/></button>
+              </div>
+              <form onSubmit={handleAddCustomer} className="space-y-4">
+                <div className="space-y-1">
+                   <label className="text-[10px] font-black text-slate-400 uppercase">Company Name</label>
+                   <input required className="w-full bg-slate-50 p-3 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={newCustomer.name} onChange={e => setNewCustomer({...newCustomer, name: e.target.value})} placeholder="e.g., Nile Shipping" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-slate-400 uppercase">Invoice Prefix</label>
+                    <input required className="w-full bg-slate-50 p-3 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={newCustomer.prefix} onChange={e => setNewCustomer({...newCustomer, prefix: e.target.value})} placeholder="INV" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-slate-400 uppercase">Start From #</label>
+                    <input type="number" required className="w-full bg-slate-50 p-3 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={newCustomer.nextNumber} onChange={e => setNewCustomer({...newCustomer, nextNumber: parseInt(e.target.value) || 1})} />
+                  </div>
+                </div>
+                <button type="submit" className="w-full bg-emerald-600 text-white py-4 rounded-2xl font-black uppercase text-xs shadow-xl hover:bg-emerald-700 transition-all active:scale-[0.98] mt-4">Confirm Registration</button>
               </form>
             </div>
           </div>
