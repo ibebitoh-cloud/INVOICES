@@ -3,7 +3,7 @@ import React, { useMemo } from 'react';
 import { Invoice, Booking, TemplateFields, InvoiceTheme, CustomTheme } from '../types';
 import { formatCurrency } from '../utils/formatters';
 import { 
-  Anchor, Briefcase, Clock, Truck, Package, Square, ArrowRight, Heart, FileText, Info
+  Anchor, Briefcase, Clock, Truck, Package, Square, ArrowRight, Heart, FileText, Info, Phone, Globe, Landmark
 } from 'lucide-react';
 
 interface InvoiceDocumentProps {
@@ -25,7 +25,6 @@ interface ThemeConfig {
 }
 
 const getThemeConfig = (theme: InvoiceTheme, customData?: CustomTheme): ThemeConfig => {
-  // If custom data exists, prioritize it
   if (customData) {
     return {
       accent: customData.accent,
@@ -62,53 +61,13 @@ const getThemeConfig = (theme: InvoiceTheme, customData?: CustomTheme): ThemeCon
       accent: 'bg-emerald-600', secondary: 'text-emerald-800', bg: 'bg-[#f0fdf4]', border: 'border-emerald-100', 
       font: 'font-sans', radius: 'rounded-3xl', layout: 'modern', tableStyle: 'clean', headerStyle: 'standard' 
     },
-    'sunset-vibe': { 
-      accent: 'bg-gradient-to-r from-orange-500 to-rose-500', secondary: 'text-rose-600', bg: 'bg-orange-50', border: 'border-orange-100', 
-      font: 'font-grotesk', radius: 'rounded-2xl', layout: 'modern', tableStyle: 'glass', headerStyle: 'standard' 
-    },
-    'blueprint': { 
-      accent: 'bg-white', secondary: 'text-blue-300', bg: 'bg-blue-800', border: 'border-blue-400', 
-      font: 'font-mono-jb', radius: 'rounded-none', layout: 'industrial', tableStyle: 'grid', headerStyle: 'standard' 
-    },
     'technical-draft': { 
       accent: 'bg-slate-700', secondary: 'text-slate-500', bg: 'bg-slate-50', border: 'border-slate-300', 
       font: 'font-mono-jb', radius: 'rounded-none', layout: 'industrial', tableStyle: 'grid', headerStyle: 'standard' 
     },
-    'minimalist': { 
-      accent: 'bg-zinc-200', secondary: 'text-zinc-400', bg: 'bg-white', border: 'border-transparent', 
-      font: 'font-sans', radius: 'rounded-full', layout: 'minimal', tableStyle: 'clean', headerStyle: 'centered' 
-    },
-    'industrial': { 
-      accent: 'bg-yellow-500', secondary: 'text-yellow-600', bg: 'bg-white', border: 'border-black', 
-      font: 'font-bebas', radius: 'rounded-none', layout: 'industrial', tableStyle: 'heavy', headerStyle: 'standard' 
-    },
-    'elegant': { 
-      accent: 'bg-stone-800', secondary: 'text-stone-500', bg: 'bg-[#fdfdfd]', border: 'border-stone-100', 
-      font: 'font-serif-bask', radius: 'rounded-[3rem]', layout: 'split', tableStyle: 'clean', headerStyle: 'centered' 
-    },
-    'glass': { 
-      accent: 'bg-blue-400', secondary: 'text-blue-600', bg: 'bg-blue-50/50', border: 'border-white', 
-      font: 'font-sans', radius: 'rounded-3xl', layout: 'modern', tableStyle: 'glass', headerStyle: 'standard' 
-    },
-    'royal': { 
-      accent: 'bg-purple-900', secondary: 'text-purple-600', bg: 'bg-white', border: 'border-purple-100', 
-      font: 'font-playfair', radius: 'rounded-xl', layout: 'split', tableStyle: 'clean', headerStyle: 'standard' 
-    },
-    'midnight-pro': { 
-      accent: 'bg-emerald-500', secondary: 'text-emerald-400', bg: 'bg-slate-950', border: 'border-white/5', 
-      font: 'font-sans', radius: 'rounded-[2rem]', layout: 'modern', tableStyle: 'glass', headerStyle: 'standard' 
-    },
     'swiss-modern': { 
       accent: 'bg-red-600', secondary: 'text-black', bg: 'bg-white', border: 'border-black', 
       font: 'font-grotesk', radius: 'rounded-none', layout: 'bold', tableStyle: 'heavy', headerStyle: 'centered' 
-    },
-    'brutalist': { 
-      accent: 'bg-zinc-900', secondary: 'text-black', bg: 'bg-white', border: 'border-black border-4', 
-      font: 'font-bebas', radius: 'rounded-none', layout: 'bold', tableStyle: 'heavy', headerStyle: 'standard' 
-    },
-    'deep-ocean': { 
-      accent: 'bg-blue-900', secondary: 'text-blue-400', bg: 'bg-blue-950', border: 'border-white/10', 
-      font: 'font-sans', radius: 'rounded-3xl', layout: 'modern', tableStyle: 'glass', headerStyle: 'standard' 
     },
   };
 
@@ -168,7 +127,7 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
     if (!fields.showWatermark || !profile.watermarkUrl) return null;
     return (
       <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden z-0 select-none">
-        <img src={profile.watermarkUrl} style={{ opacity: profile.watermarkOpacity || 0.05, transform: 'rotate(-25deg)', width: '350px', height: '350px', filter: 'grayscale(100%)' }} className="object-contain" alt="" />
+        <img src={profile.watermarkUrl} style={{ opacity: profile.watermarkOpacity || 0.05, transform: 'rotate(-25deg)', width: '450px', height: '450px', filter: 'grayscale(100%)' }} className="object-contain" alt="" />
       </div>
     );
   };
@@ -190,7 +149,13 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
           {fields.showLogo && profile.logoUrl && <img src={profile.logoUrl} className="h-24 mb-4 object-contain" />}
           <div className="space-y-0">
             <h1 className="text-2xl font-black uppercase tracking-tighter leading-none">{profile.companyName}</h1>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">SHERIF HEGAZY</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-black mt-1">SHERIF HEGAZY</p>
+            <div className="flex flex-col gap-0.5 mt-2 text-[8px] font-black uppercase tracking-widest opacity-60">
+              {profile.taxId && <p>TAX ID: {profile.taxId}</p>}
+              {profile.phone && <p>TEL: {profile.phone}</p>}
+              {profile.website && <p>WEB: {profile.website}</p>}
+              <p>{profile.email}</p>
+            </div>
           </div>
         </div>
         <div className="text-right">
@@ -213,14 +178,14 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
             <div className={`p-1.5 ${t.radius} text-white ${t.accent}`}><Anchor size={14}/></div>
-            <p className="text-xs font-black uppercase tracking-[0.3em] opacity-40">From</p>
+            <p className="text-xs font-black uppercase tracking-[0.3em] opacity-40">ISSUER NAME</p>
           </div>
-          {fields.showCompanyInfo && <p className="text-base font-bold leading-relaxed whitespace-pre-wrap pl-3 max-w-sm">{profile.address}</p>}
+          {fields.showCompanyInfo && <p className="text-sm font-bold leading-relaxed whitespace-pre-wrap pl-3 max-w-sm">{profile.address}</p>}
         </div>
         
         <div className="text-right space-y-2">
           <div className="flex items-center gap-2 justify-end">
-            <p className="text-xs font-black uppercase tracking-[0.3em] opacity-40">To</p>
+            <p className="text-xs font-black uppercase tracking-[0.3em] opacity-40">Client Info</p>
             <div className={`p-1.5 ${t.radius} text-white ${t.accent}`}><Briefcase size={14}/></div>
           </div>
           <div className="pr-3 space-y-0.5">
@@ -333,42 +298,48 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
   const BottomSection = () => {
     return (
       <div className={`mt-auto space-y-6 pt-6 border-t w-full relative z-10 shrink-0 ${isDark ? 'border-white/10' : 'border-slate-100'}`}>
-        <div className="grid grid-cols-12 gap-6 items-end">
-          <div className="col-span-8 flex flex-col gap-3">
+        <div className="grid grid-cols-12 gap-10 items-start">
+          <div className="col-span-8 flex flex-col gap-4">
+            {/* FULL NOTES SECTION */}
+            {fields.showNotes && invoice.notes && (
+              <div className={`p-4 border rounded-xl flex gap-3 items-start min-h-[120px] ${isDark ? 'bg-white/5 border-white/10' : 'bg-slate-50/30 border-slate-100'}`}>
+                <Info size={16} className="text-emerald-500 mt-0.5 shrink-0" />
+                <div className="flex flex-col gap-1.5">
+                  <h4 className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-emerald-400' : 'text-slate-900'}`}>THIS IS INVOICE FOR RENTING CLIPON GENSET</h4>
+                  <p className="text-[10px] font-bold leading-relaxed whitespace-pre-wrap text-slate-500">{invoice.notes}</p>
+                </div>
+              </div>
+            )}
+
             <div className={`p-4 border-l-4 ${t.accent.replace('bg-', 'border-')} ${isDark ? 'bg-white/5' : 'bg-slate-50'} rounded-r-xl shadow-sm`}>
               <div className="flex items-center gap-2 mb-1.5">
                 <Heart size={14} className={isDark ? 'text-emerald-400' : 'text-rose-500'} />
                 <h4 className={`text-[11px] font-black uppercase tracking-[0.1em] ${isDark ? 'text-emerald-400' : 'text-slate-900'}`}>Settlement Note</h4>
               </div>
-              <p className={`text-[10px] leading-relaxed font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                Thank you for your business! We kindly request full settlement by {invoice.dueDate}. For smooth processing, please include the invoice number in your payment reference.<br/>
-                <span className="mt-1 block">We value your feedback, so please review these details within one week of receipt; after this time, the invoice will be considered final and approved. We appreciate your cooperation!</span>
+              <p className={`text-[9px] leading-relaxed font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                Thank you for your business! We kindly request full settlement by 2026-03-02. For smooth processing, please include the invoice number in your payment reference.
+                We value your feedback, so please review these details within one week of receipt; after this time, the invoice will be considered final and approved. We appreciate your cooperation.
+                <br/>
+                <span className="mt-1 block opacity-60">This is a system generated document and does not require a physical signature if stamped.</span>
               </p>
             </div>
-
-            {fields.showNotes && invoice.notes && (
-              <div className={`p-3 border rounded-xl flex gap-3 items-start ${isDark ? 'bg-white/5 border-white/10' : 'bg-slate-50/20 border-slate-100'}`}>
-                <Info size={14} className="text-slate-300 mt-0.5" />
-                <p className="text-[10px] font-bold leading-relaxed whitespace-pre-wrap text-slate-500 italic">{invoice.notes}</p>
-              </div>
-            )}
           </div>
           
           <div className="col-span-4 flex flex-col gap-4">
             {fields.showSignature && (
               <div className="flex flex-col items-end">
-                <div className="h-20 w-full flex justify-end items-end relative overflow-visible">
+                <div className="h-24 w-full flex justify-end items-end relative overflow-visible">
                   {profile.signatureUrl && (
                     <img 
                       src={profile.signatureUrl} 
-                      className={`h-28 w-auto max-w-[180px] object-contain mb-[-12px] z-20 pointer-events-none ${!isDark ? 'mix-blend-darken' : 'brightness-110'}`} 
+                      className={`h-32 w-auto max-w-[200px] object-contain mb-[-12px] z-20 pointer-events-none ${!isDark ? 'mix-blend-darken' : 'brightness-110'}`} 
                       alt="Manager Signature" 
                     />
                   )}
                 </div>
                 <div className="text-right mt-2">
                   <p className={`text-base font-black uppercase tracking-tighter leading-none ${isDark ? 'text-white' : 'text-slate-900'}`}>{profile.name}</p>
-                  <p className="text-[9px] font-black uppercase tracking-[0.3em] opacity-40 mt-1">Authorized Operations Manager</p>
+                  <p className="text-[9px] font-black uppercase tracking-[0.3em] opacity-40 mt-1">Authorized Manager</p>
                 </div>
               </div>
             )}
@@ -377,7 +348,7 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
 
         <div className="pt-4 flex flex-col items-center justify-center w-full border-t border-slate-100 mt-2 opacity-30 select-none">
           <p className="text-[8px] font-black uppercase tracking-[0.5em] text-slate-400 italic leading-none">
-            NILE FLEET GENSET COMPANY <span className="mx-2">|</span> POWERED BY BEBITO
+            {profile.companyName} LOGISTICS <span className="mx-2">|</span> POWERED BY BEBITO
           </p>
         </div>
       </div>

@@ -107,6 +107,8 @@ export interface UserProfile {
   address: string;
   taxId: string;
   email: string;
+  phone?: string;
+  website?: string;
   signatureUrl: string | null;
   logoUrl: string | null;
   watermarkUrl: string | null;
