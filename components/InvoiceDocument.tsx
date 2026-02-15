@@ -33,6 +33,26 @@ const getThemeConfig = (theme: InvoiceTheme): ThemeConfig => {
       accent: 'bg-slate-900', secondary: 'text-slate-600', bg: 'bg-white', border: 'border-slate-200', 
       font: 'font-sans', radius: 'rounded-lg', layout: 'classic', tableStyle: 'clean', headerStyle: 'standard' 
     },
+    'luxury-gold': { 
+      accent: 'bg-amber-600', secondary: 'text-amber-500', bg: 'bg-slate-950', border: 'border-white/10', 
+      font: 'font-serif-bask', radius: 'rounded-none', layout: 'modern', tableStyle: 'clean', headerStyle: 'standard' 
+    },
+    'vintage': { 
+      accent: 'bg-amber-800', secondary: 'text-amber-900', bg: 'bg-[#f4ead5]', border: 'border-amber-900/20', 
+      font: 'font-serif-bask', radius: 'rounded-none', layout: 'classic', tableStyle: 'grid', headerStyle: 'standard' 
+    },
+    'eco-green': { 
+      accent: 'bg-emerald-600', secondary: 'text-emerald-800', bg: 'bg-[#f0fdf4]', border: 'border-emerald-100', 
+      font: 'font-sans', radius: 'rounded-3xl', layout: 'modern', tableStyle: 'clean', headerStyle: 'standard' 
+    },
+    'sunset-vibe': { 
+      accent: 'bg-gradient-to-r from-orange-500 to-rose-500', secondary: 'text-rose-600', bg: 'bg-orange-50', border: 'border-orange-100', 
+      font: 'font-grotesk', radius: 'rounded-2xl', layout: 'modern', tableStyle: 'glass', headerStyle: 'standard' 
+    },
+    'blueprint': { 
+      accent: 'bg-white', secondary: 'text-blue-300', bg: 'bg-blue-800', border: 'border-blue-400', 
+      font: 'font-mono-jb', radius: 'rounded-none', layout: 'industrial', tableStyle: 'grid', headerStyle: 'standard' 
+    },
     'technical-draft': { 
       accent: 'bg-slate-700', secondary: 'text-slate-500', bg: 'bg-slate-50', border: 'border-slate-300', 
       font: 'font-mono-jb', radius: 'rounded-none', layout: 'industrial', tableStyle: 'grid', headerStyle: 'standard' 
@@ -48,10 +68,6 @@ const getThemeConfig = (theme: InvoiceTheme): ThemeConfig => {
     'elegant': { 
       accent: 'bg-stone-800', secondary: 'text-stone-500', bg: 'bg-[#fdfdfd]', border: 'border-stone-100', 
       font: 'font-serif-bask', radius: 'rounded-[3rem]', layout: 'split', tableStyle: 'clean', headerStyle: 'centered' 
-    },
-    'blueprint': { 
-      accent: 'bg-blue-600', secondary: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-200', 
-      font: 'font-mono-jb', radius: 'rounded-sm', layout: 'industrial', tableStyle: 'grid', headerStyle: 'standard' 
     },
     'glass': { 
       accent: 'bg-blue-400', secondary: 'text-blue-600', bg: 'bg-blue-50/50', border: 'border-white', 
@@ -84,7 +100,7 @@ const getThemeConfig = (theme: InvoiceTheme): ThemeConfig => {
     accent: base.accent!,
     secondary: base.secondary!,
     bg: base.bg!,
-    text: base.text || (theme.includes('midnight') || theme.includes('deep') ? 'text-white' : 'text-slate-900'),
+    text: base.text || (theme.includes('midnight') || theme.includes('deep') || theme === 'luxury-gold' || theme === 'blueprint' ? 'text-white' : 'text-slate-900'),
     border: base.border!,
     font: base.font!,
     radius: base.radius || 'rounded-none',
@@ -118,7 +134,7 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
   const themeName = config.theme || 'logistics-grid';
   const t = getThemeConfig(themeName);
   const profile = invoice.userProfile;
-  const isDark = themeName === 'midnight-pro' || themeName === 'deep-ocean';
+  const isDark = themeName === 'midnight-pro' || themeName === 'deep-ocean' || themeName === 'luxury-gold' || themeName === 'blueprint';
 
   const groupedItems = useMemo(() => {
     const groups = new Map<string, Booking[]>();
@@ -142,18 +158,24 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
 
   const spacingStyle = { marginBottom: `${config.verticalSpacing}px` };
   const paddingStyle = { padding: `${config.horizontalPadding}mm` };
-  const scaleStyle = { transform: `scale(${config.contentScale})`, transformOrigin: 'top center' };
+  
+  // Adjusted scale style to handle full A4 height correctly
+  const scaleStyle = { 
+    transform: `scale(${config.contentScale})`, 
+    transformOrigin: 'top center',
+    width: `${100 / config.contentScale}%`,
+    height: `${100 / config.contentScale}%`
+  };
 
   const Header = () => {
     return (
       <div style={spacingStyle} className="flex justify-between items-start relative z-10 w-full shrink-0">
         <div className="flex-1">
-          {fields.showLogo && profile.logoUrl && <img src={profile.logoUrl} className="h-12 mb-2 object-contain" />}
+          {fields.showLogo && profile.logoUrl && <img src={profile.logoUrl} className="h-24 mb-4 object-contain" />}
           <div className="space-y-0">
             <h1 className="text-2xl font-black uppercase tracking-tighter leading-none">{profile.companyName}</h1>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Operations Unit</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">SHERIF HEGAZY</p>
           </div>
-          {fields.showTaxId && <p className="text-[9px] font-black uppercase tracking-[0.3em] opacity-50 mt-1">TAX ID: {profile.taxId}</p>}
         </div>
         <div className="text-right">
           <p className="text-4xl font-black uppercase tracking-tighter opacity-10 absolute -top-2 right-0 select-none">INVOICE</p>
@@ -210,28 +232,28 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
           <tbody className={`divide-y ${rowBorder}`}>
             {groupedItems.map((group, idx) => (
               <tr key={idx} className="break-inside-avoid">
-                <td className="py-3 pl-4 align-top">
-                  <div className="flex items-center gap-2 mb-1.5">
+                <td className="py-4 pl-4 align-top">
+                  <div className="flex items-center gap-2 mb-2">
                     <div className={`w-1 h-5 rounded-full ${t.accent}`}></div>
                     <div className="flex items-center gap-3">
                       {fields.showBookingNo && <p className={`font-black text-sm uppercase tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>{group[0].bookingNo}</p>}
                       {fields.showPorts && (
-                        <div className="flex items-center gap-2 py-0.5 px-2 bg-slate-50 border border-slate-100 rounded-md text-[9px] font-black text-slate-500">
+                        <div className={`flex items-center gap-2 py-0.5 px-2 rounded-md text-[9px] font-black ${isDark ? 'bg-white/5 border border-white/10 text-slate-300' : 'bg-slate-50 border border-slate-100 text-slate-500'}`}>
                            <span>{group[0].goPort}</span>
                            <ArrowRight size={10} className="text-emerald-500" />
                            <span>{group[0].giPort}</span>
                            <span className="text-slate-200 mx-1">|</span>
-                           <span className="text-blue-600 font-mono">{group[0].bookingDate || 'N/A'}</span>
+                           <span className={`${isDark ? 'text-emerald-400' : 'text-blue-600'} font-mono`}>{group[0].bookingDate || 'N/A'}</span>
                         </div>
                       )}
                     </div>
                   </div>
 
-                  <div className="ml-4 space-y-2">
+                  <div className="ml-4 space-y-3">
                     <div className="flex flex-wrap gap-1.5">
                       {group.map(u => (
                         <div key={u.id} className="group relative">
-                          <div className="text-[10px] font-black border px-2 py-0.5 rounded-sm bg-white border-slate-200 text-slate-800 font-mono-jb flex flex-col">
+                          <div className={`text-[10px] font-black border px-2 py-0.5 rounded-sm font-mono-jb flex flex-col ${isDark ? 'bg-white/10 border-white/20 text-white' : 'bg-white border-slate-200 text-slate-800'}`}>
                             <span>{u.reeferNumber}</span>
                             {fields.showGenset && u.gensetNo !== '---' && <span className="text-[8px] text-emerald-600">GS: {u.gensetNo}</span>}
                           </div>
@@ -243,19 +265,19 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
                       {fields.showTrucker && group[0].trucker !== '---' && (
                         <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400 uppercase">
                           <Truck size={12} className="text-slate-300"/>
-                          <span>Trucker: <span className="text-slate-600">{group[0].trucker}</span></span>
+                          <span>Trucker: <span className={isDark ? 'text-slate-200' : 'text-slate-600'}>{group[0].trucker}</span></span>
                         </div>
                       )}
                       {fields.showShipperAddress && group[0].shipper !== '---' && (
                         <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400 uppercase">
                           <Package size={12} className="text-slate-300"/>
-                          <span>Shipper: <span className="text-slate-600">{group[0].shipper}</span></span>
+                          <span>Shipper: <span className={isDark ? 'text-slate-200' : 'text-slate-600'}>{group[0].shipper}</span></span>
                         </div>
                       )}
                     </div>
                   </div>
                 </td>
-                <td className="py-3 pr-4 text-right align-top">
+                <td className="py-4 pr-4 text-right align-top">
                   <p className={`text-base font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     {formatCurrency(group.reduce((a,c)=>a+c.rateValue,0), invoice.currency)}
                   </p>
@@ -270,7 +292,7 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
 
   const Totals = () => {
       return (
-        <div className="w-full flex justify-end pt-4 shrink-0 relative z-10" style={spacingStyle}>
+        <div className="w-full flex justify-end shrink-0 relative z-10" style={spacingStyle}>
             <div className={`w-1/3 p-3 border-t-2 flex flex-col items-end gap-1 ${isDark ? 'border-white/20' : 'border-slate-950'}`}>
                 <div className="flex justify-between w-full text-[9px] font-bold uppercase opacity-60">
                     <span>Subtotal</span>
@@ -292,43 +314,44 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
       );
   }
 
-  const Footer = () => {
+  const BottomSection = () => {
     return (
       <div className={`mt-auto space-y-6 pt-6 border-t w-full relative z-10 shrink-0 ${isDark ? 'border-white/10' : 'border-slate-100'}`}>
         <div className="grid grid-cols-12 gap-6 items-end">
-          <div className="col-span-7 flex flex-col gap-3">
+          <div className="col-span-8 flex flex-col gap-3">
             <div className={`p-4 border-l-4 ${t.accent.replace('bg-', 'border-')} ${isDark ? 'bg-white/5' : 'bg-slate-50'} rounded-r-xl shadow-sm`}>
               <div className="flex items-center gap-2 mb-1.5">
                 <Heart size={14} className={isDark ? 'text-emerald-400' : 'text-rose-500'} />
                 <h4 className={`text-[11px] font-black uppercase tracking-[0.1em] ${isDark ? 'text-emerald-400' : 'text-slate-900'}`}>Settlement Note</h4>
               </div>
               <p className={`text-[10px] leading-relaxed font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                Thank you for your business. Full settlement is required by {invoice.dueDate}. Please include invoice number in payment references.
+                Thank you for your business! We kindly request full settlement by {invoice.dueDate}. For smooth processing, please include the invoice number in your payment reference.<br/>
+                <span className="mt-1 block">We value your feedback, so please review these details within one week of receipt; after this time, the invoice will be considered final and approved. We appreciate your cooperation!</span>
               </p>
             </div>
 
             {fields.showNotes && invoice.notes && (
-              <div className="p-3 border rounded-xl bg-slate-50/20 border-slate-100 flex gap-3 items-start">
+              <div className={`p-3 border rounded-xl flex gap-3 items-start ${isDark ? 'bg-white/5 border-white/10' : 'bg-slate-50/20 border-slate-100'}`}>
                 <Info size={14} className="text-slate-300 mt-0.5" />
                 <p className="text-[10px] font-bold leading-relaxed whitespace-pre-wrap text-slate-500 italic">{invoice.notes}</p>
               </div>
             )}
           </div>
           
-          <div className="col-span-5 flex flex-col gap-4">
+          <div className="col-span-4 flex flex-col gap-4">
             {fields.showSignature && (
               <div className="flex flex-col items-end">
-                <div className="h-16 w-full flex justify-end items-end relative overflow-visible">
+                <div className="h-20 w-full flex justify-end items-end relative overflow-visible">
                   {profile.signatureUrl && (
                     <img 
                       src={profile.signatureUrl} 
-                      className={`h-24 w-auto max-w-[150px] object-contain mb-[-8px] z-20 pointer-events-none ${!isDark ? 'mix-blend-darken' : 'brightness-110'}`} 
+                      className={`h-28 w-auto max-w-[180px] object-contain mb-[-12px] z-20 pointer-events-none ${!isDark ? 'mix-blend-darken' : 'brightness-110'}`} 
                       alt="Manager Signature" 
                     />
                   )}
                 </div>
                 <div className="text-right mt-2">
-                  <p className={`text-sm font-black uppercase tracking-tighter leading-none ${isDark ? 'text-white' : 'text-slate-900'}`}>{profile.name}</p>
+                  <p className={`text-base font-black uppercase tracking-tighter leading-none ${isDark ? 'text-white' : 'text-slate-900'}`}>{profile.name}</p>
                   <p className="text-[9px] font-black uppercase tracking-[0.3em] opacity-40 mt-1">Authorized Operations Manager</p>
                 </div>
               </div>
@@ -350,14 +373,15 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
       className={`invoice-container relative shadow-2xl ${t.bg} ${t.font} ${t.text} ${isActivePrint ? 'active-print' : ''}`}
       style={paddingStyle}
     >
-      <div style={scaleStyle} className="w-full flex flex-col h-full overflow-visible">
+      <div style={scaleStyle} className="w-full flex flex-col h-full overflow-hidden relative">
         <WatermarkLayer />
         <Header />
         <Parties />
         <Table />
         <Totals />
-        {/* The middle space appears naturally here if content is short because of mt-auto on Footer */}
-        <Footer />
+        {/* Flexible spacer to push the bottom section down, creating space in the middle */}
+        <div className="flex-grow min-h-[40px]"></div>
+        <BottomSection />
       </div>
     </div>
   );

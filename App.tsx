@@ -12,7 +12,7 @@ import {
   Copy, Archive, Share2, Send, Wand2, Zap, Grid3X3, Award, Smartphone, FileDown,
   ExternalLink, MousePointerClick, Banknote, AlertTriangle, Info, ListChecks,
   Maximize2, Minimize2, MoveHorizontal, MoveVertical,
-  Image, PlusCircle
+  Image, PlusCircle, Compass, Leaf, Sunrise, ScrollText
 } from 'lucide-react';
 import { Booking, Invoice, InvoiceSectionId, TemplateConfig, UserProfile, TemplateFields, GroupingType, InvoiceTheme, CustomerConfig } from './types';
 import { parseCurrency, formatCurrency, exportToCSV } from './utils/formatters';
@@ -23,6 +23,12 @@ const DEFAULT_COMPANY_LOGO = "https://images.unsplash.com/photo-1586611292717-f8
 const THEMES: { id: InvoiceTheme, label: string, desc: string, icon: any, color: string }[] = [
   { id: 'logistics-grid', label: 'Classic Logistics', desc: 'Heavy borders, official grid layout', icon: TableIcon, color: 'bg-emerald-600' },
   { id: 'corporate', label: 'Corporate Clean', desc: 'Minimal, business-standard style', icon: Briefcase, color: 'bg-slate-900' },
+  { id: 'luxury-gold', label: 'Luxury Gold', desc: 'Premium executive dark/gold theme', icon: Award, color: 'bg-amber-500' },
+  { id: 'vintage', label: 'Vintage Archive', desc: 'Typewriter fonts on aged paper', icon: ScrollText, color: 'bg-orange-200' },
+  { id: 'eco-green', label: 'Eco Green', desc: 'Soft earthy tones for natural brands', icon: Leaf, color: 'bg-green-500' },
+  { id: 'sunset-vibe', label: 'Sunset Glow', desc: 'Vibrant warm gradients & modern fonts', icon: Sunrise, color: 'bg-orange-500' },
+  // Fixed: removed duplicate 'label' property in the object below
+  { id: 'blueprint', label: 'Blueprint Tech', desc: 'Technical architectural design', icon: Compass, color: 'bg-blue-700' },
   { id: 'swiss-modern', label: 'Swiss Modern', desc: 'High contrast, bold grotesk font', icon: Grid3X3, color: 'bg-red-600' },
   { id: 'brutalist', label: 'Brutalist Heavy', desc: 'Raw, industrial, black & white', icon: Square, color: 'bg-black' },
   { id: 'glass', label: 'Digital Glass', desc: 'Semi-transparent modern gradients', icon: Droplets, color: 'bg-blue-400' },
@@ -446,6 +452,19 @@ const App: React.FC = () => {
     return Array.from(groups.entries());
   }, [activeInvoice?.items]);
 
+  const updateTheme = (themeId: InvoiceTheme) => {
+    setTemplateConfig(prev => ({ ...prev, theme: themeId }));
+    if (activeInvoice) {
+      setActiveInvoice({
+        ...activeInvoice,
+        templateConfig: {
+          ...(activeInvoice.templateConfig || templateConfig),
+          theme: themeId
+        }
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen flex bg-slate-50 antialiased overflow-hidden">
       <aside className="no-print w-64 bg-slate-900 flex flex-col h-screen sticky top-0 shadow-2xl z-50 shrink-0">
@@ -660,14 +679,31 @@ const App: React.FC = () => {
 
           {view === 'invoice-preview' && activeInvoice && (
              <div className="animate-in fade-in duration-500 pb-32">
-               <div className="no-print bg-white p-8 rounded-[2.5rem] shadow-2xl mb-12 border-2 border-slate-100 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <button onClick={() => setView('dashboard')} className="p-3 bg-slate-50 rounded-xl text-slate-400 hover:text-slate-900 transition-colors"><ChevronLeft size={24}/></button>
-                    <div><h3 className="text-2xl font-black text-slate-900 tracking-tight">Document Preview</h3><p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">{activeInvoice.invoiceNumber}</p></div>
+               <div className="no-print bg-white p-8 rounded-[2.5rem] shadow-2xl mb-8 border-2 border-slate-100">
+                  <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-4">
+                      <button onClick={() => setView('dashboard')} className="p-3 bg-slate-50 rounded-xl text-slate-400 hover:text-slate-900 transition-colors"><ChevronLeft size={24}/></button>
+                      <div><h3 className="text-2xl font-black text-slate-900 tracking-tight">Document Preview</h3><p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">{activeInvoice.invoiceNumber}</p></div>
+                    </div>
+                    <div className="flex gap-3">
+                      <button onClick={() => setView('edit-invoice')} className="bg-slate-100 text-slate-600 px-6 py-3 rounded-xl font-black uppercase text-xs flex items-center gap-2 hover:bg-slate-200 transition-all"><Wand2 size={18}/> Studio</button>
+                      <button onClick={() => window.print()} className="bg-slate-900 text-white px-8 py-3 rounded-xl font-black uppercase text-xs flex items-center gap-2 shadow-xl hover:bg-black transition-all active:scale-95"><Printer size={18}/> Print PDF</button>
+                    </div>
                   </div>
-                  <div className="flex gap-3">
-                    <button onClick={() => setView('edit-invoice')} className="bg-slate-100 text-slate-600 px-6 py-3 rounded-xl font-black uppercase text-xs flex items-center gap-2 hover:bg-slate-200 transition-all"><Wand2 size={18}/> Studio</button>
-                    <button onClick={() => window.print()} className="bg-slate-900 text-white px-8 py-3 rounded-xl font-black uppercase text-xs flex items-center gap-2 shadow-xl hover:bg-black transition-all active:scale-95"><Printer size={18}/> Print PDF</button>
+                  
+                  <div className="pt-6 border-t border-slate-50">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Choose Visual Style</p>
+                    <div className="flex gap-2 overflow-x-auto pb-2 custom-scroll no-scrollbar">
+                       {THEMES.map(t => {
+                         const isActive = (activeInvoice.templateConfig?.theme || templateConfig.theme) === t.id;
+                         return (
+                          <button key={t.id} onClick={() => updateTheme(t.id)} className={`flex-shrink-0 flex items-center gap-3 px-5 py-3 rounded-2xl border-2 transition-all ${isActive ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg' : 'bg-slate-50 border-transparent text-slate-600 hover:border-slate-200'}`}>
+                             <t.icon size={16} className={isActive ? 'text-emerald-100' : 'text-slate-400'} />
+                             <span className="text-xs font-black uppercase tracking-tight">{t.label}</span>
+                          </button>
+                         );
+                       })}
+                    </div>
                   </div>
                </div>
                <InvoiceDocument invoice={activeInvoice} />
