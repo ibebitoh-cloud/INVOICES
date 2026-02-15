@@ -10,7 +10,9 @@ import {
   Users, Plus, ArrowRight, PenTool, Check, Eye, EyeOff,
   Truck, MapPin, Package, RotateCcw, FileSpreadsheet,
   Copy, Archive, Share2, Send, Wand2, Zap, Grid3X3, Award, Smartphone, FileDown,
-  ExternalLink, MousePointerClick, Banknote, AlertTriangle, Info, ListChecks
+  ExternalLink, MousePointerClick, Banknote, AlertTriangle, Info, ListChecks,
+  Maximize2, Minimize2, MoveHorizontal, MoveVertical,
+  Image, PlusCircle
 } from 'lucide-react';
 import { Booking, Invoice, InvoiceSectionId, TemplateConfig, UserProfile, TemplateFields, GroupingType, InvoiceTheme, CustomerConfig } from './types';
 import { parseCurrency, formatCurrency, exportToCSV } from './utils/formatters';
@@ -47,7 +49,20 @@ const App: React.FC = () => {
   const [batchInvoices, setBatchInvoices] = useState<Invoice[]>([]);
   const [showActionModal, setShowActionModal] = useState(false);
   const [showOperationModal, setShowOperationModal] = useState(false);
+  const [showManualEntryModal, setShowManualEntryModal] = useState(false);
   const [duplicateAlert, setDuplicateAlert] = useState<{ count: number } | null>(null);
+
+  const [manualBooking, setManualBooking] = useState<Partial<Booking>>({
+    bookingNo: '',
+    reeferNumber: '',
+    goPort: '',
+    giPort: '',
+    rateValue: 0,
+    shipper: '',
+    trucker: '',
+    shipperAddress: '',
+    customer: ''
+  });
 
   const [profile, setProfile] = useState<UserProfile>(() => {
     const saved = localStorage.getItem('user_profile');
@@ -83,6 +98,9 @@ const App: React.FC = () => {
       hiddenSections: new Set<InvoiceSectionId>(),
       theme: 'logistics-grid',
       groupBy: 'booking',
+      contentScale: 1.0,
+      verticalSpacing: 16,
+      horizontalPadding: 15,
       fields: {
         showReefer: true, showGenset: true, showBookingNo: true, showCustomerRef: true,
         showPorts: true, showServicePeriod: true, showTerms: true, showSignature: true,
@@ -233,6 +251,67 @@ const App: React.FC = () => {
     event.target.value = '';
   };
 
+  const handleManualBookingSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!manualBooking.customer || !manualBooking.bookingNo) {
+      alert("Please enter at least Client and Booking Number.");
+      return;
+    }
+
+    const newId = `booking-manual-${Date.now()}`;
+    const rateVal = manualBooking.rateValue || 0;
+    const vatVal = rateVal * 0.14; // Default VAT 14%
+
+    const newEntry: Booking = {
+      id: newId,
+      customer: manualBooking.customer || 'Unnamed Client',
+      bookingNo: manualBooking.bookingNo || '---',
+      reeferNumber: manualBooking.reeferNumber || '---',
+      goPort: manualBooking.goPort || '---',
+      giPort: manualBooking.giPort || '---',
+      rateValue: rateVal,
+      rate: rateVal.toString(),
+      vatValue: vatVal,
+      vat: vatVal.toString(),
+      shipper: manualBooking.shipper || '---',
+      trucker: manualBooking.trucker || '---',
+      shipperAddress: manualBooking.shipperAddress || '---',
+      bookingDate: new Date().toISOString().split('T')[0],
+      status: 'PENDING',
+      totalBooking: '', customerRef: '', gops: '', dateOfClipOn: '', clipOffDate: '', 
+      beneficiaryName: '', gensetNo: '---', res: '', gaz: '', remarks: '', 
+      gensetFaultDescription: '', invNo: '', invDate: '', invIssueDate: ''
+    };
+
+    setBookings(prev => [newEntry, ...prev]);
+    
+    // Auto-register customer if new
+    setCustomerConfigs(prev => {
+      if (!prev.find(c => c.name.toLowerCase() === newEntry.customer.toLowerCase())) {
+        return [...prev, {
+          id: `cust-${Date.now()}`,
+          name: newEntry.customer,
+          prefix: 'GS',
+          nextNumber: 1
+        }];
+      }
+      return prev;
+    });
+
+    setShowManualEntryModal(false);
+    setManualBooking({
+      bookingNo: '',
+      reeferNumber: '',
+      goPort: '',
+      giPort: '',
+      rateValue: 0,
+      shipper: '',
+      trucker: '',
+      shipperAddress: '',
+      customer: ''
+    });
+  };
+
   const getInvoiceNumber = (customerName: string, offset: number = 0) => {
     const config = customerConfigs.find(c => c.name.toLowerCase() === customerName.toLowerCase());
     if (config) return `${config.prefix}${config.nextNumber + offset}`;
@@ -373,7 +452,7 @@ const App: React.FC = () => {
         <div className="p-8">
           <div className="flex items-center gap-3 mb-10">
             <div className="bg-emerald-500 p-2 rounded-xl text-white"><Briefcase size={20} /></div>
-            <h1 className="text-lg font-black text-white tracking-tighter uppercase leading-none">CargoBill</h1>
+            <h1 className="text-sm font-black text-white tracking-tighter uppercase leading-tight">NILE FLEET<br/>GENSET</h1>
           </div>
           <nav className="space-y-2">
             {[
@@ -405,9 +484,10 @@ const App: React.FC = () => {
           {view === 'dashboard' && (
             <div className="space-y-8 animate-in fade-in duration-500">
               <header className="flex justify-between items-end">
-                <div><h2 className="text-3xl font-black text-slate-900 tracking-tight">Shipments Manifest</h2><p className="text-slate-500 font-medium mt-1">Automatic grouping by Booking No. is enabled.</p></div>
+                <div><h2 className="text-3xl font-black text-slate-900 tracking-tight">Fleet Manifest</h2><p className="text-slate-500 font-medium mt-1">Automatic grouping by Booking No. is enabled.</p></div>
                 <div className="flex gap-3">
                    <button onClick={() => setBookings([])} className="bg-white text-slate-500 border border-slate-200 px-5 py-3 rounded-xl font-bold text-xs flex items-center gap-2 hover:bg-slate-50 transition-colors"><Trash2 size={16}/> Clear All</button>
+                   <button onClick={() => setShowManualEntryModal(true)} className="bg-emerald-50 text-emerald-700 px-5 py-3 rounded-xl font-bold text-xs flex items-center gap-2 hover:bg-emerald-100 transition-colors"><PlusCircle size={16}/> Add Booking</button>
                    <label className="cursor-pointer bg-emerald-600 text-white px-6 py-3 rounded-xl font-black text-xs flex items-center gap-2 shadow-xl hover:bg-emerald-700 transition-all">
                       <FileUp size={16}/> Import CSV
                       <input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} />
@@ -519,21 +599,52 @@ const App: React.FC = () => {
                </header>
 
                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                  <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100 space-y-8">
-                     <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-3 border-b pb-6"><SettingsIcon size={24} className="text-emerald-500"/> Content Toggles</h3>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {Object.entries(templateConfig.fields).map(([key, val]) => (
-                          <button key={key} onClick={() => toggleField(key as keyof TemplateFields)} className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${val ? 'bg-emerald-50 border-emerald-500' : 'bg-slate-50 border-transparent hover:border-slate-200'}`}>
-                             <span className={`text-[11px] font-black uppercase tracking-tight ${val ? 'text-emerald-900' : 'text-slate-500'}`}>{key.replace('show', '').replace(/([A-Z])/g, ' $1').trim()}</span>
-                             {val ? <Eye size={16} className="text-emerald-600" /> : <EyeOff size={16} className="text-slate-300" />}
-                          </button>
-                        ))}
-                     </div>
+                  <div className="space-y-10">
+                    <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100 space-y-8">
+                       <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-3 border-b pb-6"><Maximize2 size={24} className="text-emerald-500"/> Dimensions & Fitting</h3>
+                       <div className="space-y-6">
+                          <div className="space-y-4">
+                            <div className="flex justify-between items-center">
+                              <label className="text-xs font-black text-slate-400 uppercase flex items-center gap-2"><Minimize2 size={14}/> Content Scale</label>
+                              <span className="bg-slate-50 px-3 py-1 rounded-lg text-xs font-black">{Math.round(templateConfig.contentScale * 100)}%</span>
+                            </div>
+                            <input type="range" min="0.5" max="1.5" step="0.05" className="w-full accent-emerald-600 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer" value={templateConfig.contentScale} onChange={e => setTemplateConfig({...templateConfig, contentScale: parseFloat(e.target.value)})} />
+                          </div>
+
+                          <div className="space-y-4">
+                            <div className="flex justify-between items-center">
+                              <label className="text-xs font-black text-slate-400 uppercase flex items-center gap-2"><MoveVertical size={14}/> Section Spacing</label>
+                              <span className="bg-slate-50 px-3 py-1 rounded-lg text-xs font-black">{templateConfig.verticalSpacing}px</span>
+                            </div>
+                            <input type="range" min="0" max="40" step="2" className="w-full accent-emerald-600 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer" value={templateConfig.verticalSpacing} onChange={e => setTemplateConfig({...templateConfig, verticalSpacing: parseInt(e.target.value)})} />
+                          </div>
+
+                          <div className="space-y-4">
+                            <div className="flex justify-between items-center">
+                              <label className="text-xs font-black text-slate-400 uppercase flex items-center gap-2"><MoveHorizontal size={14}/> Safety Margins</label>
+                              <span className="bg-slate-50 px-3 py-1 rounded-lg text-xs font-black">{templateConfig.horizontalPadding}mm</span>
+                            </div>
+                            <input type="range" min="5" max="25" step="1" className="w-full accent-emerald-600 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer" value={templateConfig.horizontalPadding} onChange={e => setTemplateConfig({...templateConfig, horizontalPadding: parseInt(e.target.value)})} />
+                          </div>
+                       </div>
+                    </div>
+
+                    <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100 space-y-8">
+                       <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-3 border-b pb-6"><SettingsIcon size={24} className="text-emerald-500"/> Content Toggles</h3>
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {Object.entries(templateConfig.fields).map(([key, val]) => (
+                            <button key={key} onClick={() => toggleField(key as keyof TemplateFields)} className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${val ? 'bg-emerald-50 border-emerald-500' : 'bg-slate-50 border-transparent hover:border-slate-200'}`}>
+                               <span className={`text-[11px] font-black uppercase tracking-tight ${val ? 'text-emerald-900' : 'text-slate-500'}`}>{key.replace('show', '').replace(/([A-Z])/g, ' $1').trim()}</span>
+                               {val ? <Eye size={16} className="text-emerald-600" /> : <EyeOff size={16} className="text-slate-300" />}
+                            </button>
+                          ))}
+                       </div>
+                    </div>
                   </div>
 
                   <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100 space-y-8">
                      <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-3 border-b pb-6"><Palette size={24} className="text-emerald-500"/> Global Theme</h3>
-                     <div className="grid grid-cols-1 gap-3 max-h-[600px] overflow-y-auto pr-2 custom-scroll">
+                     <div className="grid grid-cols-1 gap-3 max-h-[800px] overflow-y-auto pr-2 custom-scroll">
                         {THEMES.map(t => (
                           <button key={t.id} onClick={() => setTemplateConfig({...templateConfig, theme: t.id})} className={`flex items-center gap-4 p-5 rounded-3xl transition-all border-2 text-left ${templateConfig.theme === t.id ? 'bg-emerald-50 border-emerald-500 shadow-md scale-[1.02]' : 'bg-slate-50 border-transparent hover:border-slate-200'}`}>
                              <div className={`p-4 rounded-2xl ${t.color} text-white shadow-lg`}><t.icon size={24}/></div>
@@ -647,7 +758,7 @@ const App: React.FC = () => {
           )}
 
           {view === 'profile' && (
-            <div className="max-w-4xl mx-auto space-y-10 animate-in fade-in duration-500">
+            <div className="max-w-5xl mx-auto space-y-10 animate-in fade-in duration-500">
                <div className="flex justify-between items-end"><div><h2 className="text-4xl font-black text-slate-900 tracking-tight">Identity</h2><p className="text-slate-500 font-medium mt-1">Brand assets and official watermark.</p></div><button onClick={() => {localStorage.setItem('user_profile', JSON.stringify(profile)); alert('Identity Saved!');}} className="bg-emerald-600 text-white px-10 py-4 rounded-2xl font-black shadow-xl uppercase text-xs active:scale-95 transition-all">Save Identity</button></div>
                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100 space-y-6 h-fit">
@@ -671,10 +782,24 @@ const App: React.FC = () => {
                       <label className="cursor-pointer bg-slate-900 text-white px-8 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all hover:bg-emerald-600 shadow-xl"><FileUp size={16} className="inline mr-2"/> Upload Signature<input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'signature')} /></label>
                     </div>
 
-                    <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100 space-y-4">
-                      <p className="text-[10px] font-black text-slate-400 uppercase w-full">Watermark Opacity</p>
-                      <input type="range" min="0" max="0.3" step="0.01" className="w-full accent-emerald-600 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer" value={profile.watermarkOpacity} onChange={e => setProfile({...profile, watermarkOpacity: parseFloat(e.target.value)})} />
-                      <div className="flex justify-between text-[10px] font-black text-slate-300 uppercase"><span>Transparent</span><span>{Math.round(profile.watermarkOpacity * 100)}% Visibility</span></div>
+                    <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100 space-y-8 flex flex-col items-center group relative">
+                      <p className="text-[10px] font-black text-slate-400 uppercase w-full">Watermark Image</p>
+                      {profile.watermarkUrl ? (
+                        <div className="relative w-full h-32 flex items-center justify-center bg-slate-50 rounded-3xl overflow-hidden">
+                           <img src={profile.watermarkUrl} className="max-h-full object-contain" style={{ opacity: profile.watermarkOpacity || 0.1 }} />
+                        </div>
+                      ) : (
+                        <div className="h-32 w-full bg-slate-50 rounded-3xl flex items-center justify-center text-slate-200"><Image size={48}/></div>
+                      )}
+                      
+                      <div className="w-full space-y-4">
+                        <label className="cursor-pointer bg-slate-900 text-white px-8 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all hover:bg-emerald-600 shadow-xl w-full text-center block"><FileUp size={16} className="inline mr-2"/> Upload Watermark<input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'watermark')} /></label>
+                        
+                        <div className="space-y-2">
+                          <p className="text-[10px] font-black text-slate-400 uppercase w-full flex justify-between"><span>Opacity</span> <span>{Math.round(profile.watermarkOpacity * 100)}%</span></p>
+                          <input type="range" min="0" max="0.3" step="0.01" className="w-full accent-emerald-600 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer" value={profile.watermarkOpacity} onChange={e => setProfile({...profile, watermarkOpacity: parseFloat(e.target.value)})} />
+                        </div>
+                      </div>
                     </div>
                   </div>
                </div>
@@ -716,6 +841,63 @@ const App: React.FC = () => {
         </div>
       </main>
 
+      {/* Manual Entry Modal */}
+      {showManualEntryModal && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden border border-slate-100 animate-in zoom-in-95 duration-300">
+            <div className="p-10 space-y-8">
+              <div className="flex justify-between items-center">
+                <h3 className="text-3xl font-black text-slate-900 tracking-tight">New Booking Manual Entry</h3>
+                <button onClick={() => setShowManualEntryModal(false)} className="p-2 text-slate-300 hover:text-red-500 transition-colors"><X size={24}/></button>
+              </div>
+              
+              <form onSubmit={handleManualBookingSubmit} className="grid grid-cols-2 gap-4">
+                <div className="col-span-2 space-y-1">
+                   <label className="text-[10px] font-black text-slate-400 uppercase">Billing Client (Customer)</label>
+                   <input required className="w-full bg-slate-50 p-3 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={manualBooking.customer} onChange={e => setManualBooking({...manualBooking, customer: e.target.value})} placeholder="e.g., Global Logistics S.A." />
+                </div>
+                <div className="space-y-1">
+                   <label className="text-[10px] font-black text-slate-400 uppercase">Booking No.</label>
+                   <input required className="w-full bg-slate-50 p-3 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={manualBooking.bookingNo} onChange={e => setManualBooking({...manualBooking, bookingNo: e.target.value})} placeholder="BK123456" />
+                </div>
+                <div className="space-y-1">
+                   <label className="text-[10px] font-black text-slate-400 uppercase">Container Number (Reefer)</label>
+                   <input className="w-full bg-slate-50 p-3 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={manualBooking.reeferNumber} onChange={e => setManualBooking({...manualBooking, reeferNumber: e.target.value})} placeholder="MWCU1234567" />
+                </div>
+                <div className="space-y-1">
+                   <label className="text-[10px] font-black text-slate-400 uppercase">Port On (Origin)</label>
+                   <input className="w-full bg-slate-50 p-3 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={manualBooking.goPort} onChange={e => setManualBooking({...manualBooking, goPort: e.target.value})} placeholder="Port Said" />
+                </div>
+                <div className="space-y-1">
+                   <label className="text-[10px] font-black text-slate-400 uppercase">Port Out (Destination)</label>
+                   <input className="w-full bg-slate-50 p-3 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={manualBooking.giPort} onChange={e => setManualBooking({...manualBooking, giPort: e.target.value})} placeholder="Alexandria" />
+                </div>
+                <div className="space-y-1">
+                   <label className="text-[10px] font-black text-slate-400 uppercase">Unit Rate (Amount)</label>
+                   <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-300">EGP</span>
+                      <input type="number" className="w-full bg-slate-50 pl-10 p-3 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={manualBooking.rateValue} onChange={e => setManualBooking({...manualBooking, rateValue: parseFloat(e.target.value) || 0})} />
+                   </div>
+                </div>
+                <div className="space-y-1">
+                   <label className="text-[10px] font-black text-slate-400 uppercase">Shipper Name</label>
+                   <input className="w-full bg-slate-50 p-3 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={manualBooking.shipper} onChange={e => setManualBooking({...manualBooking, shipper: e.target.value})} placeholder="Export Co." />
+                </div>
+                <div className="space-y-1">
+                   <label className="text-[10px] font-black text-slate-400 uppercase">Trucker Name</label>
+                   <input className="w-full bg-slate-50 p-3 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={manualBooking.trucker} onChange={e => setManualBooking({...manualBooking, trucker: e.target.value})} placeholder="Fast Trans" />
+                </div>
+                <div className="col-span-2 space-y-1">
+                   <label className="text-[10px] font-black text-slate-400 uppercase">Address Details</label>
+                   <textarea rows={2} className="w-full bg-slate-50 p-3 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none resize-none" value={manualBooking.shipperAddress} onChange={e => setManualBooking({...manualBooking, shipperAddress: e.target.value})} placeholder="Full address for invoice parties section..." />
+                </div>
+                <button type="submit" className="col-span-2 bg-emerald-600 text-white py-4 rounded-2xl font-black uppercase text-xs shadow-xl hover:bg-emerald-700 transition-all active:scale-[0.98] mt-4">Save Entry to Manifest</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Action Operation Modal */}
       {showOperationModal && activeInvoice && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
@@ -724,7 +906,7 @@ const App: React.FC = () => {
               <div className="flex justify-between items-start">
                 <div className="space-y-2">
                   <div className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest w-fit">Pending Action</div>
-                  <h3 className="text-4xl font-black text-slate-900 tracking-tighter">Logistic Operation</h3>
+                  <h3 className="text-4xl font-black text-slate-900 tracking-tighter">Fleet Operation</h3>
                   <p className="text-slate-500 font-bold text-sm">Invoice {activeInvoice.invoiceNumber} for {activeInvoice.customerName} is ready.</p>
                 </div>
                 <button onClick={() => setShowOperationModal(false)} className="p-3 bg-slate-50 rounded-2xl text-slate-400 hover:text-red-500 transition-colors"><X size={24} /></button>
@@ -768,7 +950,7 @@ const App: React.FC = () => {
       {/* Success Notification Modal */}
       {showActionModal && activeInvoice && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/90 backdrop-blur-xl animate-in fade-in duration-300">
-          <div className="bg-white w-full max-w-lg rounded-[3.5rem] shadow-2xl p-12 text-center space-y-8 relative overflow-hidden border border-slate-100">
+          <div className="bg-white w-full max-lg rounded-[3.5rem] shadow-2xl p-12 text-center space-y-8 relative overflow-hidden border border-slate-100">
             <div className="absolute -top-24 -left-24 w-64 h-64 bg-emerald-50 rounded-full blur-3xl opacity-50"></div>
             <button onClick={() => setShowActionModal(false)} className="absolute top-8 right-8 text-slate-300 hover:text-red-500 transition-colors z-20"><X size={24} /></button>
             <div className="flex justify-center relative z-10"><div className="bg-emerald-100 p-8 rounded-full text-emerald-600 shadow-inner"><FileCheck size={56} /></div></div>

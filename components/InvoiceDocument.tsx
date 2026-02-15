@@ -2,9 +2,7 @@ import React, { useMemo } from 'react';
 import { Invoice, Booking, TemplateFields, InvoiceTheme } from '../types';
 import { formatCurrency } from '../utils/formatters';
 import { 
-  ShieldCheck, Briefcase, Award, Boxes, Anchor, Landmark, Scale, Clock, Banknote, ShieldAlert,
-  Truck, MapPin, Package, Grid, Layout, List, Layers, CornerDownRight, Minus, Square, ArrowRight,
-  Info, Shield, Heart, Zap, Sparkles, Users, Smartphone, FileText
+  Anchor, Briefcase, Clock, Truck, Package, Square, ArrowRight, Heart, FileText, Info
 } from 'lucide-react';
 
 interface InvoiceDocumentProps {
@@ -104,6 +102,9 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
     hiddenSections: new Set(),
     theme: 'logistics-grid',
     groupBy: 'booking',
+    contentScale: 1.0,
+    verticalSpacing: 16,
+    horizontalPadding: 15,
     fields: {
       showReefer: true, showGenset: false, showBookingNo: true, showCustomerRef: true,
       showPorts: true, showServicePeriod: false, showTerms: true, showSignature: true,
@@ -130,63 +131,37 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
     return Array.from(groups.values());
   }, [invoice.items]);
 
-  const firstBooking = invoice.items[0];
-
   const WatermarkLayer = () => {
     if (!fields.showWatermark || !profile.watermarkUrl) return null;
     return (
       <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden z-0 select-none">
-        <img src={profile.watermarkUrl} style={{ opacity: profile.watermarkOpacity || 0.05, transform: 'rotate(-25deg)', width: '500px', height: '500px', filter: 'grayscale(100%)' }} className="object-contain" alt="" />
+        <img src={profile.watermarkUrl} style={{ opacity: profile.watermarkOpacity || 0.05, transform: 'rotate(-25deg)', width: '350px', height: '350px', filter: 'grayscale(100%)' }} className="object-contain" alt="" />
       </div>
     );
   };
 
-  const Header = () => {
-    if (t.headerStyle === 'centered') {
-      return (
-        <div className="flex flex-col items-center text-center mb-4 relative z-10 w-full shrink-0">
-          {fields.showLogo && profile.logoUrl && <img src={profile.logoUrl} className="h-20 mb-3 object-contain" />}
-          <h1 className="text-4xl font-black uppercase tracking-tighter leading-none">{profile.companyName}</h1>
-          <p className="text-[11px] font-black uppercase tracking-[0.2em] opacity-60 mt-1">Sherif Hegazy</p>
-          <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-40 mt-2">Tax ID: {profile.taxId}</p>
-          <div className="flex gap-6 mt-6 border-y-2 py-4 w-full border-slate-100">
-            <div className="flex-1 text-center">
-              <span className="text-xs font-black text-slate-400 uppercase block mb-1">Invoice Number</span>
-              <span className="text-2xl font-black tracking-tight">{invoice.invoiceNumber}</span>
-            </div>
-            <div className="flex-1 text-center border-x-2 border-slate-100 px-4">
-              <span className="text-xs font-black text-slate-400 uppercase block mb-1">Issue Date</span>
-              <span className="text-lg font-bold">{invoice.date}</span>
-            </div>
-            <div className="flex-1 text-center">
-              <span className="text-xs font-black text-slate-400 uppercase block mb-1">Due Date</span>
-              <span className="text-lg font-black text-red-600 underline decoration-2">{invoice.dueDate}</span>
-            </div>
-          </div>
-        </div>
-      );
-    }
+  const spacingStyle = { marginBottom: `${config.verticalSpacing}px` };
+  const paddingStyle = { padding: `${config.horizontalPadding}mm` };
+  const scaleStyle = { transform: `scale(${config.contentScale})`, transformOrigin: 'top center' };
 
+  const Header = () => {
     return (
-      <div className="flex justify-between items-start mb-6 relative z-10 w-full shrink-0">
+      <div style={spacingStyle} className="flex justify-between items-start relative z-10 w-full shrink-0">
         <div className="flex-1">
-          {fields.showLogo && profile.logoUrl && <img src={profile.logoUrl} className="h-20 mb-3 object-contain" />}
-          <div className="space-y-1">
-            <h1 className="text-3xl font-black uppercase tracking-tighter leading-none">{profile.companyName}</h1>
-            <p className="text-[11px] font-black uppercase tracking-[0.2em] opacity-60">Sherif Hegazy</p>
+          {fields.showLogo && profile.logoUrl && <img src={profile.logoUrl} className="h-12 mb-2 object-contain" />}
+          <div className="space-y-0">
+            <h1 className="text-2xl font-black uppercase tracking-tighter leading-none">{profile.companyName}</h1>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Operations Unit</p>
           </div>
-          <div className="flex items-center gap-4 mt-3">
-             <div className={`h-1.5 w-12 ${t.accent}`}></div>
-             <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-50">TAX ID: {profile.taxId}</p>
-          </div>
+          {fields.showTaxId && <p className="text-[9px] font-black uppercase tracking-[0.3em] opacity-50 mt-1">TAX ID: {profile.taxId}</p>}
         </div>
         <div className="text-right">
-          <p className="text-7xl font-black uppercase tracking-tighter opacity-10 absolute -top-4 right-0 select-none">INVOICE</p>
-          <div className="relative pt-6">
-            <p className="text-3xl font-black uppercase tracking-tighter italic">No: <span className={t.secondary}>#{invoice.invoiceNumber}</span></p>
-            <div className="mt-4 text-sm font-black space-y-2 uppercase opacity-60 tracking-[0.2em]">
-              <p>Issue Date <span className={`ml-6 ${t.text} font-black`}>{invoice.date}</span></p>
-              <p>Due Date <span className="ml-6 text-red-600 font-black underline decoration-2">{invoice.dueDate}</span></p>
+          <p className="text-4xl font-black uppercase tracking-tighter opacity-10 absolute -top-2 right-0 select-none">INVOICE</p>
+          <div className="relative pt-3">
+            <p className="text-2xl font-black uppercase tracking-tighter italic">No: <span className={t.secondary}>#{invoice.invoiceNumber}</span></p>
+            <div className="mt-1.5 text-[10px] font-black space-y-0.5 uppercase opacity-60 tracking-[0.2em]">
+              {fields.showInvoiceDate && <p>Issue Date <span className={`ml-4 ${t.text} font-black`}>{invoice.date}</span></p>}
+              {fields.showDueDate && <p>Due Date <span className="ml-4 text-red-600 font-black underline decoration-2">{invoice.dueDate}</span></p>}
             </div>
           </div>
         </div>
@@ -196,47 +171,23 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
 
   const Parties = () => {
     return (
-      <div className={`grid grid-cols-2 gap-10 mb-6 relative z-10 py-6 border-y-2 w-full shrink-0 ${isDark ? 'border-white/10' : 'border-slate-100'} ${t.layout === 'split' ? 'items-start' : 'items-stretch'}`}>
-        <div className="space-y-4">
-          <div className="flex items-center gap-4">
-            <div className={`p-2 ${t.radius} text-white ${t.accent}`}><Anchor size={18}/></div>
-            <p className="text-xs font-black uppercase tracking-[0.3em] opacity-40">Service Provider</p>
+      <div style={spacingStyle} className={`grid grid-cols-2 gap-10 relative z-10 py-3 border-y-2 w-full shrink-0 ${isDark ? 'border-white/10' : 'border-slate-100'} items-start`}>
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2">
+            <div className={`p-1.5 ${t.radius} text-white ${t.accent}`}><Anchor size={14}/></div>
+            <p className="text-xs font-black uppercase tracking-[0.3em] opacity-40">From</p>
           </div>
-          <p className="text-base font-bold leading-relaxed whitespace-pre-wrap pl-3 max-w-sm">{profile.address}</p>
+          {fields.showCompanyInfo && <p className="text-base font-bold leading-relaxed whitespace-pre-wrap pl-3 max-w-sm">{profile.address}</p>}
         </div>
         
-        <div className="text-right space-y-6">
-          <div className="flex items-center gap-4 justify-end">
-            <p className="text-xs font-black uppercase tracking-[0.3em] opacity-40">Client Details</p>
-            <div className={`p-2 ${t.radius} text-white ${t.accent}`}><Briefcase size={18}/></div>
+        <div className="text-right space-y-2">
+          <div className="flex items-center gap-2 justify-end">
+            <p className="text-xs font-black uppercase tracking-[0.3em] opacity-40">To</p>
+            <div className={`p-1.5 ${t.radius} text-white ${t.accent}`}><Briefcase size={14}/></div>
           </div>
-          <div className="pr-3 space-y-4">
-            <div>
-              <p className="text-3xl font-black uppercase mb-2 leading-none tracking-tighter">{invoice.customerName}</p>
-              <p className="text-sm font-medium uppercase leading-relaxed opacity-60 whitespace-pre-wrap">{invoice.customerAddress}</p>
-            </div>
-
-            <div className="flex flex-col gap-2.5 mt-4 items-end">
-              {fields.showShipperAddress && firstBooking?.shipperAddress && (
-                <div className={`w-full max-w-[360px] p-3 border-2 ${t.radius} ${isDark ? 'bg-white/5 border-white/10' : 'bg-slate-50/50 border-slate-200'} flex items-center justify-between text-right`}>
-                  <div className={`p-2 ${isDark ? 'bg-white/10' : 'bg-white'} rounded-lg shadow-sm text-slate-400`}><Package size={16}/></div>
-                  <div className="flex-1 px-4 overflow-hidden">
-                    <span className="text-[10px] font-black text-slate-300 uppercase block tracking-widest mb-0.5">Shipper Info</span>
-                    <span className="text-sm font-black text-slate-900 uppercase block leading-tight truncate mb-0.5">{firstBooking.shipper}</span>
-                    <span className="text-[11px] font-bold text-slate-500 uppercase leading-tight block truncate">{firstBooking.shipperAddress}</span>
-                  </div>
-                </div>
-              )}
-              {fields.showTrucker && firstBooking?.trucker && (
-                <div className={`w-full max-w-[360px] p-3 border-2 ${t.radius} ${isDark ? 'bg-white/5 border-white/10' : 'bg-slate-50/50 border-slate-200'} flex items-center justify-between text-right`}>
-                  <div className={`p-2 ${isDark ? 'bg-white/10' : 'bg-white'} rounded-lg shadow-sm text-slate-400`}><Truck size={16}/></div>
-                  <div className="flex-1 px-4 overflow-hidden">
-                    <span className="text-[10px] font-black text-slate-300 uppercase block tracking-widest mb-0.5">Carrier Service</span>
-                    <span className="text-sm font-bold text-slate-500 uppercase leading-tight truncate block">{firstBooking.trucker}</span>
-                  </div>
-                </div>
-              )}
-            </div>
+          <div className="pr-3 space-y-0.5">
+            <p className="text-xl font-black uppercase leading-none tracking-tighter">{invoice.customerName}</p>
+            {fields.showCustomerAddress && <p className="text-[10px] font-medium uppercase leading-relaxed opacity-60 whitespace-pre-wrap">{invoice.customerAddress}</p>}
           </div>
         </div>
       </div>
@@ -244,54 +195,68 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
   };
 
   const Table = () => {
-    const tableHeaderClass = `py-5 px-4 text-sm font-black uppercase tracking-[0.2em] ${isDark ? 'text-emerald-500' : 'text-slate-400'}`;
+    const tableHeaderClass = `py-2.5 px-3 text-[10px] font-black uppercase tracking-[0.1em] ${isDark ? 'text-emerald-500' : 'text-slate-400'}`;
     const rowBorder = isDark ? 'border-white/10' : 'border-slate-100';
     
     return (
-      <div className="flex-1 w-full relative z-10 py-4 overflow-hidden">
+      <div className="w-full relative z-10 shrink-0">
         <table className={`w-full text-left table-auto border-collapse ${t.tableStyle === 'grid' ? 'border-2' : ''} ${t.tableStyle === 'heavy' ? 'border-t-8 border-slate-950' : ''}`}>
-          <thead className={t.tableStyle === 'striped' ? 'bg-slate-50' : ''}>
-            <tr className={`border-b-4 ${isDark ? 'border-white/20' : 'border-slate-950'}`}>
-              <th className={`${tableHeaderClass} w-[70%] pl-6`}>Logistics & Operational Details</th>
-              <th className={`${tableHeaderClass} w-[30%] text-right pr-6`}>Valuation</th>
+          <thead>
+            <tr className={`border-b-2 ${isDark ? 'border-white/20' : 'border-slate-950'}`}>
+              <th className={`${tableHeaderClass} w-[75%] pl-4`}>Operational & Logistics Data</th>
+              <th className={`${tableHeaderClass} w-[25%] text-right pr-4`}>Subtotal</th>
             </tr>
           </thead>
-          <tbody className={`divide-y-2 ${rowBorder}`}>
+          <tbody className={`divide-y ${rowBorder}`}>
             {groupedItems.map((group, idx) => (
-              <tr key={idx} className={t.tableStyle === 'striped' && idx % 2 === 0 ? 'bg-slate-50/20' : ''}>
-                <td className="py-6 pl-6 align-top">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className={`w-2 h-12 rounded-full ${t.accent}`}></div>
-                    <div>
-                      <div className="flex items-baseline gap-4">
-                        <p className={`font-black text-3xl uppercase tracking-tighter leading-none ${isDark ? 'text-white' : 'text-slate-900'}`}>{group[0].bookingNo}</p>
-                        
-                        {/* Port and Clip info */}
-                        <div className="flex items-center gap-4 py-1.5 px-4 bg-slate-50 border border-slate-100 rounded-xl shadow-sm">
-                          <div className="flex items-center gap-2 text-xs font-black text-slate-600">
-                             <span className="text-[9px] opacity-40">FROM</span> <span className="tracking-tight">{group[0].goPort}</span>
-                             <ArrowRight size={14} className="text-emerald-500 mx-1" />
-                             <span className="text-[9px] opacity-40">TO</span> <span className="tracking-tight">{group[0].giPort}</span>
-                          </div>
-                          <div className="w-px h-4 bg-slate-200"></div>
-                          <div className="flex items-center gap-2 text-xs font-black text-blue-700">
-                             <Clock size={12}/> <span className="bg-blue-100/50 px-2 py-0.5 rounded uppercase">{group[0].dateOfClipOn || 'N/A'}</span>
-                          </div>
+              <tr key={idx} className="break-inside-avoid">
+                <td className="py-3 pl-4 align-top">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className={`w-1 h-5 rounded-full ${t.accent}`}></div>
+                    <div className="flex items-center gap-3">
+                      {fields.showBookingNo && <p className={`font-black text-sm uppercase tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>{group[0].bookingNo}</p>}
+                      {fields.showPorts && (
+                        <div className="flex items-center gap-2 py-0.5 px-2 bg-slate-50 border border-slate-100 rounded-md text-[9px] font-black text-slate-500">
+                           <span>{group[0].goPort}</span>
+                           <ArrowRight size={10} className="text-emerald-500" />
+                           <span>{group[0].giPort}</span>
+                           <span className="text-slate-200 mx-1">|</span>
+                           <span className="text-blue-600 font-mono">{group[0].bookingDate || 'N/A'}</span>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-3 ml-6 mt-2">
-                    {group.map(u => (
-                      <div key={u.id} className={`flex items-center gap-2 text-xs font-black border-2 px-4 py-2 ${t.radius} shadow-md ${isDark ? 'bg-white/5 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-800'}`}>
-                        <Square size={12} className={isDark ? 'text-emerald-400' : 'text-emerald-600'} />
-                        <span className="font-mono-jb uppercase tracking-widest">{u.reeferNumber}</span>
-                      </div>
-                    ))}
+
+                  <div className="ml-4 space-y-2">
+                    <div className="flex flex-wrap gap-1.5">
+                      {group.map(u => (
+                        <div key={u.id} className="group relative">
+                          <div className="text-[10px] font-black border px-2 py-0.5 rounded-sm bg-white border-slate-200 text-slate-800 font-mono-jb flex flex-col">
+                            <span>{u.reeferNumber}</span>
+                            {fields.showGenset && u.gensetNo !== '---' && <span className="text-[8px] text-emerald-600">GS: {u.gensetNo}</span>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      {fields.showTrucker && group[0].trucker !== '---' && (
+                        <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400 uppercase">
+                          <Truck size={12} className="text-slate-300"/>
+                          <span>Trucker: <span className="text-slate-600">{group[0].trucker}</span></span>
+                        </div>
+                      )}
+                      {fields.showShipperAddress && group[0].shipper !== '---' && (
+                        <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400 uppercase">
+                          <Package size={12} className="text-slate-300"/>
+                          <span>Shipper: <span className="text-slate-600">{group[0].shipper}</span></span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </td>
-                <td className="py-6 pr-6 text-right align-top">
-                  <p className={`text-3xl font-black tracking-tighter leading-none mt-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                <td className="py-3 pr-4 text-right align-top">
+                  <p className={`text-base font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     {formatCurrency(group.reduce((a,c)=>a+c.rateValue,0), invoice.currency)}
                   </p>
                 </td>
@@ -303,87 +268,97 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
     );
   };
 
+  const Totals = () => {
+      return (
+        <div className="w-full flex justify-end pt-4 shrink-0 relative z-10" style={spacingStyle}>
+            <div className={`w-1/3 p-3 border-t-2 flex flex-col items-end gap-1 ${isDark ? 'border-white/20' : 'border-slate-950'}`}>
+                <div className="flex justify-between w-full text-[9px] font-bold uppercase opacity-60">
+                    <span>Subtotal</span>
+                    <span>{formatCurrency(invoice.subtotal, invoice.currency)}</span>
+                </div>
+                {fields.showVat && (
+                    <div className="flex justify-between w-full text-[9px] font-bold uppercase opacity-60">
+                        <span>VAT (14%)</span>
+                        <span>{formatCurrency(invoice.tax, invoice.currency)}</span>
+                    </div>
+                )}
+                <div className="w-full border-t border-dotted my-1 opacity-20"></div>
+                <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>TOTAL PAYABLE</span>
+                <span className={`text-2xl font-black tracking-tighter leading-none ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    {formatCurrency(invoice.total, invoice.currency)}
+                </span>
+            </div>
+        </div>
+      );
+  }
+
   const Footer = () => {
     return (
-      <div className={`mt-auto space-y-6 pt-6 border-t-2 w-full relative z-10 shrink-0 ${isDark ? 'border-white/10' : 'border-slate-100'}`}>
-        <div className="grid grid-cols-12 gap-10">
-          <div className="col-span-6 flex flex-col gap-4">
-            {/* Nile Fleet Note */}
-            <div className={`relative p-5 border-l-4 ${t.accent.replace('bg-', 'border-')} ${isDark ? 'bg-white/5' : 'bg-slate-50'} rounded-r-2xl shadow-sm`}>
-              <div className="flex items-center gap-3 mb-2">
+      <div className={`mt-auto space-y-6 pt-6 border-t w-full relative z-10 shrink-0 ${isDark ? 'border-white/10' : 'border-slate-100'}`}>
+        <div className="grid grid-cols-12 gap-6 items-end">
+          <div className="col-span-7 flex flex-col gap-3">
+            <div className={`p-4 border-l-4 ${t.accent.replace('bg-', 'border-')} ${isDark ? 'bg-white/5' : 'bg-slate-50'} rounded-r-xl shadow-sm`}>
+              <div className="flex items-center gap-2 mb-1.5">
                 <Heart size={14} className={isDark ? 'text-emerald-400' : 'text-rose-500'} />
-                <h4 className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-emerald-400' : 'text-slate-900'}`}>A Note from Nile Fleet</h4>
+                <h4 className={`text-[11px] font-black uppercase tracking-[0.1em] ${isDark ? 'text-emerald-400' : 'text-slate-900'}`}>Settlement Note</h4>
               </div>
-              <p className={`text-[10px] leading-relaxed font-bold mb-2 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                Thank you for choosing Nile Fleet Company for your Genset rental needs.
+              <p className={`text-[10px] leading-relaxed font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                Thank you for your business. Full settlement is required by {invoice.dueDate}. Please include invoice number in payment references.
               </p>
-              <ul className={`space-y-2 text-[9px] leading-relaxed font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                <li className="flex gap-2 items-start">
-                  <div className={`w-1 h-1 rounded-full mt-1 shrink-0 ${t.accent}`}></div>
-                  <p>Settlement required by <span className="font-black text-slate-900 underline">{invoice.dueDate}</span>.</p>
-                </li>
-              </ul>
             </div>
 
-            {/* Studio Notes - The dynamic notes field */}
             {fields.showNotes && invoice.notes && (
-              <div className={`p-5 border-2 ${t.radius} ${isDark ? 'bg-white/5 border-white/10' : 'bg-amber-50/30 border-amber-100'}`}>
-                <div className="flex items-center gap-2 mb-2 opacity-60">
-                  <FileText size={14} />
-                  <span className="text-[10px] font-black uppercase tracking-widest">Operational Remarks</span>
-                </div>
-                <p className="text-[10px] font-bold leading-relaxed whitespace-pre-wrap">{invoice.notes}</p>
+              <div className="p-3 border rounded-xl bg-slate-50/20 border-slate-100 flex gap-3 items-start">
+                <Info size={14} className="text-slate-300 mt-0.5" />
+                <p className="text-[10px] font-bold leading-relaxed whitespace-pre-wrap text-slate-500 italic">{invoice.notes}</p>
               </div>
             )}
           </div>
           
-          <div className="col-span-6 flex flex-col justify-end">
-            <div className={`p-4 border-t-4 flex flex-col items-end gap-1 ${isDark ? 'border-white/20' : 'border-slate-950'}`}>
-              <span className={`text-[10px] font-black uppercase tracking-[0.3em] ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>TOTAL DUE</span>
-              <span className={`text-4xl font-black tracking-tighter leading-none ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                  {formatCurrency(invoice.total, invoice.currency)}
-              </span>
-            </div>
-
-            {/* Signature Section - Improved visibility */}
+          <div className="col-span-5 flex flex-col gap-4">
             {fields.showSignature && (
-              <div className="mt-8 pt-4 border-t border-slate-100 flex flex-col items-end">
-                <div className="h-24 w-full flex justify-end items-end relative overflow-visible">
+              <div className="flex flex-col items-end">
+                <div className="h-16 w-full flex justify-end items-end relative overflow-visible">
                   {profile.signatureUrl && (
                     <img 
                       src={profile.signatureUrl} 
-                      className={`h-32 w-auto max-w-[200px] object-contain mb-[-12px] z-20 pointer-events-none ${!isDark ? 'mix-blend-darken' : 'brightness-125'}`} 
+                      className={`h-24 w-auto max-w-[150px] object-contain mb-[-8px] z-20 pointer-events-none ${!isDark ? 'mix-blend-darken' : 'brightness-110'}`} 
                       alt="Manager Signature" 
                     />
                   )}
                 </div>
                 <div className="text-right mt-2">
-                  <p className={`text-lg font-black uppercase tracking-tighter leading-none ${isDark ? 'text-white' : 'text-slate-900'}`}>{profile.name}</p>
-                  <p className="text-[8px] font-black uppercase tracking-[0.3em] opacity-40 mt-1">Authorized Operations Manager</p>
+                  <p className={`text-sm font-black uppercase tracking-tighter leading-none ${isDark ? 'text-white' : 'text-slate-900'}`}>{profile.name}</p>
+                  <p className="text-[9px] font-black uppercase tracking-[0.3em] opacity-40 mt-1">Authorized Operations Manager</p>
                 </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* Brand Signature - Smaller as requested */}
-        <div className="pt-4 mt-4 flex flex-col items-center justify-center w-full border-t border-slate-50">
-          <p className="text-[7px] font-black uppercase tracking-[0.4em] text-slate-300 italic select-none">
-            Powered by <span className="text-slate-400">Bebito</span>
+        <div className="pt-4 flex flex-col items-center justify-center w-full border-t border-slate-100 mt-2 opacity-30 select-none">
+          <p className="text-[8px] font-black uppercase tracking-[0.5em] text-slate-400 italic leading-none">
+            NILE FLEET GENSET COMPANY <span className="mx-2">|</span> POWERED BY BEBITO
           </p>
-          <p className="text-[6px] font-bold tracking-[0.2em] text-slate-300 mt-0.5">+201146475759</p>
         </div>
       </div>
     );
   };
 
   return (
-    <div className={`invoice-container shadow-2xl relative print:p-0 p-[15mm] ${t.bg} ${t.font} ${t.text} ${isActivePrint ? 'active-print' : ''}`}>
-      <WatermarkLayer />
-      <Header />
-      <Parties />
-      <Table />
-      <Footer />
+    <div 
+      className={`invoice-container relative shadow-2xl ${t.bg} ${t.font} ${t.text} ${isActivePrint ? 'active-print' : ''}`}
+      style={paddingStyle}
+    >
+      <div style={scaleStyle} className="w-full flex flex-col h-full overflow-visible">
+        <WatermarkLayer />
+        <Header />
+        <Parties />
+        <Table />
+        <Totals />
+        {/* The middle space appears naturally here if content is short because of mt-auto on Footer */}
+        <Footer />
+      </div>
     </div>
   );
 };

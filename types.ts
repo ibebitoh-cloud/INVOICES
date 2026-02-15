@@ -1,3 +1,4 @@
+
 export interface Booking {
   id: string;
   totalBooking: string;
@@ -77,6 +78,10 @@ export interface TemplateConfig {
   fields: TemplateFields;
   theme: InvoiceTheme;
   groupBy: GroupingType;
+  // New Sizing Controls
+  contentScale: number;
+  verticalSpacing: number;
+  horizontalPadding: number;
 }
 
 export interface UserProfile {
