@@ -3,7 +3,7 @@ import React, { useMemo } from 'react';
 import { Invoice, Booking, TemplateFields, InvoiceTheme, CustomTheme } from '../types';
 import { formatCurrency } from '../utils/formatters';
 import { 
-  Anchor, Briefcase, Clock, Truck, Package, Square, ArrowRight, Heart, FileText, Info, Phone, Globe, Landmark
+  Anchor, Briefcase, Clock, Truck, Package, Square, ArrowRight, Heart, FileText, Info, Phone, Globe, Landmark, Mail
 } from 'lucide-react';
 
 interface InvoiceDocumentProps {
@@ -101,7 +101,7 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
       showReefer: true, showGenset: false, showBookingNo: true, showCustomerRef: true,
       showPorts: true, showServicePeriod: false, showTerms: true, showSignature: true,
       showLogo: true, showCompanyInfo: true, showTaxId: true, showCustomerAddress: true,
-      showBeneficiary: false, showShipperAddress: true, showTrucker: true, showVat: true,
+      showBeneficiary: false, showShipperAddress: true, showTrucker: true,
       showInvoiceDate: true, showDueDate: true, showNotes: true, showWatermark: true
     }
   };
@@ -149,12 +149,9 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
           {fields.showLogo && profile.logoUrl && <img src={profile.logoUrl} className="h-24 mb-4 object-contain" />}
           <div className="space-y-0">
             <h1 className="text-2xl font-black uppercase tracking-tighter leading-none">{profile.companyName}</h1>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-black mt-1">SHERIF HEGAZY</p>
             <div className="flex flex-col gap-0.5 mt-2 text-[8px] font-black uppercase tracking-widest opacity-60">
               {profile.taxId && <p>TAX ID: {profile.taxId}</p>}
-              {profile.phone && <p>TEL: {profile.phone}</p>}
               {profile.website && <p>WEB: {profile.website}</p>}
-              <p>{profile.email}</p>
             </div>
           </div>
         </div>
@@ -279,17 +276,12 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
                     <span>Subtotal</span>
                     <span>{formatCurrency(invoice.subtotal, invoice.currency)}</span>
                 </div>
-                {fields.showVat && (
-                    <div className="flex justify-between w-full text-[9px] font-bold uppercase opacity-60">
-                        <span>VAT (14%)</span>
-                        <span>{formatCurrency(invoice.tax, invoice.currency)}</span>
-                    </div>
-                )}
                 <div className="w-full border-t border-dotted my-1 opacity-20"></div>
                 <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>TOTAL PAYABLE</span>
                 <span className={`text-2xl font-black tracking-tighter leading-none ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     {formatCurrency(invoice.total, invoice.currency)}
                 </span>
+                <p className="text-[8px] font-black uppercase tracking-widest opacity-30 mt-1">Tax Exempt Statement</p>
             </div>
         </div>
       );
@@ -317,7 +309,7 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
                 <h4 className={`text-[11px] font-black uppercase tracking-[0.1em] ${isDark ? 'text-emerald-400' : 'text-slate-900'}`}>Settlement Note</h4>
               </div>
               <p className={`text-[9px] leading-relaxed font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                Thank you for your business! We kindly request full settlement by 2026-03-02. For smooth processing, please include the invoice number in your payment reference.
+                Thank you for your business! We kindly request full settlement by {invoice.dueDate}. For smooth processing, please include the invoice number in your payment reference.
                 We value your feedback, so please review these details within one week of receipt; after this time, the invoice will be considered final and approved. We appreciate your cooperation.
                 <br/>
                 <span className="mt-1 block opacity-60">This is a system generated document and does not require a physical signature if stamped.</span>
@@ -337,9 +329,21 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
                     />
                   )}
                 </div>
-                <div className="text-right mt-2">
+                <div className="text-right mt-2 border-t-2 border-slate-900 pt-2 w-full flex flex-col items-end">
                   <p className={`text-base font-black uppercase tracking-tighter leading-none ${isDark ? 'text-white' : 'text-slate-900'}`}>{profile.name}</p>
                   <p className="text-[9px] font-black uppercase tracking-[0.3em] opacity-40 mt-1">Authorized Manager</p>
+                  
+                  {/* Manager Info Block - Contact details moved here */}
+                  <div className="mt-2 text-right space-y-0.5 opacity-80">
+                    <div className="flex items-center justify-end gap-1.5 text-[9px] font-bold uppercase text-slate-800">
+                      <span>{profile.phone}</span>
+                      <Phone size={11} className="text-emerald-600"/>
+                    </div>
+                    <div className="flex items-center justify-end gap-1.5 text-[9px] font-bold uppercase text-slate-800">
+                      <span>{profile.email}</span>
+                      <Mail size={11} className="text-emerald-600"/>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

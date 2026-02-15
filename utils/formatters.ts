@@ -33,8 +33,6 @@ export const formatDate = (dateStr: string): string => {
 export const exportToCSV = (data: any[], filename: string) => {
   if (data.length === 0) return;
   
-  // Clean data for CSV - filter out internal IDs or complex objects if necessary
-  // but keep core logistics fields
   const headers = Object.keys(data[0]).join(',');
   const rows = data.map(obj => 
     Object.values(obj).map(val => {
@@ -50,6 +48,26 @@ export const exportToCSV = (data: any[], filename: string) => {
   const link = document.createElement("a");
   link.setAttribute("href", url);
   link.setAttribute("download", filename.endsWith('.csv') ? filename : `${filename}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
+export const downloadSampleCSV = () => {
+  const headers = "Customer,Booking No,Unit Number,Port Go,Port Gi,Trucker,Shipper,Rate,Date";
+  const rows = [
+    "Example Client A,BK-10020,UNIT-8822,Alexandria,Cairo,Fast Logistics,Global Traders,1500,2023-10-27",
+    "Example Client B,BK-33044,UNIT-1199,Port Said,Damietta,Speed Truckers,Oceanic Foods,2250,2023-10-28"
+  ].join('\n');
+  
+  const csvContent = `${headers}\n${rows}`;
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", "nile_fleet_sample.csv");
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

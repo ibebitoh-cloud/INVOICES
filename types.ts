@@ -22,8 +22,6 @@ export interface Booking {
   status: string;
   rate: string;
   rateValue: number;
-  vat: string;
-  vatValue: number;
   remarks: string;
   gensetFaultDescription: string;
   invNo: string;
@@ -62,7 +60,7 @@ export type InvoiceTheme =
   | 'vintage' | 'soft-clay' | 'eco-green' | 'sunset-vibe' | 'high-contrast'
   | 'deep-ocean' | 'pastel-dream' | 'luxury-gold' | 'urban-street' | 'paper-texture'
   | 'monochrome' | 'vivid-spectrum' | 'classic-ledger' | 'modern-serif' | 'compact-list'
-  | string; // Allow for custom IDs
+  | string;
 
 export type GroupingType = 'unit' | 'shipper' | 'trucker' | 'booking';
 
@@ -82,7 +80,6 @@ export interface TemplateFields {
   showBeneficiary: boolean;
   showShipperAddress: boolean;
   showTrucker: boolean;
-  showVat: boolean;
   showInvoiceDate: boolean;
   showDueDate: boolean;
   showNotes: boolean;
@@ -94,7 +91,7 @@ export interface TemplateConfig {
   hiddenSections: Set<InvoiceSectionId>;
   fields: TemplateFields;
   theme: InvoiceTheme;
-  customThemeData?: CustomTheme; // Store full data for custom styles
+  customThemeData?: CustomTheme;
   groupBy: GroupingType;
   contentScale: number;
   verticalSpacing: number;
@@ -125,7 +122,6 @@ export interface Invoice {
   beneficiaryName: string;
   items: Booking[];
   subtotal: number;
-  tax: number;
   total: number;
   currency: string;
   notes?: string;

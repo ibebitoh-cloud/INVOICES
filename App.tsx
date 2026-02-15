@@ -14,10 +14,11 @@ import {
   Maximize2, Minimize2, MoveHorizontal, MoveVertical,
   PlusCircle, Compass, Leaf, Sunrise, ScrollText, FlaskConical, Beaker,
   ShieldCheck, Key, Cpu, Paintbrush, Building2, Hash, Edit3,
-  FileText, Activity, Layers2, FileOutput, Globe, Phone, Landmark, Sliders, ToggleRight, ToggleLeft, Save
+  FileText, Activity, Layers2, FileOutput, Globe, Phone, Landmark, Sliders, ToggleRight, ToggleLeft, Save,
+  Hash as HashIcon, Mail
 } from 'lucide-react';
 import { Booking, Invoice, InvoiceSectionId, TemplateConfig, UserProfile, TemplateFields, GroupingType, InvoiceTheme, CustomerConfig, CustomTheme } from './types';
-import { parseCurrency, formatCurrency, exportToCSV } from './utils/formatters';
+import { parseCurrency, formatCurrency, exportToCSV, downloadSampleCSV } from './utils/formatters';
 import InvoiceDocument from './components/InvoiceDocument';
 
 const DEFAULT_COMPANY_LOGO = "https://images.unsplash.com/photo-1586611292717-f828b167408c?auto=format&fit=crop&q=80&w=200&h=200";
@@ -30,6 +31,8 @@ const STANDARD_THEMES: { id: InvoiceTheme, label: string, desc: string, icon: an
   { id: 'swiss-modern', label: 'Swiss Modern', desc: 'High contrast, bold grotesk font', icon: Grid3X3, color: 'bg-red-600' },
   { id: 'technical-draft', label: 'Technical Draft', desc: 'Monospace, blueprint technical look', icon: Terminal, color: 'bg-slate-600' }
 ];
+
+declare var html2pdf: any;
 
 const App: React.FC = () => {
   const [bookings, setBookings] = useState<Booking[]>(() => {
@@ -54,8 +57,8 @@ const App: React.FC = () => {
   const [showActionModal, setShowActionModal] = useState(false);
   const [showManualEntryModal, setShowManualEntryModal] = useState(false);
   const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   
-  // State for Customer Operations View
   const [selectedCustomerForDetail, setSelectedCustomerForDetail] = useState<CustomerConfig | null>(null);
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
 
@@ -80,9 +83,7 @@ const App: React.FC = () => {
   const [profile, setProfile] = useState<UserProfile>(() => {
     const saved = localStorage.getItem('user_profile');
     if (saved) {
-        const parsed = JSON.parse(saved);
-        const { bankName, iban, swift, ...rest } = parsed;
-        return rest;
+        return JSON.parse(saved);
     }
     return {
       name: 'Mohamed Alaa',
@@ -124,7 +125,7 @@ const App: React.FC = () => {
         showReefer: true, showGenset: true, showBookingNo: true, showCustomerRef: true,
         showPorts: true, showServicePeriod: true, showTerms: true, showSignature: true,
         showLogo: true, showCompanyInfo: true, showTaxId: true, showCustomerAddress: true,
-        showBeneficiary: false, showShipperAddress: true, showTrucker: true, showVat: true,
+        showBeneficiary: false, showShipperAddress: true, showTrucker: true,
         showInvoiceDate: true, showDueDate: true, showNotes: true, showWatermark: true
       }
     };
@@ -138,6 +139,29 @@ const App: React.FC = () => {
     const toSave = { ...templateConfig, hiddenSections: Array.from(templateConfig.hiddenSections) };
     localStorage.setItem('template_config', JSON.stringify(toSave));
   }, [templateConfig]);
+
+  const handleDownloadPDF = async (filename: string = 'invoice.pdf') => {
+    const element = document.querySelector('.invoice-container');
+    if (!element) return;
+    
+    setIsDownloading(true);
+    const opt = {
+      margin: 0,
+      filename: filename,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, logging: false },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    try {
+      await html2pdf().from(element).set(opt).save();
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+      alert('Could not generate PDF. Please try the Print option.');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   const handleImageUpload = (file: File, field: 'logoUrl' | 'signatureUrl' | 'watermarkUrl') => {
     const reader = new FileReader();
@@ -197,7 +221,6 @@ const App: React.FC = () => {
           customer: 'Unnamed Client',
           bookingDate: new Date().toISOString().split('T')[0],
           rateValue: 0,
-          vatValue: 0,
           remarks: ''
         };
 
@@ -219,7 +242,6 @@ const App: React.FC = () => {
         });
 
         if (booking.bookingNo !== '---' && booking.customer) {
-          booking.vatValue = booking.rateValue * 0.14;
           newEntries.push(booking as Booking);
           newCustomersToRegister.add(booking.customer);
         }
@@ -245,24 +267,6 @@ const App: React.FC = () => {
     e.target.value = '';
   };
 
-  const downloadSampleCSV = () => {
-    const sampleData = [
-      {
-        Customer: "Nile Shipping Co",
-        "Booking No": "BK990011",
-        "Reefer Number": "MRKU1234567",
-        "Go Port": "Alexandria",
-        "Gi Port": "Sokhna",
-        Rate: "2500.00",
-        Trucker: "Fleet Express",
-        Shipper: "Global Exports",
-        "Booking Date": "2025-05-20",
-        Remarks: "Standard clip-on service"
-      }
-    ];
-    exportToCSV(sampleData, "nile-fleet-sample-manifest.csv");
-  };
-
   const generateInvoicesFromSelection = (silent: boolean = false): Invoice[] => {
     const selectedItems = bookings.filter(b => selectedIds.has(b.id));
     if (selectedItems.length === 0) return [];
@@ -281,7 +285,6 @@ const App: React.FC = () => {
     groups.forEach((items) => {
       const firstItem = items[0];
       const subtotal = items.reduce((acc, curr) => acc + curr.rateValue, 0);
-      const tax = subtotal * 0.14;
       
       const custIdx = updatedCustomerConfigs.findIndex(c => c.name === firstItem.customer);
       let prefix = 'INV';
@@ -304,8 +307,7 @@ const App: React.FC = () => {
         beneficiaryName: '',
         items: items,
         subtotal,
-        tax,
-        total: subtotal + tax,
+        total: subtotal,
         currency: invConfig.currency,
         notes: firstItem.remarks || "Genset rental services and logistics support.",
         templateConfig,
@@ -340,10 +342,8 @@ const App: React.FC = () => {
     setView('print-view');
     setShowActionModal(false);
     
-    // Trigger print dialog after small delay to allow render
     setTimeout(() => {
       window.print();
-      // After print, offer to clear selection or mark billed
       if (confirm("Invoices sent to printer. Mark these manifest items as 'BILLED'?")) {
         executeBulkStatusUpdate('BILLED');
       }
@@ -355,12 +355,6 @@ const App: React.FC = () => {
   const executeBulkStatusUpdate = (status: 'BILLED' | 'PENDING') => {
     setBookings(prev => prev.map(b => selectedIds.has(b.id) ? { ...b, status, invNo: status === 'BILLED' ? 'M-GEN' : '' } : b));
     setSelectedIds(new Set());
-    setShowActionModal(false);
-  };
-
-  const executeSelectionExport = () => {
-    const selectedItems = bookings.filter(b => selectedIds.has(b.id));
-    exportToCSV(selectedItems, `manifest-export-${new Date().toISOString().split('T')[0]}.csv`);
     setShowActionModal(false);
   };
 
@@ -394,7 +388,6 @@ const App: React.FC = () => {
 
     const newId = `booking-manual-${Date.now()}`;
     const rateVal = manualBooking.rateValue || 0;
-    const vatVal = rateVal * 0.14;
 
     const newEntry: Booking = {
       id: newId,
@@ -405,8 +398,6 @@ const App: React.FC = () => {
       giPort: manualBooking.giPort || '---',
       rateValue: rateVal,
       rate: rateVal.toString(),
-      vatValue: vatVal,
-      vat: vatVal.toString(),
       shipper: manualBooking.shipper || '---',
       trucker: manualBooking.trucker || '---',
       shipperAddress: manualBooking.shipperAddress || '---',
@@ -500,8 +491,8 @@ const App: React.FC = () => {
               <header className="flex justify-between items-end">
                 <div><h2 className="text-3xl font-black text-slate-900 tracking-tight">Fleet Manifest</h2><p className="text-slate-500 font-medium mt-1">Ready for automated billing cycles.</p></div>
                 <div className="flex gap-3">
-                   <button onClick={downloadSampleCSV} className="bg-white border border-slate-200 text-slate-600 px-5 py-3 rounded-xl font-bold text-xs flex items-center gap-2 hover:bg-slate-50 transition-colors shadow-sm"><Download size={16}/> Sample CSV</button>
                    <button onClick={() => setShowManualEntryModal(true)} className="bg-white border border-slate-200 text-slate-600 px-5 py-3 rounded-xl font-bold text-xs flex items-center gap-2 hover:bg-slate-50 transition-colors shadow-sm"><PlusCircle size={16}/> Add Booking</button>
+                   <button onClick={downloadSampleCSV} className="bg-white border border-slate-200 text-slate-600 px-5 py-3 rounded-xl font-bold text-xs flex items-center gap-2 hover:bg-slate-50 transition-colors shadow-sm"><FileSpreadsheet size={16}/> Download Sample</button>
                    <label className="cursor-pointer bg-slate-900 text-white px-6 py-3 rounded-xl font-black text-xs flex items-center gap-2 shadow-xl hover:bg-black transition-all">
                       <FileUp size={16}/> Import CSV
                       <input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} />
@@ -574,107 +565,6 @@ const App: React.FC = () => {
             </div>
           )}
 
-          {view === 'customers' && selectedCustomerForDetail && (
-            <div className="space-y-8 animate-in fade-in duration-500 slide-in-from-right-4">
-              <header className="flex justify-between items-center">
-                <div className="flex items-center gap-4">
-                  <button onClick={() => setSelectedCustomerForDetail(null)} className="p-3 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-slate-900 transition-colors shadow-sm"><ChevronLeft size={24}/></button>
-                  <div>
-                    <h2 className="text-3xl font-black text-slate-900 tracking-tight">{selectedCustomerForDetail.name}</h2>
-                    <p className="text-slate-500 font-medium">Customer Operations & Configuration</p>
-                  </div>
-                </div>
-              </header>
-
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                {/* Configuration Sidebar */}
-                <div className="lg:col-span-4 space-y-6">
-                  <div className="bg-white p-8 rounded-[3rem] shadow-xl border border-slate-100 space-y-8">
-                    <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><SettingsIcon size={18}/> Configuration</h3>
-                    <div className="space-y-4">
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-slate-400 uppercase">Billing Prefix</label>
-                        <input 
-                          className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" 
-                          value={selectedCustomerForDetail.prefix} 
-                          onChange={e => handleUpdateCustomerConfig({...selectedCustomerForDetail, prefix: e.target.value})} 
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-slate-400 uppercase">Next Serial Number</label>
-                        <input 
-                          type="number"
-                          className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" 
-                          value={selectedCustomerForDetail.nextNumber} 
-                          onChange={e => handleUpdateCustomerConfig({...selectedCustomerForDetail, nextNumber: parseInt(e.target.value) || 1})} 
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-slate-400 uppercase">Company Display Name</label>
-                        <input 
-                          className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" 
-                          value={selectedCustomerForDetail.name} 
-                          onChange={e => handleUpdateCustomerConfig({...selectedCustomerForDetail, name: e.target.value})} 
-                        />
-                        <p className="text-[8px] text-amber-500 font-bold mt-1 uppercase">* Renaming will disconnect existing manifest items if not matched exactly.</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Operations List */}
-                <div className="lg:col-span-8 space-y-6">
-                  <div className="bg-white rounded-[3rem] shadow-xl border border-slate-100 overflow-hidden flex flex-col min-h-[500px]">
-                    <div className="p-8 border-b border-slate-50 flex justify-between items-center">
-                      <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><TableIcon size={18}/> Manifest History</h3>
-                      <span className="text-[10px] font-black bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full uppercase">{customerSpecificBookings.length} Total Entries</span>
-                    </div>
-                    
-                    {customerSpecificBookings.length === 0 ? (
-                      <div className="flex-1 flex flex-col items-center justify-center p-20 text-center space-y-4 opacity-30">
-                        <Archive size={48} />
-                        <p className="font-bold text-slate-900">No active manifest items for this customer.</p>
-                      </div>
-                    ) : (
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
-                          <thead className="bg-slate-50 border-b font-black text-slate-400 uppercase tracking-widest text-[10px]">
-                            <tr>
-                              <th className="py-5 px-8">Booking #</th>
-                              <th className="py-5 px-4">Unit</th>
-                              <th className="py-5 px-4">Rate</th>
-                              <th className="py-5 px-4">Status</th>
-                              <th className="py-5 px-8 text-right">Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-50">
-                            {customerSpecificBookings.map((b) => (
-                              <tr key={b.id} className="hover:bg-slate-50 group">
-                                <td className="py-5 px-8 font-mono text-slate-500 font-bold">{b.bookingNo}</td>
-                                <td className="py-5 px-4 font-mono font-black text-emerald-600">{b.reeferNumber}</td>
-                                <td className="py-5 px-4 font-black text-slate-900">{formatCurrency(b.rateValue, 'EGP')}</td>
-                                <td className="py-5 px-4">
-                                  {b.status === 'BILLED' ? 
-                                    <span className="text-[10px] px-2 py-0.5 rounded-full font-black uppercase bg-emerald-100 text-emerald-700">BILLED</span> : 
-                                    <span className="text-[10px] px-2 py-0.5 rounded-full font-black uppercase bg-slate-100 text-slate-400">PENDING</span>
-                                  }
-                                </td>
-                                <td className="py-5 px-8 text-right">
-                                  <button onClick={() => setEditingBooking(b)} className="p-2 text-slate-300 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"><Edit3 size={18} /></button>
-                                  <button onClick={() => setBookings(prev => prev.filter(item => item.id !== b.id))} className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100 ml-2"><Trash2 size={18} /></button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
           {view === 'profile' && (
             <div className="max-w-6xl mx-auto space-y-12 animate-in fade-in duration-500">
                <div className="flex justify-between items-end">
@@ -684,7 +574,6 @@ const App: React.FC = () => {
                
                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                   <div className="lg:col-span-8 space-y-8">
-                    {/* Basic Info */}
                     <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100 space-y-8">
                        <h3 className="text-xl font-black text-slate-900 pb-4 border-b uppercase tracking-tight flex items-center gap-3"><Briefcase size={22} className="text-emerald-500"/> Official Profile</h3>
                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -696,7 +585,6 @@ const App: React.FC = () => {
                        </div>
                     </div>
 
-                    {/* Contact & Web */}
                     <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100 space-y-8">
                        <h3 className="text-xl font-black text-slate-900 pb-4 border-b uppercase tracking-tight flex items-center gap-3"><Phone size={22} className="text-blue-500"/> Contact & Digital</h3>
                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -707,24 +595,25 @@ const App: React.FC = () => {
                   </div>
 
                   <div className="lg:col-span-4 space-y-8">
-                    {/* Visual Brand Assets */}
+                    {/* LOGO CARD */}
                     <div className="bg-white p-8 rounded-[3rem] shadow-xl border border-slate-100 space-y-6">
-                      <div className="flex justify-between"><p className="text-[10px] font-black text-slate-400 uppercase">Primary Logo</p><label className="cursor-pointer text-emerald-600 font-black text-[10px] uppercase hover:underline"><input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], 'logoUrl')} />Upload</label></div>
+                      <div className="flex justify-between items-center"><p className="text-[10px] font-black text-slate-400 uppercase">Primary Logo</p><label className="cursor-pointer text-emerald-600 font-black text-[10px] uppercase hover:underline"><input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], 'logoUrl')} />Upload</label></div>
                       <div className="h-40 bg-slate-50 rounded-3xl flex items-center justify-center border-2 border-slate-100 overflow-hidden relative group">
                         {profile.logoUrl ? <img src={profile.logoUrl} className="h-full object-contain p-4 transition-transform group-hover:scale-110" /> : <ImageIcon size={48} className="text-slate-200" />}
                         {profile.logoUrl && <button onClick={() => setProfile({...profile, logoUrl: null})} className="absolute top-4 right-4 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={14}/></button>}
                       </div>
                     </div>
 
+                    {/* SIGNATURE CARD */}
                     <div className="bg-white p-8 rounded-[3rem] shadow-xl border border-slate-100 space-y-6">
-                      <div className="flex justify-between"><p className="text-[10px] font-black text-slate-400 uppercase">Digital Signature</p><label className="cursor-pointer text-emerald-600 font-black text-[10px] uppercase hover:underline"><input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], 'signatureUrl')} />Upload</label></div>
+                      <div className="flex justify-between items-center"><p className="text-[10px] font-black text-slate-400 uppercase">Digital Signature</p><label className="cursor-pointer text-emerald-600 font-black text-[10px] uppercase hover:underline"><input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], 'signatureUrl')} />Upload</label></div>
                       <div className="h-28 bg-slate-50 rounded-2xl flex items-center justify-center border-2 border-slate-100 overflow-hidden relative group">
                         {profile.signatureUrl ? <img src={profile.signatureUrl} className="h-full object-contain p-4 mix-blend-multiply transition-transform group-hover:scale-110" /> : <PenTool size={32} className="text-slate-200" />}
                         {profile.signatureUrl && <button onClick={() => setProfile({...profile, signatureUrl: null})} className="absolute top-4 right-4 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={14}/></button>}
                       </div>
                     </div>
 
-                    {/* Safety Watermark */}
+                    {/* WATERMARK CARD */}
                     <div className="bg-white p-8 rounded-[3rem] shadow-xl border border-slate-100 space-y-6">
                       <div className="flex justify-between items-center">
                         <p className="text-[10px] font-black text-slate-400 uppercase">Safety Watermark</p>
@@ -798,14 +687,10 @@ const App: React.FC = () => {
                       { key: 'showGenset', label: 'Genset Info' },
                       { key: 'showTrucker', label: 'Trucker Name' },
                       { key: 'showShipperAddress', label: 'Shipper Name' },
-                      { key: 'showVat', label: 'Tax Calculations' },
-                      { key: 'showSignature', label: 'Authorized Signature' },
+                      { key: 'showInvoiceDate', label: 'Invoice Date' },
+                      { key: 'showDueDate', label: 'Due Date' },
                       { key: 'showNotes', label: 'Terms & Notes' },
-                      { key: 'showWatermark', label: 'Safety Watermark' },
-                      { key: 'showBeneficiary', label: 'Beneficiary Info' },
-                      { key: 'showCustomerRef', label: 'Customer Reference' },
-                      { key: 'showTerms', label: 'Extended Terms' },
-                      { key: 'showServicePeriod', label: 'Service Timeline' }
+                      { key: 'showWatermark', label: 'Safety Watermark' }
                     ].map(field => (
                       <button 
                         key={field.key} 
@@ -824,11 +709,29 @@ const App: React.FC = () => {
           {view === 'invoice-preview' && activeInvoice && (
             <div className="animate-in fade-in duration-500 pb-32">
                <div className="no-print bg-white p-8 rounded-[2.5rem] shadow-2xl mb-8 border-2 border-slate-100 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4 flex-1">
                     <button onClick={() => setView('dashboard')} className="p-3 bg-slate-50 rounded-xl text-slate-400 hover:text-slate-900 transition-colors"><ChevronLeft size={24}/></button>
-                    <div><h3 className="text-2xl font-black text-slate-900 tracking-tight">Document Preview</h3><p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">{activeInvoice.invoiceNumber}</p></div>
+                    <div className="flex flex-col gap-1 w-full max-w-xs">
+                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1"><HashIcon size={10}/> Invoice Serial</label>
+                       <input 
+                         type="text"
+                         value={activeInvoice.invoiceNumber}
+                         onChange={(e) => setActiveInvoice({...activeInvoice, invoiceNumber: e.target.value})}
+                         className="bg-slate-50 border-2 border-transparent focus:border-emerald-500 p-2 rounded-xl font-black text-slate-900 outline-none transition-all"
+                       />
+                    </div>
                   </div>
-                  <button onClick={() => window.print()} className="bg-slate-900 text-white px-10 py-4 rounded-2xl font-black uppercase text-xs flex items-center gap-2 shadow-xl hover:bg-black transition-all active:scale-95"><Printer size={18}/> Print PDF</button>
+                  <div className="flex gap-2">
+                    <button 
+                      disabled={isDownloading}
+                      onClick={() => handleDownloadPDF(`${activeInvoice.invoiceNumber}.pdf`)} 
+                      className={`bg-emerald-600 text-white px-10 py-4 rounded-2xl font-black uppercase text-xs flex items-center gap-2 shadow-xl hover:bg-emerald-700 transition-all active:scale-95 ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      {isDownloading ? <Zap size={18} className="animate-pulse" /> : <Download size={18}/>}
+                      {isDownloading ? 'Generating...' : 'Download PDF'}
+                    </button>
+                    <button onClick={() => window.print()} className="bg-slate-900 text-white p-4 rounded-2xl shadow-xl hover:bg-black transition-all"><Printer size={20}/></button>
+                  </div>
                </div>
                <div className="flex justify-center">
                  <InvoiceDocument invoice={activeInvoice} />
@@ -858,7 +761,6 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      {/* Editing Booking Modal */}
       {editingBooking && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl p-10 space-y-8 relative max-h-[90vh] overflow-y-auto no-scrollbar">
@@ -878,7 +780,7 @@ const App: React.FC = () => {
                <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Go Port</label><input className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={editingBooking.goPort} onChange={e => setEditingBooking({...editingBooking, goPort: e.target.value})} /></div>
                <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Gi Port</label><input className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={editingBooking.giPort} onChange={e => setEditingBooking({...editingBooking, giPort: e.target.value})} /></div>
                <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Trucker Company</label><input className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={editingBooking.trucker} onChange={e => setEditingBooking({...editingBooking, trucker: e.target.value})} /></div>
-               <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Rate (EGP)</label><input type="number" step="0.01" className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={editingBooking.rateValue} onChange={e => { const val = parseFloat(e.target.value) || 0; setEditingBooking({...editingBooking, rateValue: val, vatValue: val * 0.14}); }} /></div>
+               <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Rate (EGP)</label><input type="number" step="0.01" className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={editingBooking.rateValue} onChange={e => { const val = parseFloat(e.target.value) || 0; setEditingBooking({...editingBooking, rateValue: val}); }} /></div>
                <div className="col-span-2 space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Internal Remarks</label><textarea className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none resize-none" rows={3} value={editingBooking.remarks} onChange={e => setEditingBooking({...editingBooking, remarks: e.target.value})} /></div>
                
                <button type="submit" className="col-span-2 bg-emerald-600 text-white py-5 rounded-2xl font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all">
@@ -921,12 +823,12 @@ const App: React.FC = () => {
                 </div>
               </button>
 
-              {/* INSTANT DOWNLOAD MANIFEST */}
-              <button onClick={executeSelectionExport} className="group p-6 bg-white border-2 border-slate-100 hover:border-emerald-500 rounded-[2rem] flex flex-col gap-4 transition-all active:scale-95">
-                <div className="bg-slate-50 w-12 h-12 rounded-xl flex items-center justify-center group-hover:bg-emerald-100 group-hover:text-emerald-600 transition-colors"><Download size={24}/></div>
+              {/* DOWNLOAD PDF MANIFEST (Replaced CSV) */}
+              <button onClick={() => alert('PDF manifest report feature coming soon - Please generate invoices for individual PDFs')} className="group p-6 bg-white border-2 border-slate-100 hover:border-emerald-500 rounded-[2rem] flex flex-col gap-4 transition-all active:scale-95">
+                <div className="bg-slate-50 w-12 h-12 rounded-xl flex items-center justify-center group-hover:bg-emerald-100 group-hover:text-emerald-600 transition-colors"><FileDown size={24}/></div>
                 <div className="text-left">
-                  <h4 className="font-black uppercase text-sm text-slate-900">Download CSV</h4>
-                  <p className="text-slate-400 text-[10px] font-medium leading-relaxed">Immediate manifest export for Excel</p>
+                  <h4 className="font-black uppercase text-sm text-slate-900">Download PDF Report</h4>
+                  <p className="text-slate-400 text-[10px] font-medium leading-relaxed">Export selected manifest data as PDF</p>
                 </div>
               </button>
 
