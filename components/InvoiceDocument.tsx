@@ -149,6 +149,7 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
           {fields.showLogo && profile.logoUrl && <img src={profile.logoUrl} className="h-24 mb-4 object-contain" />}
           <div className="space-y-0">
             <h1 className="text-2xl font-black uppercase tracking-tighter leading-none">{profile.companyName}</h1>
+            <p className="text-[11px] font-black uppercase tracking-[0.2em] text-black mt-1">SHERIF HEGAZY</p>
             <div className="flex flex-col gap-0.5 mt-2 text-[8px] font-black uppercase tracking-widest opacity-60">
               {profile.taxId && <p>TAX ID: {profile.taxId}</p>}
               {profile.website && <p>WEB: {profile.website}</p>}
