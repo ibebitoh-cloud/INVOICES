@@ -1,5 +1,6 @@
+
 import React, { useMemo } from 'react';
-import { Invoice, Booking, TemplateFields, InvoiceTheme } from '../types';
+import { Invoice, Booking, TemplateFields, InvoiceTheme, CustomTheme } from '../types';
 import { formatCurrency } from '../utils/formatters';
 import { 
   Anchor, Briefcase, Clock, Truck, Package, Square, ArrowRight, Heart, FileText, Info
@@ -23,7 +24,23 @@ interface ThemeConfig {
   headerStyle: 'standard' | 'centered' | 'badge' | 'sidebar';
 }
 
-const getThemeConfig = (theme: InvoiceTheme): ThemeConfig => {
+const getThemeConfig = (theme: InvoiceTheme, customData?: CustomTheme): ThemeConfig => {
+  // If custom data exists, prioritize it
+  if (customData) {
+    return {
+      accent: customData.accent,
+      secondary: customData.secondary,
+      bg: customData.bg,
+      text: customData.text,
+      border: customData.border,
+      font: customData.font,
+      radius: customData.radius,
+      layout: customData.layout,
+      tableStyle: customData.tableStyle,
+      headerStyle: customData.headerStyle,
+    };
+  }
+
   const configs: Record<string, Partial<ThemeConfig>> = {
     'logistics-grid': { 
       accent: 'bg-emerald-600', secondary: 'text-emerald-700', bg: 'bg-white', border: 'border-slate-900', 
@@ -132,9 +149,9 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
 
   const fields = config.fields as TemplateFields;
   const themeName = config.theme || 'logistics-grid';
-  const t = getThemeConfig(themeName);
+  const t = getThemeConfig(themeName, config.customThemeData);
   const profile = invoice.userProfile;
-  const isDark = themeName === 'midnight-pro' || themeName === 'deep-ocean' || themeName === 'luxury-gold' || themeName === 'blueprint';
+  const isDark = themeName === 'midnight-pro' || themeName === 'deep-ocean' || themeName === 'luxury-gold' || themeName === 'blueprint' || (config.customThemeData?.bg.includes('950') || config.customThemeData?.bg.includes('black'));
 
   const groupedItems = useMemo(() => {
     const groups = new Map<string, Booking[]>();
@@ -159,7 +176,6 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
   const spacingStyle = { marginBottom: `${config.verticalSpacing}px` };
   const paddingStyle = { padding: `${config.horizontalPadding}mm` };
   
-  // Adjusted scale style to handle full A4 height correctly
   const scaleStyle = { 
     transform: `scale(${config.contentScale})`, 
     transformOrigin: 'top center',
@@ -379,7 +395,6 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
         <Parties />
         <Table />
         <Totals />
-        {/* Flexible spacer to push the bottom section down, creating space in the middle */}
         <div className="flex-grow min-h-[40px]"></div>
         <BottomSection />
       </div>

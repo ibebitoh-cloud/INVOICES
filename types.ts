@@ -39,13 +39,30 @@ export interface CustomerConfig {
 }
 
 export type InvoiceSectionId = 'header' | 'parties' | 'table' | 'totals' | 'footer' | 'signature';
+
+export interface CustomTheme {
+  id: string;
+  label: string;
+  accent: string;
+  secondary: string;
+  bg: string;
+  text: string;
+  border: string;
+  font: string;
+  radius: string;
+  layout: 'classic' | 'modern' | 'industrial' | 'split' | 'minimal' | 'sidebar' | 'bold';
+  tableStyle: 'grid' | 'clean' | 'striped' | 'heavy' | 'glass';
+  headerStyle: 'standard' | 'centered' | 'badge' | 'sidebar';
+}
+
 export type InvoiceTheme = 
   | 'logistics-grid' | 'corporate' | 'technical-draft' | 'minimalist' | 'industrial' 
   | 'elegant' | 'blueprint' | 'glass' | 'royal' | 'modern-cards' 
   | 'midnight-pro' | 'sidebar-pro' | 'neon-glow' | 'swiss-modern' | 'brutalist' 
   | 'vintage' | 'soft-clay' | 'eco-green' | 'sunset-vibe' | 'high-contrast'
   | 'deep-ocean' | 'pastel-dream' | 'luxury-gold' | 'urban-street' | 'paper-texture'
-  | 'monochrome' | 'vivid-spectrum' | 'classic-ledger' | 'modern-serif' | 'compact-list';
+  | 'monochrome' | 'vivid-spectrum' | 'classic-ledger' | 'modern-serif' | 'compact-list'
+  | string; // Allow for custom IDs
 
 export type GroupingType = 'unit' | 'shipper' | 'trucker' | 'booking';
 
@@ -77,8 +94,8 @@ export interface TemplateConfig {
   hiddenSections: Set<InvoiceSectionId>;
   fields: TemplateFields;
   theme: InvoiceTheme;
+  customThemeData?: CustomTheme; // Store full data for custom styles
   groupBy: GroupingType;
-  // New Sizing Controls
   contentScale: number;
   verticalSpacing: number;
   horizontalPadding: number;
