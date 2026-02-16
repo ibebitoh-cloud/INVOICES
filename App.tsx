@@ -15,7 +15,7 @@ import {
   PlusCircle, Compass, Leaf, Sunrise, ScrollText, FlaskConical, Beaker,
   ShieldCheck, Key, Cpu, Paintbrush, Building2, Hash, Edit3,
   FileText, Activity, Layers2, FileOutput, Globe, Phone, Landmark, Sliders, ToggleRight, ToggleLeft, Save,
-  Hash as HashIcon, Mail
+  Hash as HashIcon, Mail, Box, Calendar, MessageSquareText, Award as AwardIcon, User
 } from 'lucide-react';
 import { Booking, Invoice, InvoiceSectionId, TemplateConfig, UserProfile, TemplateFields, GroupingType, InvoiceTheme, CustomerConfig, CustomTheme } from './types';
 import { parseCurrency, formatCurrency, exportToCSV, downloadSampleCSV } from './utils/formatters';
@@ -26,10 +26,16 @@ const DEFAULT_COMPANY_LOGO = "https://images.unsplash.com/photo-1586611292717-f8
 const STANDARD_THEMES: { id: InvoiceTheme, label: string, desc: string, icon: any, color: string }[] = [
   { id: 'logistics-grid', label: 'Classic Logistics', desc: 'Heavy borders, official grid layout', icon: TableIcon, color: 'bg-emerald-600' },
   { id: 'corporate', label: 'Corporate Clean', desc: 'Minimal, business-standard style', icon: Briefcase, color: 'bg-slate-900' },
-  { id: 'luxury-gold', label: 'Luxury Gold', desc: 'Premium executive dark/gold theme', icon: Award, color: 'bg-amber-500' },
-  { id: 'vintage', label: 'Vintage Archive', desc: 'Typewriter fonts on aged paper', icon: ScrollText, color: 'bg-orange-200' },
-  { id: 'swiss-modern', label: 'Swiss Modern', desc: 'High contrast, bold grotesk font', icon: Grid3X3, color: 'bg-red-600' },
-  { id: 'technical-draft', label: 'Technical Draft', desc: 'Monospace, blueprint technical look', icon: Terminal, color: 'bg-slate-600' }
+  { id: 'luxury-gold', label: 'Executive Gold', desc: 'Premium serif fonts with gold accents', icon: Award, color: 'bg-amber-500' },
+  { id: 'vintage', label: 'Vintage Archive', desc: 'Typewriter fonts on clean white paper', icon: ScrollText, color: 'bg-orange-600' },
+  { id: 'swiss-modern', label: 'Swiss Bold', desc: 'High contrast, bold grotesque font', icon: Grid3X3, color: 'bg-red-600' },
+  { id: 'technical-draft', label: 'Technical Draft', desc: 'Monospace, blueprint technical look', icon: Terminal, color: 'bg-slate-600' },
+  { id: 'minimalist', label: 'Ultra Minimal', desc: 'Maximum whitespace, zero borders', icon: Square, color: 'bg-slate-300' },
+  { id: 'sidebar-pro', label: 'Left Sidebar', desc: 'Details on side, wide table layout', icon: MoveHorizontal, color: 'bg-blue-600' },
+  { id: 'modern-cards', label: 'Card-based', desc: 'Items presented in distinct blocks', icon: Layers, color: 'bg-purple-600' },
+  { id: 'blueprint', label: 'Blueprint Grid', desc: 'Architectural lines and grid focus', icon: MapPin, color: 'bg-cyan-600' },
+  { id: 'elegant', label: 'Elegant Serif', desc: 'Sophisticated typography and spacing', icon: Sunrise, color: 'bg-rose-400' },
+  { id: 'industrial', label: 'Industrial Stamped', desc: 'Bold headers and stamped aesthetics', icon: Box, color: 'bg-zinc-800' }
 ];
 
 declare var html2pdf: any;
@@ -77,7 +83,8 @@ const App: React.FC = () => {
   const [newCustomer, setNewCustomer] = useState<Partial<CustomerConfig>>({
     name: '',
     prefix: 'INV',
-    nextNumber: 1
+    nextNumber: 1,
+    dueDate: '2026-03-03'
   });
 
   const [profile, setProfile] = useState<UserProfile>(() => {
@@ -87,6 +94,8 @@ const App: React.FC = () => {
     }
     return {
       name: 'Mohamed Alaa',
+      ownerName: 'Sherif Hegazy',
+      title: 'Operations Manager',
       companyName: 'Nile Fleet',
       address: 'Genset Rent Company\nCairo, Egypt',
       taxId: '620-410-998',
@@ -100,11 +109,15 @@ const App: React.FC = () => {
     };
   });
 
-  const [invConfig, setInvConfig] = useState({
-    date: new Date().toISOString().split('T')[0],
-    dueDate: new Date(Date.now() + 15 * 86400000).toISOString().split('T')[0],
-    notes: 'Operational services provided for Genset rental and logistics.',
-    currency: 'EGP'
+  const [invConfig, setInvConfig] = useState(() => {
+    const saved = localStorage.getItem('inv_config');
+    if (saved) return JSON.parse(saved);
+    return {
+      date: new Date().toISOString().split('T')[0],
+      dueDate: "2026-03-03",
+      notes: 'Settlement Note Thank you for your business! We kindly request full settlement by 2026-03-03. For smooth processing, please include the invoice number in your payment reference. We value your feedback, so please review these details within one week of receipt; after this time, the invoice will be considered final and approved. We appreciate your cooperation.',
+      currency: 'EGP'
+    };
   });
 
   const [templateConfig, setTemplateConfig] = useState<TemplateConfig>(() => {
@@ -135,6 +148,7 @@ const App: React.FC = () => {
   useEffect(() => { localStorage.setItem('user_profile', JSON.stringify(profile)); }, [profile]);
   useEffect(() => { localStorage.setItem('customer_configs', JSON.stringify(customerConfigs)); }, [customerConfigs]);
   useEffect(() => { localStorage.setItem('custom_themes', JSON.stringify(customThemes)); }, [customThemes]);
+  useEffect(() => { localStorage.setItem('inv_config', JSON.stringify(invConfig)); }, [invConfig]);
   useEffect(() => {
     const toSave = { ...templateConfig, hiddenSections: Array.from(templateConfig.hiddenSections) };
     localStorage.setItem('template_config', JSON.stringify(toSave));
@@ -169,6 +183,10 @@ const App: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
+  const filteredBookings = useMemo(() => {
+    return bookings.filter(b => (!searchTerm || b.bookingNo.toLowerCase().includes(searchTerm.toLowerCase()) || b.reeferNumber.toLowerCase().includes(searchTerm.toLowerCase()) || b.customer.toLowerCase().includes(searchTerm.toLowerCase())));
+  }, [bookings, searchTerm]);
+
   const toggleBooking = (id: string) => {
     const target = bookings.find(b => b.id === id);
     if (!target) return;
@@ -183,6 +201,21 @@ const App: React.FC = () => {
         if (isAdding) next.add(toggleId);
         else next.delete(toggleId);
       });
+      return next;
+    });
+  };
+
+  const toggleAllBookings = () => {
+    const allFilteredIds = filteredBookings.map(b => b.id);
+    const areAllSelected = allFilteredIds.every(id => selectedIds.has(id));
+
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (areAllSelected) {
+        allFilteredIds.forEach(id => next.delete(id));
+      } else {
+        allFilteredIds.forEach(id => next.add(id));
+      }
       return next;
     });
   };
@@ -252,7 +285,7 @@ const App: React.FC = () => {
         const toAdd: CustomerConfig[] = [];
         newCustomersToRegister.forEach(name => {
           if (!existingNames.has(name.toLowerCase())) {
-            toAdd.push({ id: `cust-${Date.now()}-${Math.random()}`, name, prefix: 'INV', nextNumber: 1 });
+            toAdd.push({ id: `cust-${Date.now()}-${Math.random()}`, name, prefix: 'INV', nextNumber: 1, dueDate: '2026-03-03' });
           }
         });
         return [...prev, ...toAdd];
@@ -267,8 +300,8 @@ const App: React.FC = () => {
     e.target.value = '';
   };
 
-  const generateInvoicesFromSelection = (silent: boolean = false): Invoice[] => {
-    const selectedItems = bookings.filter(b => selectedIds.has(b.id));
+  const generateInvoicesFromSelection = (silent: boolean = false, itemsToBill?: Booking[]): Invoice[] => {
+    const selectedItems = itemsToBill || bookings.filter(b => selectedIds.has(b.id));
     if (selectedItems.length === 0) return [];
     
     const groups = new Map<string, Booking[]>();
@@ -289,19 +322,24 @@ const App: React.FC = () => {
       const custIdx = updatedCustomerConfigs.findIndex(c => c.name === firstItem.customer);
       let prefix = 'INV';
       let nextNum = 1001;
+      let customerDueDate = invConfig.dueDate;
       
       if (custIdx !== -1) {
         const c = updatedCustomerConfigs[custIdx];
         prefix = c.prefix;
         nextNum = c.nextNumber;
+        if (c.dueDate) customerDueDate = c.dueDate;
         updatedCustomerConfigs[custIdx].nextNumber += 1;
       }
+
+      // Sync the due date in the notes string automatically
+      const syncedNotes = invConfig.notes.replace(/\d{4}-\d{2}-\d{2}/, customerDueDate);
 
       generatedInvoices.push({
         id: `INV-${Date.now()}-${Math.random()}`,
         invoiceNumber: `${prefix}-${nextNum.toString().padStart(4, '0')}`,
         date: invConfig.date,
-        dueDate: invConfig.dueDate,
+        dueDate: customerDueDate,
         customerName: firstItem.customer,
         customerAddress: firstItem.shipperAddress,
         beneficiaryName: '',
@@ -309,7 +347,7 @@ const App: React.FC = () => {
         subtotal,
         total: subtotal,
         currency: invConfig.currency,
-        notes: firstItem.remarks || "Genset rental services and logistics support.",
+        notes: syncedNotes, // Synced with the selected due date
         templateConfig,
         userProfile: profile
       });
@@ -319,8 +357,8 @@ const App: React.FC = () => {
     return generatedInvoices;
   };
 
-  const executeInvoiceGeneration = () => {
-    const generated = generateInvoicesFromSelection();
+  const executeInvoiceGeneration = (items?: Booking[]) => {
+    const generated = generateInvoicesFromSelection(false, items);
     if (generated.length === 0) return;
 
     if (generated.length > 1) {
@@ -334,8 +372,8 @@ const App: React.FC = () => {
     setShowActionModal(false);
   };
 
-  const executeInstantPrint = () => {
-    const generated = generateInvoicesFromSelection();
+  const executeInstantPrint = (items?: Booking[]) => {
+    const generated = generateInvoicesFromSelection(false, items);
     if (generated.length === 0) return;
 
     setBatchInvoices(generated);
@@ -344,8 +382,10 @@ const App: React.FC = () => {
     
     setTimeout(() => {
       window.print();
-      if (confirm("Invoices sent to printer. Mark these manifest items as 'BILLED'?")) {
-        executeBulkStatusUpdate('BILLED');
+      const markAsBilled = confirm("Invoices sent to printer. Mark items as 'BILLED'?");
+      if (markAsBilled) {
+        const ids = items ? items.map(i => i.id) : Array.from(selectedIds);
+        setBookings(prev => prev.map(b => ids.includes(b.id) ? { ...b, status: 'BILLED', invNo: 'M-GEN' } : b));
       }
       setView('dashboard');
       setSelectedIds(new Set());
@@ -410,7 +450,7 @@ const App: React.FC = () => {
     
     setCustomerConfigs(prev => {
       if (prev.some(c => c.name === newEntry.customer)) return prev;
-      return [...prev, { id: `cust-${Date.now()}`, name: newEntry.customer, prefix: 'INV', nextNumber: 1 }];
+      return [...prev, { id: `cust-${Date.now()}`, name: newEntry.customer, prefix: 'INV', nextNumber: 1, dueDate: '2026-03-03' }];
     });
 
     setBookings(prev => [newEntry, ...prev]);
@@ -425,32 +465,18 @@ const App: React.FC = () => {
       id: `cust-${Date.now()}`,
       name: newCustomer.name,
       prefix: newCustomer.prefix || 'INV',
-      nextNumber: newCustomer.nextNumber || 1
+      nextNumber: newCustomer.nextNumber || 1,
+      dueDate: newCustomer.dueDate || '2026-03-03'
     };
 
     setCustomerConfigs(prev => [...prev, config]);
-    setNewCustomer({ name: '', prefix: 'INV', nextNumber: 1 });
+    setNewCustomer({ name: '', prefix: 'INV', nextNumber: 1, dueDate: '2026-03-03' });
     setShowAddCustomerModal(false);
   };
 
-  const handleUpdateCustomerConfig = (updated: CustomerConfig) => {
-    setCustomerConfigs(prev => prev.map(c => c.id === updated.id ? updated : c));
-    setSelectedCustomerForDetail(updated);
+  const updateCustomerProperty = (id: string, property: keyof CustomerConfig, value: any) => {
+    setCustomerConfigs(prev => prev.map(c => c.id === id ? { ...c, [property]: value } : c));
   };
-
-  const handleUpdateBooking = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingBooking) return;
-    setBookings(prev => prev.map(b => b.id === editingBooking.id ? editingBooking : b));
-    setEditingBooking(null);
-  };
-
-  const filteredBookings = bookings.filter(b => (!searchTerm || b.bookingNo.toLowerCase().includes(searchTerm.toLowerCase()) || b.reeferNumber.toLowerCase().includes(searchTerm.toLowerCase()) || b.customer.toLowerCase().includes(searchTerm.toLowerCase())));
-
-  const customerSpecificBookings = useMemo(() => {
-    if (!selectedCustomerForDetail) return [];
-    return bookings.filter(b => b.customer.toLowerCase() === selectedCustomerForDetail.name.toLowerCase());
-  }, [bookings, selectedCustomerForDetail]);
 
   return (
     <div className="min-h-screen flex bg-slate-50 antialiased overflow-hidden">
@@ -461,7 +487,7 @@ const App: React.FC = () => {
               <div className="bg-emerald-500 p-2 rounded-xl text-white"><Briefcase size={20} /></div>
               <h1 className="text-sm font-black text-white tracking-tighter uppercase leading-tight">NILE FLEET<br/>GENSET</h1>
             </div>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] ml-11">SHERIF HEGAZY</p>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] ml-11">{profile.ownerName}</p>
           </div>
           <nav className="space-y-2">
             {[
@@ -476,10 +502,10 @@ const App: React.FC = () => {
             ))}
           </nav>
         </div>
-        <div className="mt-auto p-8 border-t border-white/5">
-          <div className="flex flex-col gap-1 items-start">
+        <div className="mt-auto p-8 border-t border-white/5 text-center">
+          <div className="flex flex-col gap-1 items-center">
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 leading-tight">{profile.companyName}</span>
-            <span className="text-xs font-black text-white tracking-tight uppercase">OPERATOR DASHBOARD</span>
+            <span className="text-[8px] font-black text-white/40 tracking-tight uppercase">POWERED BY BEBITO</span>
           </div>
         </div>
       </aside>
@@ -489,7 +515,7 @@ const App: React.FC = () => {
           {view === 'dashboard' && (
             <div className="space-y-8 animate-in fade-in duration-500">
               <header className="flex justify-between items-end">
-                <div><h2 className="text-3xl font-black text-slate-900 tracking-tight">Fleet Manifest</h2><p className="text-slate-500 font-medium mt-1">Ready for automated billing cycles.</p></div>
+                <div><h2 className="text-3xl font-black text-slate-900 tracking-tight">Fleet Manifest</h2><p className="text-slate-500 font-medium mt-1">Select items for bulk billing or use row actions for quick printing.</p></div>
                 <div className="flex gap-3">
                    <button onClick={() => setShowManualEntryModal(true)} className="bg-white border border-slate-200 text-slate-600 px-5 py-3 rounded-xl font-bold text-xs flex items-center gap-2 hover:bg-slate-50 transition-colors shadow-sm"><PlusCircle size={16}/> Add Booking</button>
                    <button onClick={downloadSampleCSV} className="bg-white border border-slate-200 text-slate-600 px-5 py-3 rounded-xl font-bold text-xs flex items-center gap-2 hover:bg-slate-50 transition-colors shadow-sm"><FileSpreadsheet size={16}/> Download Sample</button>
@@ -500,34 +526,98 @@ const App: React.FC = () => {
                 </div>
               </header>
 
-              <div className="bg-white rounded-[2rem] shadow-xl border border-slate-100 p-6 flex gap-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                  <input type="text" placeholder="Search manifest..." className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent focus:border-emerald-600 rounded-2xl font-bold outline-none transition-all" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              <div className="bg-white rounded-[2rem] shadow-xl border border-slate-100 p-6 flex flex-col gap-6">
+                <div className="flex gap-4">
+                  <div className="flex-1 relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                    <input type="text" placeholder="Search manifest..." className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent focus:border-emerald-600 rounded-2xl font-bold outline-none transition-all" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                  </div>
+                  {selectedIds.size > 0 && (
+                    <div className="flex gap-3 animate-in slide-in-from-right duration-300">
+                      <button 
+                        onClick={() => executeInstantPrint()} 
+                        className="bg-emerald-600 text-white px-8 py-4 rounded-2xl font-black transition-all uppercase text-xs tracking-widest shadow-xl flex items-center gap-2 hover:bg-emerald-700"
+                      >
+                        <Printer size={18}/> Print Batch ({selectedIds.size})
+                      </button>
+                      <button 
+                        onClick={() => executeInvoiceGeneration()} 
+                        className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black transition-all uppercase text-xs tracking-widest shadow-xl flex items-center gap-2 hover:bg-black"
+                      >
+                        <Eye size={18}/> Preview Batch
+                      </button>
+                      <button 
+                        onClick={() => setShowActionModal(true)} 
+                        className="bg-white border-2 border-slate-100 text-slate-600 p-4 rounded-2xl hover:bg-slate-50 transition-all"
+                      >
+                        <Sliders size={20}/>
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <button 
-                  disabled={selectedIds.size === 0} 
-                  onClick={() => setShowActionModal(true)} 
-                  className="bg-emerald-600 text-white px-10 py-4 rounded-2xl font-black disabled:opacity-30 transition-all uppercase text-xs tracking-widest shadow-xl flex items-center gap-2 active:scale-95 hover:bg-emerald-700"
-                >
-                  <Activity size={18} className="fill-white"/> Quick Operations ({selectedIds.size})
-                </button>
               </div>
 
               <div className="bg-white rounded-[2rem] shadow-xl border border-slate-100 overflow-hidden">
                 <table className="w-full text-left text-sm">
                   <thead className="bg-slate-50 border-b font-black text-slate-400 uppercase tracking-widest text-[10px]">
-                    <tr><th className="py-5 px-6 w-12 text-center">#</th><th className="py-5 px-4">Client</th><th className="py-5 px-4">Booking</th><th className="py-5 px-4">Unit</th><th className="py-5 px-4">Rate</th><th className="py-5 px-4 text-center">Status</th></tr>
+                    <tr>
+                      <th className="py-5 px-6 w-12 text-center cursor-pointer hover:bg-slate-100 transition-colors" onClick={toggleAllBookings}>
+                        <input 
+                          type="checkbox" 
+                          readOnly 
+                          className="w-5 h-5 rounded cursor-pointer accent-emerald-600" 
+                          checked={filteredBookings.length > 0 && filteredBookings.every(b => selectedIds.has(b.id))} 
+                        />
+                      </th>
+                      <th className="py-5 px-4">Client</th>
+                      <th className="py-5 px-4">Booking</th>
+                      <th className="py-5 px-4">Unit</th>
+                      <th className="py-5 px-4">Rate</th>
+                      <th className="py-5 px-4 text-center">Status</th>
+                      <th className="py-5 px-4 text-right">Action</th>
+                    </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
                     {filteredBookings.map((b) => (
-                      <tr key={b.id} className={`hover:bg-slate-50 cursor-pointer transition-colors ${selectedIds.has(b.id) ? 'bg-emerald-50' : ''}`} onClick={() => toggleBooking(b.id)}>
-                        <td className="py-5 px-6 text-center"><input type="checkbox" readOnly className="w-5 h-5 rounded cursor-pointer accent-emerald-600" checked={selectedIds.has(b.id)} /></td>
-                        <td className="py-5 px-4 font-bold text-slate-900">{b.customer}</td>
-                        <td className="py-5 px-4 font-mono text-slate-500">{b.bookingNo}</td>
-                        <td className="py-5 px-4 font-mono font-bold text-emerald-600">{b.reeferNumber}</td>
-                        <td className="py-5 px-4 font-black text-slate-900">{formatCurrency(b.rateValue, 'EGP')}</td>
-                        <td className="py-5 px-4 text-center">{b.invNo || b.status === 'BILLED' ? <span className="text-[10px] px-3 py-1 rounded-full font-black uppercase bg-emerald-100 text-emerald-700">BILLED</span> : <span className="text-[10px] px-3 py-1 rounded-full font-black uppercase bg-slate-100 text-slate-400">PENDING</span>}</td>
+                      <tr key={b.id} className={`hover:bg-slate-50 transition-colors ${selectedIds.has(b.id) ? 'bg-emerald-50' : ''}`}>
+                        <td className="py-5 px-6 text-center" onClick={() => toggleBooking(b.id)}>
+                          <input type="checkbox" readOnly className="w-5 h-5 rounded cursor-pointer accent-emerald-600" checked={selectedIds.has(b.id)} />
+                        </td>
+                        <td className="py-5 px-4 font-bold text-slate-900" onClick={() => toggleBooking(b.id)}>{b.customer}</td>
+                        <td className="py-5 px-4 font-mono text-slate-500" onClick={() => toggleBooking(b.id)}>{b.bookingNo}</td>
+                        <td className="py-5 px-4 font-mono font-bold text-emerald-600" onClick={() => toggleBooking(b.id)}>{b.reeferNumber}</td>
+                        <td className="py-5 px-4 font-black text-slate-900" onClick={() => toggleBooking(b.id)}>{formatCurrency(b.rateValue, 'EGP')}</td>
+                        <td className="py-5 px-4 text-center" onClick={() => toggleBooking(b.id)}>
+                          {b.invNo || b.status === 'BILLED' ? 
+                            <span className="text-[10px] px-3 py-1 rounded-full font-black uppercase bg-emerald-100 text-emerald-700">BILLED</span> : 
+                            <span className="text-[10px] px-3 py-1 rounded-full font-black uppercase bg-slate-100 text-slate-400">PENDING</span>
+                          }
+                        </td>
+                        <td className="py-5 px-4 text-right">
+                          <div className="flex gap-2 justify-end">
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); executeInstantPrint([b]); }} 
+                              title="Instant Print"
+                              className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                            >
+                              <Printer size={18} />
+                            </button>
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); executeInvoiceGeneration([b]); }} 
+                              title="Preview Invoice"
+                              className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg transition-colors"
+                            >
+                              <Eye size={18} />
+                            </button>
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); setEditingBooking(b); }} 
+                              title="Edit Entry"
+                              className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg transition-colors"
+                            >
+                              <Edit3 size={18} />
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -536,28 +626,50 @@ const App: React.FC = () => {
             </div>
           )}
 
-          {view === 'customers' && !selectedCustomerForDetail && (
+          {view === 'customers' && (
             <div className="space-y-8 animate-in fade-in duration-500">
                <header className="flex justify-between items-end">
-                 <div><h2 className="text-3xl font-black text-slate-900 tracking-tight">Customer Directory</h2><p className="text-slate-500 font-medium mt-1">Click a customer to manage operations and numbering.</p></div>
+                 <div><h2 className="text-3xl font-black text-slate-900 tracking-tight">Customer Directory</h2><p className="text-slate-500 font-medium mt-1">Manage operations and invoice numbering for your clients.</p></div>
                  <button onClick={() => setShowAddCustomerModal(true)} className="bg-emerald-600 text-white px-6 py-3 rounded-xl font-black text-xs flex items-center gap-2 shadow-xl hover:bg-emerald-700 transition-all"><Plus size={16}/> New Client</button>
                </header>
                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                  {customerConfigs.map((cust) => (
-                   <div key={cust.id} onClick={() => setSelectedCustomerForDetail(cust)} className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 space-y-6 group cursor-pointer hover:border-emerald-500 transition-all hover:scale-[1.02]">
+                   <div key={cust.id} className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 space-y-6 group transition-all hover:scale-[1.02]">
                      <div className="flex justify-between items-start">
                        <div className="bg-slate-50 p-3 rounded-2xl text-emerald-600 group-hover:scale-110 transition-transform"><Building2 size={24} /></div>
-                       <div className="flex gap-2">
-                         <button onClick={(e) => { e.stopPropagation(); setCustomerConfigs(prev => prev.filter(c => c.id !== cust.id)); }} className="p-2 text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
-                       </div>
+                       <button onClick={() => setCustomerConfigs(prev => prev.filter(c => c.id !== cust.id))} className="p-2 text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
                      </div>
                      <div>
                        <h3 className="text-lg font-black text-slate-900 leading-tight">{cust.name}</h3>
                        <p className="text-[10px] font-bold text-slate-400 uppercase mt-1 tracking-widest flex items-center gap-1"><Layers size={10}/> {bookings.filter(b => b.customer.toLowerCase() === cust.name.toLowerCase()).length} Operations</p>
                      </div>
                      <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-50">
-                       <div className="space-y-1"><label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Prefix</label><p className="font-black text-emerald-600 font-mono">{cust.prefix}</p></div>
-                       <div className="space-y-1"><label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Next Serial</label><p className="font-black text-slate-900 font-mono">#{cust.nextNumber}</p></div>
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Prefix</label>
+                          <input 
+                            className="w-full bg-slate-50 p-2 rounded-lg font-black text-emerald-600 font-mono text-xs border border-transparent focus:border-emerald-500 outline-none transition-all" 
+                            value={cust.prefix} 
+                            onChange={e => updateCustomerProperty(cust.id, 'prefix', e.target.value)}
+                          />
+                       </div>
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Next Serial</label>
+                          <input 
+                            type="number"
+                            className="w-full bg-slate-50 p-2 rounded-lg font-black text-slate-900 font-mono text-xs border border-transparent focus:border-emerald-500 outline-none transition-all" 
+                            value={cust.nextNumber} 
+                            onChange={e => updateCustomerProperty(cust.id, 'nextNumber', parseInt(e.target.value) || 1)}
+                          />
+                       </div>
+                       <div className="space-y-1 col-span-2">
+                          <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1"><Calendar size={10}/> Due Date</label>
+                          <input 
+                            type="date"
+                            className="w-full bg-slate-50 p-2 rounded-lg font-black text-slate-900 font-mono text-xs border border-transparent focus:border-emerald-500 outline-none transition-all" 
+                            value={cust.dueDate || '2026-03-03'} 
+                            onChange={e => updateCustomerProperty(cust.id, 'dueDate', e.target.value)}
+                          />
+                       </div>
                      </div>
                    </div>
                  ))}
@@ -579,9 +691,10 @@ const App: React.FC = () => {
                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Entity Name</label><input className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={profile.companyName} onChange={e => setProfile({...profile, companyName: e.target.value})} /></div>
                           <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Tax ID / CR</label><input className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={profile.taxId} onChange={e => setProfile({...profile, taxId: e.target.value})} /></div>
-                          <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Manager Name</label><input className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={profile.name} onChange={e => setProfile({...profile, name: e.target.value})} /></div>
-                          <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Email Address</label><input className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={profile.email} onChange={e => setProfile({...profile, email: e.target.value})} /></div>
-                          <div className="space-y-1 col-span-2"><label className="text-[10px] font-black text-slate-400 uppercase">Physical Address</label><textarea rows={2} className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none resize-none" value={profile.address} onChange={e => setProfile({...profile, address: e.target.value})} /></div>
+                          <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Company Owner</label><div className="relative"><User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16}/><input className="w-full bg-slate-50 pl-12 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={profile.ownerName || ''} onChange={e => setProfile({...profile, ownerName: e.target.value})} /></div></div>
+                          <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Authorized Official</label><div className="relative"><CheckCircle className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16}/><input className="w-full bg-slate-50 pl-12 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={profile.name} onChange={e => setProfile({...profile, name: e.target.value})} /></div></div>
+                          <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Professional Title</label><div className="relative"><AwardIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16}/><input className="w-full bg-slate-50 pl-12 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={profile.title || ''} onChange={e => setProfile({...profile, title: e.target.value})} /></div></div>
+                          <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Physical Address</label><textarea rows={2} className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none resize-none" value={profile.address} onChange={e => setProfile({...profile, address: e.target.value})} /></div>
                        </div>
                     </div>
 
@@ -589,13 +702,13 @@ const App: React.FC = () => {
                        <h3 className="text-xl font-black text-slate-900 pb-4 border-b uppercase tracking-tight flex items-center gap-3"><Phone size={22} className="text-blue-500"/> Contact & Digital</h3>
                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Business Phone</label><div className="relative"><Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16}/><input className="w-full bg-slate-50 pl-12 p-4 rounded-xl font-bold border-2 border-transparent focus:border-blue-600 outline-none" value={profile.phone || ''} onChange={e => setProfile({...profile, phone: e.target.value})} /></div></div>
-                          <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Website URL</label><div className="relative"><Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16}/><input className="w-full bg-slate-50 pl-12 p-4 rounded-xl font-bold border-2 border-transparent focus:border-blue-600 outline-none" value={profile.website || ''} onChange={e => setProfile({...profile, website: e.target.value})} /></div></div>
+                          <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Email Address</label><div className="relative"><Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16}/><input className="w-full bg-slate-50 pl-12 p-4 rounded-xl font-bold border-2 border-transparent focus:border-blue-600 outline-none" value={profile.email} onChange={e => setProfile({...profile, email: e.target.value})} /></div></div>
+                          <div className="space-y-1 col-span-2"><label className="text-[10px] font-black text-slate-400 uppercase">Website URL</label><div className="relative"><Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16}/><input className="w-full bg-slate-50 pl-12 p-4 rounded-xl font-bold border-2 border-transparent focus:border-blue-600 outline-none" value={profile.website || ''} onChange={e => setProfile({...profile, website: e.target.value})} /></div></div>
                        </div>
                     </div>
                   </div>
 
                   <div className="lg:col-span-4 space-y-8">
-                    {/* LOGO CARD */}
                     <div className="bg-white p-8 rounded-[3rem] shadow-xl border border-slate-100 space-y-6">
                       <div className="flex justify-between items-center"><p className="text-[10px] font-black text-slate-400 uppercase">Primary Logo</p><label className="cursor-pointer text-emerald-600 font-black text-[10px] uppercase hover:underline"><input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], 'logoUrl')} />Upload</label></div>
                       <div className="h-40 bg-slate-50 rounded-3xl flex items-center justify-center border-2 border-slate-100 overflow-hidden relative group">
@@ -604,7 +717,6 @@ const App: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* SIGNATURE CARD */}
                     <div className="bg-white p-8 rounded-[3rem] shadow-xl border border-slate-100 space-y-6">
                       <div className="flex justify-between items-center"><p className="text-[10px] font-black text-slate-400 uppercase">Digital Signature</p><label className="cursor-pointer text-emerald-600 font-black text-[10px] uppercase hover:underline"><input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], 'signatureUrl')} />Upload</label></div>
                       <div className="h-28 bg-slate-50 rounded-2xl flex items-center justify-center border-2 border-slate-100 overflow-hidden relative group">
@@ -613,15 +725,8 @@ const App: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* WATERMARK CARD */}
                     <div className="bg-white p-8 rounded-[3rem] shadow-xl border border-slate-100 space-y-6">
-                      <div className="flex justify-between items-center">
-                        <p className="text-[10px] font-black text-slate-400 uppercase">Safety Watermark</p>
-                        <label className="cursor-pointer text-emerald-600 font-black text-[10px] uppercase hover:underline">
-                          <input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], 'watermarkUrl')} />
-                          {profile.watermarkUrl ? 'Replace' : 'Upload'}
-                        </label>
-                      </div>
+                      <div className="flex justify-between items-center"><p className="text-[10px] font-black text-slate-400 uppercase">Safety Watermark</p><label className="cursor-pointer text-emerald-600 font-black text-[10px] uppercase hover:underline"><input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], 'watermarkUrl')} />Upload</label></div>
                       <div className="h-32 bg-slate-50 rounded-2xl flex items-center justify-center border-2 border-slate-100 overflow-hidden relative group">
                         {profile.watermarkUrl ? (
                           <div className="relative w-full h-full flex items-center justify-center">
@@ -650,11 +755,24 @@ const App: React.FC = () => {
           {view === 'settings' && (
             <div className="space-y-12 animate-in fade-in duration-500">
                <header className="flex justify-between items-end">
-                 <div>
-                   <h2 className="text-4xl font-black text-slate-900 tracking-tight">Templates</h2>
-                   <p className="text-slate-500 font-medium mt-1">Design your documents and select visible invoice data.</p>
-                 </div>
+                 <div><h2 className="text-4xl font-black text-slate-900 tracking-tight">Templates</h2><p className="text-slate-500 font-medium mt-1">Design your documents and select visible invoice data.</p></div>
                </header>
+
+               <div className="space-y-8">
+                 <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><MessageSquareText size={18}/> Default Settlement Note</h3>
+                 <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100 space-y-4">
+                    <p className="text-xs text-slate-400 font-medium leading-relaxed">
+                      This text appears in the "Official Notes" section. Use the YYYY-MM-DD format (e.g., 2026-03-03) anywhere in the text to have it automatically synchronized with each customer's specific due date during generation.
+                    </p>
+                    <textarea 
+                      className="w-full bg-slate-50 p-6 rounded-2xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none resize-none" 
+                      rows={5}
+                      value={invConfig.notes}
+                      onChange={e => setInvConfig({...invConfig, notes: e.target.value})}
+                      placeholder="Enter your settlement note template..."
+                    />
+                 </div>
+               </div>
 
                <div className="space-y-8">
                  <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><Palette size={18}/> Visual Style</h3>
@@ -669,10 +787,7 @@ const App: React.FC = () => {
                </div>
 
                <div className="space-y-8">
-                 <div className="flex items-end justify-between">
-                   <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><ListChecks size={18}/> Field Visibility</h3>
-                   <p className="text-[10px] font-bold text-slate-400 uppercase">Choose exactly what data to appear on invoices</p>
-                 </div>
+                 <div className="flex items-end justify-between"><h3 className="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><ListChecks size={18}/> Field Visibility</h3></div>
                  <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-4">
                     {[
                       { key: 'showLogo', label: 'Company Logo' },
@@ -687,16 +802,10 @@ const App: React.FC = () => {
                       { key: 'showGenset', label: 'Genset Info' },
                       { key: 'showTrucker', label: 'Trucker Name' },
                       { key: 'showShipperAddress', label: 'Shipper Name' },
-                      { key: 'showInvoiceDate', label: 'Invoice Date' },
-                      { key: 'showDueDate', label: 'Due Date' },
                       { key: 'showNotes', label: 'Terms & Notes' },
                       { key: 'showWatermark', label: 'Safety Watermark' }
                     ].map(field => (
-                      <button 
-                        key={field.key} 
-                        onClick={() => toggleTemplateField(field.key as keyof TemplateFields)}
-                        className={`flex items-center justify-between p-4 rounded-2xl transition-all ${templateConfig.fields[field.key as keyof TemplateFields] ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
-                      >
+                      <button key={field.key} onClick={() => toggleTemplateField(field.key as keyof TemplateFields)} className={`flex items-center justify-between p-4 rounded-2xl transition-all ${templateConfig.fields[field.key as keyof TemplateFields] ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>
                         <span className="text-[11px] font-black uppercase tracking-tight">{field.label}</span>
                         {templateConfig.fields[field.key as keyof TemplateFields] ? <ToggleRight size={24} /> : <ToggleLeft size={24} />}
                       </button>
@@ -713,29 +822,15 @@ const App: React.FC = () => {
                     <button onClick={() => setView('dashboard')} className="p-3 bg-slate-50 rounded-xl text-slate-400 hover:text-slate-900 transition-colors"><ChevronLeft size={24}/></button>
                     <div className="flex flex-col gap-1 w-full max-w-xs">
                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1"><HashIcon size={10}/> Invoice Serial</label>
-                       <input 
-                         type="text"
-                         value={activeInvoice.invoiceNumber}
-                         onChange={(e) => setActiveInvoice({...activeInvoice, invoiceNumber: e.target.value})}
-                         className="bg-slate-50 border-2 border-transparent focus:border-emerald-500 p-2 rounded-xl font-black text-slate-900 outline-none transition-all"
-                       />
+                       <input type="text" value={activeInvoice.invoiceNumber} onChange={(e) => setActiveInvoice({...activeInvoice, invoiceNumber: e.target.value})} className="bg-slate-50 border-2 border-transparent focus:border-emerald-500 p-2 rounded-xl font-black text-slate-900 outline-none transition-all" />
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <button 
-                      disabled={isDownloading}
-                      onClick={() => handleDownloadPDF(`${activeInvoice.invoiceNumber}.pdf`)} 
-                      className={`bg-emerald-600 text-white px-10 py-4 rounded-2xl font-black uppercase text-xs flex items-center gap-2 shadow-xl hover:bg-emerald-700 transition-all active:scale-95 ${isDownloading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
-                      {isDownloading ? <Zap size={18} className="animate-pulse" /> : <Download size={18}/>}
-                      {isDownloading ? 'Generating...' : 'Download PDF'}
-                    </button>
+                    <button disabled={isDownloading} onClick={() => handleDownloadPDF(`${activeInvoice.invoiceNumber}.pdf`)} className={`bg-emerald-600 text-white px-10 py-4 rounded-2xl font-black uppercase text-xs flex items-center gap-2 shadow-xl hover:bg-emerald-700 transition-all active:scale-95 ${isDownloading ? 'opacity-50' : ''}`}><Download size={18}/> {isDownloading ? 'Exporting...' : 'Download PDF'}</button>
                     <button onClick={() => window.print()} className="bg-slate-900 text-white p-4 rounded-2xl shadow-xl hover:bg-black transition-all"><Printer size={20}/></button>
                   </div>
                </div>
-               <div className="flex justify-center">
-                 <InvoiceDocument invoice={activeInvoice} />
-               </div>
+               <div className="flex justify-center"><InvoiceDocument invoice={activeInvoice} /></div>
             </div>
           )}
 
@@ -761,90 +856,6 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      {editingBooking && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl p-10 space-y-8 relative max-h-[90vh] overflow-y-auto no-scrollbar">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-4">
-                <div className="bg-emerald-100 p-3 rounded-2xl text-emerald-600"><Edit3 size={28}/></div>
-                <h3 className="text-3xl font-black text-slate-900 tracking-tight">Edit Entry</h3>
-              </div>
-              <button onClick={() => setEditingBooking(null)} className="p-3 bg-slate-50 rounded-xl text-slate-400 hover:text-slate-900 transition-colors"><X size={24}/></button>
-            </div>
-            
-            <form onSubmit={handleUpdateBooking} className="grid grid-cols-2 gap-6">
-               <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Booking Number</label><input required className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={editingBooking.bookingNo} onChange={e => setEditingBooking({...editingBooking, bookingNo: e.target.value})} /></div>
-               <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Reefer Number</label><input required className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={editingBooking.reeferNumber} onChange={e => setEditingBooking({...editingBooking, reeferNumber: e.target.value})} /></div>
-               <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Genset Number</label><input className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={editingBooking.gensetNo} onChange={e => setEditingBooking({...editingBooking, gensetNo: e.target.value})} /></div>
-               <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Operational Date</label><input type="date" className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={editingBooking.bookingDate} onChange={e => setEditingBooking({...editingBooking, bookingDate: e.target.value})} /></div>
-               <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Go Port</label><input className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={editingBooking.goPort} onChange={e => setEditingBooking({...editingBooking, goPort: e.target.value})} /></div>
-               <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Gi Port</label><input className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={editingBooking.giPort} onChange={e => setEditingBooking({...editingBooking, giPort: e.target.value})} /></div>
-               <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Trucker Company</label><input className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={editingBooking.trucker} onChange={e => setEditingBooking({...editingBooking, trucker: e.target.value})} /></div>
-               <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Rate (EGP)</label><input type="number" step="0.01" className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={editingBooking.rateValue} onChange={e => { const val = parseFloat(e.target.value) || 0; setEditingBooking({...editingBooking, rateValue: val}); }} /></div>
-               <div className="col-span-2 space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Internal Remarks</label><textarea className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none resize-none" rows={3} value={editingBooking.remarks} onChange={e => setEditingBooking({...editingBooking, remarks: e.target.value})} /></div>
-               
-               <button type="submit" className="col-span-2 bg-emerald-600 text-white py-5 rounded-2xl font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all">
-                  <Save size={18}/> Commit Changes
-               </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Operations Quick Actions Modal */}
-      {showActionModal && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl p-10 space-y-8 relative">
-            <button onClick={() => setShowActionModal(false)} className="absolute top-8 right-8 text-slate-300 hover:text-slate-900 transition-colors"><X size={24}/></button>
-            <div className="flex items-center gap-4">
-              <div className="bg-emerald-100 p-3 rounded-2xl text-emerald-600"><Activity size={28}/></div>
-              <div>
-                <h3 className="text-3xl font-black text-slate-900 tracking-tight">Operation Hub</h3>
-                <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">{selectedIds.size} selections active</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* INSTANT PRINT */}
-              <button onClick={executeInstantPrint} className="group p-6 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[2rem] flex flex-col gap-4 transition-all shadow-lg shadow-emerald-500/20 active:scale-95">
-                <div className="bg-white/20 w-12 h-12 rounded-xl flex items-center justify-center group-hover:bg-white/30 transition-colors"><Printer size={24}/></div>
-                <div className="text-left">
-                  <h4 className="font-black uppercase text-sm">Instant Print / PDF</h4>
-                  <p className="text-white/60 text-[10px] font-medium leading-relaxed">Fast-track to print dialog for all items</p>
-                </div>
-              </button>
-
-              {/* GENERATE & REVIEW */}
-              <button onClick={executeInvoiceGeneration} className="group p-6 bg-slate-900 hover:bg-black text-white rounded-[2rem] flex flex-col gap-4 transition-all shadow-lg shadow-black/20 active:scale-95">
-                <div className="bg-white/10 w-12 h-12 rounded-xl flex items-center justify-center group-hover:bg-emerald-500 transition-colors"><FileOutput size={24}/></div>
-                <div className="text-left">
-                  <h4 className="font-black uppercase text-sm">Review & Generate</h4>
-                  <p className="text-white/50 text-[10px] font-medium leading-relaxed">Preview invoices before final output</p>
-                </div>
-              </button>
-
-              {/* DOWNLOAD PDF MANIFEST (Replaced CSV) */}
-              <button onClick={() => alert('PDF manifest report feature coming soon - Please generate invoices for individual PDFs')} className="group p-6 bg-white border-2 border-slate-100 hover:border-emerald-500 rounded-[2rem] flex flex-col gap-4 transition-all active:scale-95">
-                <div className="bg-slate-50 w-12 h-12 rounded-xl flex items-center justify-center group-hover:bg-emerald-100 group-hover:text-emerald-600 transition-colors"><FileDown size={24}/></div>
-                <div className="text-left">
-                  <h4 className="font-black uppercase text-sm text-slate-900">Download PDF Report</h4>
-                  <p className="text-slate-400 text-[10px] font-medium leading-relaxed">Export selected manifest data as PDF</p>
-                </div>
-              </button>
-
-              {/* BULK MARK AS BILLED */}
-              <button onClick={() => executeBulkStatusUpdate('BILLED')} className="group p-6 bg-white border-2 border-slate-100 hover:border-blue-500 rounded-[2rem] flex flex-col gap-4 transition-all active:scale-95">
-                <div className="bg-slate-50 w-12 h-12 rounded-xl flex items-center justify-center group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors"><CheckCircle size={24}/></div>
-                <div className="text-left">
-                  <h4 className="font-black uppercase text-sm text-slate-900">Mark as Billed</h4>
-                  <p className="text-slate-400 text-[10px] font-medium leading-relaxed">Quick status update without invoices</p>
-                </div>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Manual Entry Modal */}
       {showManualEntryModal && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-300">
@@ -861,6 +872,36 @@ const App: React.FC = () => {
         </div>
       )}
 
+      {/* Bulk Action Modal (Advanced) */}
+      {showActionModal && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl p-10 space-y-8 relative">
+            <button onClick={() => setShowActionModal(false)} className="absolute top-8 right-8 text-slate-300 hover:text-slate-900 transition-colors"><X size={24}/></button>
+            <div className="flex items-center gap-4"><div className="bg-emerald-100 p-3 rounded-2xl text-emerald-600"><Activity size={28}/></div><div><h3 className="text-3xl font-black text-slate-900 tracking-tight">Advanced Actions</h3><p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">{selectedIds.size} selections active</p></div></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <button onClick={() => executeInstantPrint()} className="group p-6 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[2rem] flex flex-col gap-4 transition-all shadow-lg active:scale-95"><div className="bg-white/20 w-12 h-12 rounded-xl flex items-center justify-center"><Printer size={24}/></div><div className="text-left"><h4 className="font-black uppercase text-sm">Instant Print All</h4><p className="text-white/60 text-[10px] font-medium leading-relaxed">Direct path to physical output</p></div></button>
+              <button onClick={() => executeInvoiceGeneration()} className="group p-6 bg-slate-900 hover:bg-black text-white rounded-[2rem] flex flex-col gap-4 transition-all shadow-lg active:scale-95"><div className="bg-white/10 w-12 h-12 rounded-xl flex items-center justify-center"><Eye size={24}/></div><div className="text-left"><h4 className="font-black uppercase text-sm">Batch Preview</h4><p className="text-white/50 text-[10px] font-medium leading-relaxed">Inspect before finalization</p></div></button>
+              <button onClick={() => executeBulkStatusUpdate('BILLED')} className="group p-6 bg-white border-2 border-slate-100 hover:border-blue-500 rounded-[2rem] flex flex-col gap-4 transition-all active:scale-95"><div className="bg-slate-50 w-12 h-12 rounded-xl flex items-center justify-center"><CheckCircle size={24}/></div><div className="text-left"><h4 className="font-black uppercase text-sm text-slate-900">Mark as Billed</h4><p className="text-slate-400 text-[10px] font-medium leading-relaxed">Status update without invoices</p></div></button>
+              <button onClick={() => executeBulkStatusUpdate('PENDING')} className="group p-6 bg-white border-2 border-slate-100 hover:border-orange-500 rounded-[2rem] flex flex-col gap-4 transition-all active:scale-95"><div className="bg-slate-50 w-12 h-12 rounded-xl flex items-center justify-center"><RotateCcw size={24}/></div><div className="text-left"><h4 className="font-black uppercase text-sm text-slate-900">Revert to Pending</h4><p className="text-slate-400 text-[10px] font-medium leading-relaxed">Unlock for modifications</p></div></button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editingBooking && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl p-10 space-y-8 relative max-h-[90vh] overflow-y-auto no-scrollbar">
+            <div className="flex justify-between items-center"><div className="flex items-center gap-4"><div className="bg-emerald-100 p-3 rounded-2xl text-emerald-600"><Edit3 size={28}/></div><h3 className="text-3xl font-black text-slate-900 tracking-tight">Edit Entry</h3></div><button onClick={() => setEditingBooking(null)} className="p-3 bg-slate-50 rounded-xl text-slate-400 hover:text-slate-900 transition-colors"><X size={24}/></button></div>
+            <form onSubmit={(e) => { e.preventDefault(); setBookings(prev => prev.map(b => b.id === editingBooking.id ? editingBooking : b)); setEditingBooking(null); }} className="grid grid-cols-2 gap-6">
+               <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Booking Number</label><input required className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={editingBooking.bookingNo} onChange={e => setEditingBooking({...editingBooking, bookingNo: e.target.value})} /></div>
+               <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Reefer Number</label><input required className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={editingBooking.reeferNumber} onChange={e => setEditingBooking({...editingBooking, reeferNumber: e.target.value})} /></div>
+               <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Rate (EGP)</label><input type="number" step="0.01" className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={editingBooking.rateValue} onChange={e => setEditingBooking({...editingBooking, rateValue: parseFloat(e.target.value) || 0})} /></div>
+               <button type="submit" className="col-span-2 bg-emerald-600 text-white py-5 rounded-2xl font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all"><Save size={18}/> Commit Changes</button>
+            </form>
+          </div>
+        </div>
+      )}
+
       {showAddCustomerModal && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl p-10 space-y-8">
@@ -870,6 +911,10 @@ const App: React.FC = () => {
                <div className="grid grid-cols-2 gap-4">
                  <input className="w-full bg-slate-50 p-4 rounded-xl font-bold" placeholder="Prefix" value={newCustomer.prefix} onChange={e => setNewCustomer({...newCustomer, prefix: e.target.value})} />
                  <input type="number" className="w-full bg-slate-50 p-4 rounded-xl font-bold" placeholder="Start Seq" value={newCustomer.nextNumber} onChange={e => setNewCustomer({...newCustomer, nextNumber: parseInt(e.target.value) || 1})} />
+               </div>
+               <div className="space-y-1">
+                 <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Default Due Date</label>
+                 <input type="date" className="w-full bg-slate-50 p-4 rounded-xl font-bold" value={newCustomer.dueDate} onChange={e => setNewCustomer({...newCustomer, dueDate: e.target.value})} />
                </div>
                <button type="submit" className="w-full bg-emerald-600 text-white py-4 rounded-xl font-black uppercase tracking-widest">Register Client</button>
             </form>

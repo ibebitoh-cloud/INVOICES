@@ -34,6 +34,7 @@ export interface CustomerConfig {
   name: string;
   prefix: string;
   nextNumber: number;
+  dueDate?: string;
 }
 
 export type InvoiceSectionId = 'header' | 'parties' | 'table' | 'totals' | 'footer' | 'signature';
@@ -100,6 +101,8 @@ export interface TemplateConfig {
 
 export interface UserProfile {
   name: string;
+  ownerName?: string;
+  title?: string;
   companyName: string;
   address: string;
   taxId: string;

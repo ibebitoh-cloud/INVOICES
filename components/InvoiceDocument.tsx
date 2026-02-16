@@ -3,7 +3,7 @@ import React, { useMemo } from 'react';
 import { Invoice, Booking, TemplateFields, InvoiceTheme, CustomTheme } from '../types';
 import { formatCurrency } from '../utils/formatters';
 import { 
-  Anchor, Briefcase, Clock, Truck, Package, Square, ArrowRight, Heart, FileText, Info, Phone, Globe, Landmark, Mail
+  Anchor, Briefcase, Clock, Truck, Package, Square, ArrowRight, Heart, FileText, Info, Phone, Globe, Landmark, Mail, Hash, Box, Layers, Layout as LayoutIcon, MapPin
 } from 'lucide-react';
 
 interface InvoiceDocumentProps {
@@ -19,7 +19,7 @@ interface ThemeConfig {
   border: string;
   font: string;
   radius: string;
-  layout: 'classic' | 'modern' | 'industrial' | 'split' | 'minimal' | 'sidebar' | 'bold';
+  layout: 'classic' | 'modern' | 'industrial' | 'split' | 'minimal' | 'sidebar' | 'bold' | 'centered' | 'cards' | 'blueprint' | 'elegant';
   tableStyle: 'grid' | 'clean' | 'striped' | 'heavy' | 'glass';
   headerStyle: 'standard' | 'centered' | 'badge' | 'sidebar';
 }
@@ -29,12 +29,12 @@ const getThemeConfig = (theme: InvoiceTheme, customData?: CustomTheme): ThemeCon
     return {
       accent: customData.accent,
       secondary: customData.secondary,
-      bg: customData.bg,
+      bg: 'bg-white', // Force white background as requested
       text: customData.text,
       border: customData.border,
       font: customData.font,
       radius: customData.radius,
-      layout: customData.layout,
+      layout: customData.layout as any,
       tableStyle: customData.tableStyle,
       headerStyle: customData.headerStyle,
     };
@@ -47,40 +47,60 @@ const getThemeConfig = (theme: InvoiceTheme, customData?: CustomTheme): ThemeCon
     },
     'corporate': { 
       accent: 'bg-slate-900', secondary: 'text-slate-600', bg: 'bg-white', border: 'border-slate-200', 
-      font: 'font-sans', radius: 'rounded-lg', layout: 'classic', tableStyle: 'clean', headerStyle: 'standard' 
+      font: 'font-sans', radius: 'rounded-lg', layout: 'split', tableStyle: 'clean', headerStyle: 'badge' 
     },
     'luxury-gold': { 
-      accent: 'bg-amber-600', secondary: 'text-amber-500', bg: 'bg-slate-950', border: 'border-white/10', 
-      font: 'font-serif-bask', radius: 'rounded-none', layout: 'modern', tableStyle: 'clean', headerStyle: 'standard' 
+      accent: 'bg-amber-600', secondary: 'text-amber-500', bg: 'bg-white', border: 'border-amber-200', 
+      font: 'font-playfair', radius: 'rounded-none', layout: 'centered', tableStyle: 'clean', headerStyle: 'centered' 
     },
     'vintage': { 
-      accent: 'bg-amber-800', secondary: 'text-amber-900', bg: 'bg-[#f4ead5]', border: 'border-amber-900/20', 
+      accent: 'bg-amber-800', secondary: 'text-amber-900', bg: 'bg-white', border: 'border-amber-900/20', 
       font: 'font-serif-bask', radius: 'rounded-none', layout: 'classic', tableStyle: 'grid', headerStyle: 'standard' 
     },
-    'eco-green': { 
-      accent: 'bg-emerald-600', secondary: 'text-emerald-800', bg: 'bg-[#f0fdf4]', border: 'border-emerald-100', 
-      font: 'font-sans', radius: 'rounded-3xl', layout: 'modern', tableStyle: 'clean', headerStyle: 'standard' 
-    },
     'technical-draft': { 
-      accent: 'bg-slate-700', secondary: 'text-slate-500', bg: 'bg-slate-50', border: 'border-slate-300', 
+      accent: 'bg-slate-700', secondary: 'text-slate-500', bg: 'bg-white', border: 'border-slate-300', 
       font: 'font-mono-jb', radius: 'rounded-none', layout: 'industrial', tableStyle: 'grid', headerStyle: 'standard' 
     },
     'swiss-modern': { 
       accent: 'bg-red-600', secondary: 'text-black', bg: 'bg-white', border: 'border-black', 
-      font: 'font-grotesk', radius: 'rounded-none', layout: 'bold', tableStyle: 'heavy', headerStyle: 'centered' 
+      font: 'font-bebas', radius: 'rounded-none', layout: 'bold', tableStyle: 'heavy', headerStyle: 'centered' 
     },
+    'minimalist': {
+      accent: 'bg-slate-900', secondary: 'text-slate-400', bg: 'bg-white', border: 'border-transparent',
+      font: 'font-grotesk', radius: 'rounded-none', layout: 'minimal', tableStyle: 'clean', headerStyle: 'badge'
+    },
+    'sidebar-pro': {
+      accent: 'bg-blue-600', secondary: 'text-blue-800', bg: 'bg-white', border: 'border-slate-100',
+      font: 'font-sans', radius: 'rounded-2xl', layout: 'sidebar', tableStyle: 'clean', headerStyle: 'sidebar'
+    },
+    'modern-cards': {
+      accent: 'bg-purple-600', secondary: 'text-purple-700', bg: 'bg-white', border: 'border-purple-100',
+      font: 'font-sans', radius: 'rounded-3xl', layout: 'cards', tableStyle: 'clean', headerStyle: 'badge'
+    },
+    'blueprint': {
+      accent: 'bg-cyan-600', secondary: 'text-cyan-700', bg: 'bg-white', border: 'border-cyan-200',
+      font: 'font-mono-jb', layout: 'blueprint', tableStyle: 'grid', headerStyle: 'standard'
+    },
+    'elegant': {
+      accent: 'bg-rose-400', secondary: 'text-rose-600', bg: 'bg-white', border: 'border-rose-100',
+      font: 'font-serif-bask', layout: 'elegant', tableStyle: 'clean', headerStyle: 'centered'
+    },
+    'industrial': {
+      accent: 'bg-zinc-900', secondary: 'text-zinc-600', bg: 'bg-white', border: 'border-zinc-300',
+      font: 'font-bebas', layout: 'industrial', tableStyle: 'heavy', headerStyle: 'badge'
+    }
   };
 
   const base = configs[theme] || configs['logistics-grid'];
   return {
     accent: base.accent!,
     secondary: base.secondary!,
-    bg: base.bg!,
-    text: base.text || (theme.includes('midnight') || theme.includes('deep') || theme === 'luxury-gold' || theme === 'blueprint' ? 'text-white' : 'text-slate-900'),
+    bg: 'bg-white', // All themes now white
+    text: base.text || 'text-slate-900',
     border: base.border!,
     font: base.font!,
     radius: base.radius || 'rounded-none',
-    layout: base.layout || 'classic',
+    layout: (base.layout as any) || 'classic',
     tableStyle: base.tableStyle || 'clean',
     headerStyle: base.headerStyle || 'standard'
   };
@@ -110,7 +130,6 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
   const themeName = config.theme || 'logistics-grid';
   const t = getThemeConfig(themeName, config.customThemeData);
   const profile = invoice.userProfile;
-  const isDark = themeName === 'midnight-pro' || themeName === 'deep-ocean' || themeName === 'luxury-gold' || themeName === 'blueprint' || (config.customThemeData?.bg.includes('950') || config.customThemeData?.bg.includes('black'));
 
   const groupedItems = useMemo(() => {
     const groups = new Map<string, Booking[]>();
@@ -142,122 +161,65 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
     height: `${100 / config.contentScale}%`
   };
 
-  const Header = () => {
-    return (
-      <div style={spacingStyle} className="flex justify-between items-start relative z-10 w-full shrink-0">
-        <div className="flex-1">
-          {fields.showLogo && profile.logoUrl && <img src={profile.logoUrl} className="h-24 mb-4 object-contain" />}
-          <div className="space-y-0">
-            <h1 className="text-2xl font-black uppercase tracking-tighter leading-none">{profile.companyName}</h1>
-            <p className="text-[11px] font-black uppercase tracking-[0.2em] text-black mt-1">SHERIF HEGAZY</p>
-            <div className="flex flex-col gap-0.5 mt-2 text-[8px] font-black uppercase tracking-widest opacity-60">
-              {profile.taxId && <p>TAX ID: {profile.taxId}</p>}
-              {profile.website && <p>WEB: {profile.website}</p>}
+  const InvoiceTable = ({ noHeader = false, variant = 'standard' }: { noHeader?: boolean, variant?: string }) => (
+    <div className="w-full relative z-10 shrink-0">
+      {variant === 'cards' ? (
+        <div className="space-y-4">
+          {groupedItems.map((group, idx) => (
+            <div key={idx} className={`p-6 border-2 ${t.border} rounded-2xl flex justify-between items-center group transition-all hover:bg-slate-50`}>
+              <div>
+                <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{group[0].bookingNo}</p>
+                <div className="flex items-center gap-3">
+                  <h4 className="text-xl font-black uppercase">{group[0].customer}</h4>
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[9px] font-black rounded uppercase">
+                    {group[0].goPort} <ArrowRight size={10}/> {group[0].giPort}
+                  </div>
+                </div>
+                <div className="mt-3 flex gap-2">
+                  {group.map(u => (
+                    <span key={u.id} className="text-[10px] font-bold px-2 py-0.5 bg-slate-100 rounded text-slate-600">{u.reeferNumber}</span>
+                  ))}
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-black tracking-tight">{formatCurrency(group.reduce((a,c)=>a+c.rateValue,0), invoice.currency)}</p>
+              </div>
             </div>
-          </div>
+          ))}
         </div>
-        <div className="text-right">
-          <p className="text-4xl font-black uppercase tracking-tighter opacity-10 absolute -top-2 right-0 select-none">INVOICE</p>
-          <div className="relative pt-3">
-            <p className="text-2xl font-black uppercase tracking-tighter italic">No: <span className={t.secondary}>#{invoice.invoiceNumber}</span></p>
-            <div className="mt-1.5 text-[10px] font-black space-y-0.5 uppercase opacity-60 tracking-[0.2em]">
-              {fields.showInvoiceDate && <p>Issue Date <span className={`ml-4 ${t.text} font-black`}>{invoice.date}</span></p>}
-              {fields.showDueDate && <p>Due Date <span className="ml-4 text-red-600 font-black underline decoration-2">{invoice.dueDate}</span></p>}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const Parties = () => {
-    return (
-      <div style={spacingStyle} className={`grid grid-cols-2 gap-10 relative z-10 py-3 border-y-2 w-full shrink-0 ${isDark ? 'border-white/10' : 'border-slate-100'} items-start`}>
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2">
-            <div className={`p-1.5 ${t.radius} text-white ${t.accent}`}><Anchor size={14}/></div>
-            <p className="text-xs font-black uppercase tracking-[0.3em] opacity-40">ISSUER NAME</p>
-          </div>
-          {fields.showCompanyInfo && <p className="text-sm font-bold leading-relaxed whitespace-pre-wrap pl-3 max-w-sm">{profile.address}</p>}
-        </div>
-        
-        <div className="text-right space-y-2">
-          <div className="flex items-center gap-2 justify-end">
-            <p className="text-xs font-black uppercase tracking-[0.3em] opacity-40">Client Info</p>
-            <div className={`p-1.5 ${t.radius} text-white ${t.accent}`}><Briefcase size={14}/></div>
-          </div>
-          <div className="pr-3 space-y-0.5">
-            <p className="text-xl font-black uppercase leading-none tracking-tighter">{invoice.customerName}</p>
-            {fields.showCustomerAddress && <p className="text-[10px] font-medium uppercase leading-relaxed opacity-60 whitespace-pre-wrap">{invoice.customerAddress}</p>}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const Table = () => {
-    const tableHeaderClass = `py-2.5 px-3 text-[10px] font-black uppercase tracking-[0.1em] ${isDark ? 'text-emerald-500' : 'text-slate-400'}`;
-    const rowBorder = isDark ? 'border-white/10' : 'border-slate-100';
-    
-    return (
-      <div className="w-full relative z-10 shrink-0">
+      ) : (
         <table className={`w-full text-left table-auto border-collapse ${t.tableStyle === 'grid' ? 'border-2' : ''} ${t.tableStyle === 'heavy' ? 'border-t-8 border-slate-950' : ''}`}>
-          <thead>
-            <tr className={`border-b-2 ${isDark ? 'border-white/20' : 'border-slate-950'}`}>
-              <th className={`${tableHeaderClass} w-[75%] pl-4`}>Operational & Logistics Data</th>
-              <th className={`${tableHeaderClass} w-[25%] text-right pr-4`}>Subtotal</th>
-            </tr>
-          </thead>
-          <tbody className={`divide-y ${rowBorder}`}>
+          {!noHeader && (
+            <thead>
+              <tr className={`border-b-2 border-slate-950`}>
+                <th className="py-3 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Logistics Itemization</th>
+                <th className="py-3 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Subtotal</th>
+              </tr>
+            </thead>
+          )}
+          <tbody className={`divide-y divide-slate-100`}>
             {groupedItems.map((group, idx) => (
               <tr key={idx} className="break-inside-avoid">
-                <td className="py-4 pl-4 align-top">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className={`w-1 h-5 rounded-full ${t.accent}`}></div>
-                    <div className="flex items-center gap-3">
-                      {fields.showBookingNo && <p className={`font-black text-sm uppercase tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>{group[0].bookingNo}</p>}
-                      {fields.showPorts && (
-                        <div className={`flex items-center gap-2 py-0.5 px-2 rounded-md text-[9px] font-black ${isDark ? 'bg-white/5 border border-white/10 text-slate-300' : 'bg-slate-50 border border-slate-100 text-slate-500'}`}>
-                           <span>{group[0].goPort}</span>
-                           <ArrowRight size={10} className="text-emerald-500" />
-                           <span>{group[0].giPort}</span>
-                           <span className="text-slate-200 mx-1">|</span>
-                           <span className={`${isDark ? 'text-emerald-400' : 'text-blue-600'} font-mono`}>{group[0].bookingDate || 'N/A'}</span>
-                        </div>
-                      )}
+                <td className="py-4 px-4 align-top">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className={`w-1 h-5 ${t.accent}`}></div>
+                    <p className="font-black text-sm uppercase">{group[0].bookingNo}</p>
+                    <div className="flex items-center gap-2 py-0.5 px-2 rounded bg-slate-50 border border-slate-100 text-[9px] font-black text-slate-500 uppercase">
+                       <span>{group[0].goPort}</span>
+                       <ArrowRight size={10} className="text-emerald-500" />
+                       <span>{group[0].giPort}</span>
                     </div>
                   </div>
-
-                  <div className="ml-4 space-y-3">
-                    <div className="flex flex-wrap gap-1.5">
-                      {group.map(u => (
-                        <div key={u.id} className="group relative">
-                          <div className={`text-[10px] font-black border px-2 py-0.5 rounded-sm font-mono-jb flex flex-col ${isDark ? 'bg-white/10 border-white/20 text-white' : 'bg-white border-slate-200 text-slate-800'}`}>
-                            <span>{u.reeferNumber}</span>
-                            {fields.showGenset && u.gensetNo !== '---' && <span className="text-[8px] text-emerald-600">GS: {u.gensetNo}</span>}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      {fields.showTrucker && group[0].trucker !== '---' && (
-                        <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400 uppercase">
-                          <Truck size={12} className="text-slate-300"/>
-                          <span>Trucker: <span className={isDark ? 'text-slate-200' : 'text-slate-600'}>{group[0].trucker}</span></span>
-                        </div>
-                      )}
-                      {fields.showShipperAddress && group[0].shipper !== '---' && (
-                        <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400 uppercase">
-                          <Package size={12} className="text-slate-300"/>
-                          <span>Shipper: <span className={isDark ? 'text-slate-200' : 'text-slate-600'}>{group[0].shipper}</span></span>
-                        </div>
-                      )}
-                    </div>
+                  <div className="ml-4 flex flex-wrap gap-1.5">
+                    {group.map(u => (
+                      <span key={u.id} className="text-[10px] font-black px-2 py-0.5 border border-slate-200 rounded-sm bg-white uppercase">
+                        {u.reeferNumber}
+                      </span>
+                    ))}
                   </div>
                 </td>
-                <td className="py-4 pr-4 text-right align-top">
-                  <p className={`text-base font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                <td className="py-4 px-4 text-right align-top">
+                  <p className="text-base font-black tracking-tight">
                     {formatCurrency(group.reduce((a,c)=>a+c.rateValue,0), invoice.currency)}
                   </p>
                 </td>
@@ -265,100 +227,345 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
             ))}
           </tbody>
         </table>
-      </div>
-    );
+      )}
+    </div>
+  );
+
+  const renderLayout = () => {
+    switch (t.layout) {
+      case 'centered': return <CenteredLayout />;
+      case 'split': return <SplitLayout />;
+      case 'industrial': return <IndustrialLayout />;
+      case 'bold': return <SwissBoldLayout />;
+      case 'sidebar': return <SidebarLayout />;
+      case 'cards': return <CardsLayout />;
+      case 'blueprint': return <BlueprintLayout />;
+      case 'elegant': return <ElegantLayout />;
+      case 'minimal': return <MinimalLayout />;
+      default: return <ClassicLayout />;
+    }
   };
 
-  const Totals = () => {
-      return (
-        <div className="w-full flex justify-end shrink-0 relative z-10" style={spacingStyle}>
-            <div className={`w-1/3 p-3 border-t-2 flex flex-col items-end gap-1 ${isDark ? 'border-white/20' : 'border-slate-950'}`}>
-                <div className="flex justify-between w-full text-[9px] font-bold uppercase opacity-60">
-                    <span>Subtotal</span>
-                    <span>{formatCurrency(invoice.subtotal, invoice.currency)}</span>
-                </div>
-                <div className="w-full border-t border-dotted my-1 opacity-20"></div>
-                <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>TOTAL PAYABLE</span>
-                <span className={`text-2xl font-black tracking-tighter leading-none ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                    {formatCurrency(invoice.total, invoice.currency)}
-                </span>
-                <p className="text-[8px] font-black uppercase tracking-widest opacity-30 mt-1">Tax Exempt Statement</p>
-            </div>
-        </div>
-      );
-  }
-
-  const BottomSection = () => {
-    return (
-      <div className={`mt-auto space-y-6 pt-6 border-t w-full relative z-10 shrink-0 ${isDark ? 'border-white/10' : 'border-slate-100'}`}>
-        <div className="grid grid-cols-12 gap-10 items-start">
-          <div className="col-span-8 flex flex-col gap-4">
-            {/* FULL NOTES SECTION */}
-            {fields.showNotes && invoice.notes && (
-              <div className={`p-4 border rounded-xl flex gap-3 items-start min-h-[120px] ${isDark ? 'bg-white/5 border-white/10' : 'bg-slate-50/30 border-slate-100'}`}>
-                <Info size={16} className="text-emerald-500 mt-0.5 shrink-0" />
-                <div className="flex flex-col gap-1.5">
-                  <h4 className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-emerald-400' : 'text-slate-900'}`}>THIS IS INVOICE FOR RENTING CLIPON GENSET</h4>
-                  <p className="text-[10px] font-bold leading-relaxed whitespace-pre-wrap text-slate-500">{invoice.notes}</p>
-                </div>
-              </div>
-            )}
-
-            <div className={`p-4 border-l-4 ${t.accent.replace('bg-', 'border-')} ${isDark ? 'bg-white/5' : 'bg-slate-50'} rounded-r-xl shadow-sm`}>
-              <div className="flex items-center gap-2 mb-1.5">
-                <Heart size={14} className={isDark ? 'text-emerald-400' : 'text-rose-500'} />
-                <h4 className={`text-[11px] font-black uppercase tracking-[0.1em] ${isDark ? 'text-emerald-400' : 'text-slate-900'}`}>Settlement Note</h4>
-              </div>
-              <p className={`text-[9px] leading-relaxed font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                Thank you for your business! We kindly request full settlement by {invoice.dueDate}. For smooth processing, please include the invoice number in your payment reference.
-                We value your feedback, so please review these details within one week of receipt; after this time, the invoice will be considered final and approved. We appreciate your cooperation.
-                <br/>
-                <span className="mt-1 block opacity-60">This is a system generated document and does not require a physical signature if stamped.</span>
-              </p>
-            </div>
-          </div>
-          
-          <div className="col-span-4 flex flex-col gap-4">
-            {fields.showSignature && (
-              <div className="flex flex-col items-end">
-                <div className="h-24 w-full flex justify-end items-end relative overflow-visible">
-                  {profile.signatureUrl && (
-                    <img 
-                      src={profile.signatureUrl} 
-                      className={`h-32 w-auto max-w-[200px] object-contain mb-[-12px] z-20 pointer-events-none ${!isDark ? 'mix-blend-darken' : 'brightness-110'}`} 
-                      alt="Manager Signature" 
-                    />
-                  )}
-                </div>
-                <div className="text-right mt-2 border-t-2 border-slate-900 pt-2 w-full flex flex-col items-end">
-                  <p className={`text-base font-black uppercase tracking-tighter leading-none ${isDark ? 'text-white' : 'text-slate-900'}`}>{profile.name}</p>
-                  <p className="text-[9px] font-black uppercase tracking-[0.3em] opacity-40 mt-1">Authorized Manager</p>
-                  
-                  {/* Manager Info Block - Contact details moved here */}
-                  <div className="mt-2 text-right space-y-0.5 opacity-80">
-                    <div className="flex items-center justify-end gap-1.5 text-[9px] font-bold uppercase text-slate-800">
-                      <span>{profile.phone}</span>
-                      <Phone size={11} className="text-emerald-600"/>
-                    </div>
-                    <div className="flex items-center justify-end gap-1.5 text-[9px] font-bold uppercase text-slate-800">
-                      <span>{profile.email}</span>
-                      <Mail size={11} className="text-emerald-600"/>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+  const ClassicLayout = () => (
+    <>
+      <div style={spacingStyle} className="flex justify-between items-start relative z-10 w-full shrink-0">
+        <div className="flex-1">
+          {fields.showLogo && profile.logoUrl && <img src={profile.logoUrl} className="h-20 mb-4 object-contain" />}
+          <div className="space-y-0">
+            <h1 className="text-2xl font-black uppercase tracking-tighter leading-none">{profile.companyName}</h1>
+            <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500 mt-1">{profile.ownerName}</p>
+            {fields.showCompanyInfo && <p className="text-[9px] font-bold mt-2 opacity-70 max-w-xs">{profile.address}</p>}
           </div>
         </div>
-
-        <div className="pt-4 flex flex-col items-center justify-center w-full border-t border-slate-100 mt-2 opacity-30 select-none">
-          <p className="text-[8px] font-black uppercase tracking-[0.5em] text-slate-400 italic leading-none">
-            {profile.companyName} LOGISTICS <span className="mx-2">|</span> POWERED BY BEBITO
-          </p>
+        <div className="text-right">
+          <p className="text-5xl font-black uppercase tracking-tighter opacity-10 absolute -top-4 right-0">INVOICE</p>
+          <div className="relative pt-4">
+             <p className="text-xl font-black uppercase tracking-tight">Invoice <span className={t.secondary}>#{invoice.invoiceNumber}</span></p>
+             <div className="mt-2 text-[10px] font-black space-y-0.5 uppercase opacity-60">
+               {fields.showInvoiceDate && <p>Date: {invoice.date}</p>}
+               {fields.showDueDate && <p>Due: {invoice.dueDate}</p>}
+             </div>
+          </div>
         </div>
       </div>
-    );
-  };
+      <div style={spacingStyle} className="grid grid-cols-2 gap-10 py-4 border-y border-slate-900/10">
+        <div>
+          <p className="text-[9px] font-black uppercase tracking-widest opacity-40 mb-1">Bill To</p>
+          <p className="text-lg font-black uppercase tracking-tight">{invoice.customerName}</p>
+          {fields.showCustomerAddress && <p className="text-[10px] opacity-60 mt-1">{invoice.customerAddress}</p>}
+        </div>
+        <div className="text-right">
+           {fields.showTaxId && <p className="text-[9px] font-black uppercase opacity-40">Tax ID: {profile.taxId}</p>}
+        </div>
+      </div>
+      <InvoiceTable />
+    </>
+  );
+
+  const CenteredLayout = () => (
+    <div className="text-center flex flex-col items-center">
+      <div style={spacingStyle} className="space-y-4">
+        {fields.showLogo && profile.logoUrl && <img src={profile.logoUrl} className="h-24 mx-auto object-contain" />}
+        <div>
+          <h1 className="text-4xl font-playfair font-bold uppercase tracking-widest">{profile.companyName}</h1>
+          <p className="text-xs font-black uppercase tracking-[0.5em] text-amber-500 mt-1">{profile.ownerName}</p>
+        </div>
+        <div className="w-16 h-0.5 bg-amber-500 mx-auto"></div>
+        <p className="text-[10px] font-serif uppercase tracking-widest opacity-60">{profile.address}</p>
+      </div>
+      
+      <div className="w-full grid grid-cols-3 border-y border-slate-100 py-6 mb-8 items-center">
+         <div className="text-left">
+            <p className="text-[8px] uppercase tracking-widest opacity-40">Invoice For</p>
+            <p className="text-lg font-bold uppercase">{invoice.customerName}</p>
+         </div>
+         <div className="text-center">
+            <p className="text-3xl font-playfair italic">No. {invoice.invoiceNumber}</p>
+         </div>
+         <div className="text-right space-y-1">
+            <p className="text-[9px] font-bold uppercase">Issued: {invoice.date}</p>
+            <p className="text-[9px] font-bold uppercase text-amber-500 underline">Due: {invoice.dueDate}</p>
+         </div>
+      </div>
+      <InvoiceTable />
+    </div>
+  );
+
+  const SidebarLayout = () => (
+    <div className="grid grid-cols-12 h-full -mx-[15mm] -my-[15mm]">
+      <div className={`col-span-3 ${t.accent} text-white p-10 flex flex-col gap-10`}>
+        {fields.showLogo && profile.logoUrl && <img src={profile.logoUrl} className="w-full object-contain mb-4 invert brightness-0" />}
+        <div className="space-y-4">
+          <p className="text-[10px] font-black uppercase tracking-widest opacity-50">Invoice No.</p>
+          <p className="text-2xl font-black">#{invoice.invoiceNumber}</p>
+        </div>
+        <div className="space-y-4">
+          <p className="text-[10px] font-black uppercase tracking-widest opacity-50">Billed To</p>
+          <p className="text-lg font-black uppercase">{invoice.customerName}</p>
+          <p className="text-[9px] leading-relaxed opacity-70">{invoice.customerAddress}</p>
+        </div>
+        <div className="mt-auto space-y-2 opacity-50 text-[9px] font-black uppercase">
+          <p>Date: {invoice.date}</p>
+          <p>Due: {invoice.dueDate}</p>
+        </div>
+      </div>
+      <div className="col-span-9 bg-white p-12">
+        <h2 className="text-4xl font-black uppercase mb-12 tracking-tight">Fleet Operational Invoice</h2>
+        <div className="mb-8 border-b border-slate-100 pb-4">
+            <p className="text-[10px] font-black uppercase tracking-widest opacity-30">Company Principal</p>
+            <p className="text-lg font-black uppercase">{profile.ownerName}</p>
+        </div>
+        <InvoiceTable noHeader={true} />
+      </div>
+    </div>
+  );
+
+  const CardsLayout = () => (
+    <div className="flex flex-col h-full">
+      <div className="flex justify-between items-center mb-10">
+        <div>
+          <h1 className="text-4xl font-black text-purple-600 tracking-tight leading-none">{profile.companyName}</h1>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] mt-2">{profile.ownerName} <span className="opacity-40">| Principal</span></p>
+        </div>
+        <div className="bg-purple-50 p-6 rounded-3xl text-right">
+          <p className="text-[10px] font-black uppercase tracking-widest text-purple-400 mb-1">Doc #</p>
+          <p className="text-2xl font-black text-purple-900 leading-none">{invoice.invoiceNumber}</p>
+        </div>
+      </div>
+      <div className="flex-1">
+        <InvoiceTable variant="cards" />
+      </div>
+    </div>
+  );
+
+  const BlueprintLayout = () => (
+    <div className="flex flex-col h-full border-4 border-cyan-600 p-8">
+      <div className="flex justify-between border-b-2 border-cyan-600 pb-8 mb-8">
+        <div>
+          <p className="text-[10px] font-mono font-black text-cyan-600 uppercase mb-2">// LOGISTICS_DRAFT</p>
+          <h1 className="text-5xl font-mono font-black uppercase leading-none tracking-tighter">{profile.companyName}</h1>
+          <p className="text-xs font-mono font-bold mt-1 text-cyan-700">OWNER: {profile.ownerName}</p>
+        </div>
+        <div className="text-right font-mono">
+          <p className="text-xs font-black uppercase">SERIAL: {invoice.invoiceNumber}</p>
+          <p className="text-xs font-black uppercase">TIMESTAMP: {invoice.date}</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-10 mb-12 font-mono">
+        <div className="p-4 bg-cyan-50 border border-cyan-100">
+          <p className="text-[10px] font-black text-cyan-600 uppercase mb-2">TARGET_CLIENT</p>
+          <p className="text-xl font-black">{invoice.customerName}</p>
+          <p className="text-[10px] opacity-60 mt-1">{invoice.customerAddress}</p>
+        </div>
+        <div className="p-4 bg-slate-50 border border-slate-100">
+          <p className="text-[10px] font-black text-slate-400 uppercase mb-2">AUTHORIZED_BY</p>
+          <p className="text-xl font-black">{profile.name}</p>
+          <p className="text-[10px] opacity-60 mt-1">{profile.title || 'FLEET OPERATIONS MANAGER'}</p>
+        </div>
+      </div>
+      <div className="flex-1">
+        <InvoiceTable />
+      </div>
+    </div>
+  );
+
+  const ElegantLayout = () => (
+    <div className="flex flex-col h-full text-center px-12">
+      <div className="pt-12 pb-16 border-b border-rose-100 mb-12">
+        {fields.showLogo && profile.logoUrl && <img src={profile.logoUrl} className="h-16 mx-auto mb-8 grayscale opacity-50" />}
+        <h1 className="text-5xl font-serif-bask italic mb-2 tracking-tight">{profile.companyName}</h1>
+        <p className="text-[10px] font-black uppercase tracking-[0.5em] text-rose-300">{profile.ownerName}</p>
+      </div>
+      <div className="flex justify-between text-left mb-16">
+        <div>
+          <p className="text-[9px] font-black uppercase tracking-widest text-slate-300 mb-2">Client Signature Space</p>
+          <p className="text-2xl font-serif-bask font-bold">{invoice.customerName}</p>
+          <p className="text-xs italic opacity-40 mt-1">{invoice.customerAddress}</p>
+        </div>
+        <div className="text-right">
+          <p className="text-[9px] font-black uppercase tracking-widest text-slate-300 mb-2">Invoice Particulars</p>
+          <p className="text-xl font-serif-bask font-bold">Ref: {invoice.invoiceNumber}</p>
+          <p className="text-xs italic opacity-40 mt-1">Date of Issue: {invoice.date}</p>
+        </div>
+      </div>
+      <div className="flex-1 text-left">
+        <InvoiceTable />
+      </div>
+    </div>
+  );
+
+  const MinimalLayout = () => (
+    <div className="flex flex-col h-full">
+      <div className="flex justify-between items-start mb-24">
+        <div>
+            <h1 className="text-3xl font-black tracking-tighter uppercase leading-none">{profile.companyName}</h1>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1">{profile.ownerName}</p>
+        </div>
+        <div className="text-right">
+          <p className="text-sm font-black uppercase tracking-tighter">{invoice.invoiceNumber}</p>
+          <p className="text-xs opacity-40 font-bold uppercase">{invoice.date}</p>
+        </div>
+      </div>
+      <div className="mb-24">
+        <p className="text-xs font-black text-slate-300 uppercase mb-4 tracking-widest">To</p>
+        <p className="text-4xl font-black tracking-tighter uppercase leading-none">{invoice.customerName}</p>
+      </div>
+      <div className="flex-1">
+        <InvoiceTable noHeader={true} />
+      </div>
+    </div>
+  );
+
+  const IndustrialLayout = () => (
+    <div className="grid grid-cols-12 border-4 border-slate-900 h-full overflow-hidden">
+       {/* Header Cell */}
+       <div className="col-span-7 border-b-4 border-r-4 border-slate-900 p-6 bg-white">
+          <div className="flex items-start gap-4">
+            {profile.logoUrl && <img src={profile.logoUrl} className="h-16 w-16 object-contain" />}
+            <div>
+              <h1 className="text-3xl font-mono font-black uppercase tracking-tight leading-none">{profile.companyName}</h1>
+              <p className="text-[10px] font-mono font-bold bg-slate-900 text-white px-2 inline-block mt-2">PRINCIPAL: {profile.ownerName}</p>
+            </div>
+          </div>
+          <p className="text-[10px] font-mono font-bold mt-4 opacity-70 whitespace-pre-wrap">{profile.address}</p>
+       </div>
+       
+       <div className="col-span-5 border-b-4 border-slate-900 p-6 bg-slate-50 flex flex-col justify-center">
+          <p className="text-[9px] font-mono font-black uppercase opacity-40">Document Serial</p>
+          <p className="text-3xl font-mono font-black">#{invoice.invoiceNumber}</p>
+          <div className="mt-4 flex gap-4 text-[9px] font-mono font-bold">
+             <span>D: {invoice.date}</span>
+             <span className="text-red-600">DUE: {invoice.dueDate}</span>
+          </div>
+       </div>
+
+       {/* Client Cell */}
+       <div className="col-span-12 border-b-4 border-slate-900 p-6 grid grid-cols-2">
+          <div className="border-r-2 border-slate-900/20 pr-6">
+            <p className="text-[9px] font-mono font-black uppercase opacity-40 mb-2">Billing To</p>
+            <p className="text-2xl font-mono font-black uppercase">{invoice.customerName}</p>
+            <p className="text-xs font-mono font-bold opacity-60 mt-1">{invoice.customerAddress}</p>
+          </div>
+          <div className="pl-6 flex flex-col justify-end">
+             {profile.taxId && <p className="text-xs font-mono font-bold">REG_ID: {profile.taxId}</p>}
+             {profile.website && <p className="text-xs font-mono font-bold">WWW: {profile.website}</p>}
+          </div>
+       </div>
+
+       <div className="col-span-12 p-2 bg-white flex-1">
+          <InvoiceTable noHeader={true} />
+       </div>
+    </div>
+  );
+
+  const SwissBoldLayout = () => (
+    <div className="flex flex-col h-full bg-white px-4">
+      <div className="flex justify-between items-end border-b-[12px] border-black pb-4 pt-10">
+        <h1 className="text-7xl font-bebas leading-none tracking-tighter">INVOICE</h1>
+        <div className="text-right">
+          <p className="text-5xl font-bebas leading-none italic">{invoice.invoiceNumber}</p>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-12 gap-4 mt-8">
+        <div className="col-span-8 space-y-2">
+          <h2 className="text-5xl font-bebas leading-none">{profile.companyName}</h2>
+          <p className="text-xl font-bebas text-red-600 tracking-widest">{profile.ownerName}</p>
+          <p className="text-sm font-bold uppercase mt-4 max-w-sm">{profile.address}</p>
+        </div>
+        <div className="col-span-4 bg-black text-white p-6 flex flex-col justify-between">
+          <div>
+            <p className="text-[10px] uppercase font-black tracking-widest opacity-50 mb-4">Customer</p>
+            <p className="text-2xl font-bebas tracking-wide uppercase">{invoice.customerName}</p>
+          </div>
+          <div className="space-y-1 mt-6">
+            <p className="text-[10px] font-black uppercase">Date: {invoice.date}</p>
+            <p className="text-[10px] font-black uppercase text-red-500">Payment Required: {invoice.dueDate}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-12 flex-1">
+        <InvoiceTable />
+      </div>
+    </div>
+  );
+
+  const SplitLayout = () => (
+    <div className="flex flex-col">
+      <div style={spacingStyle} className="flex justify-between items-center bg-slate-900 text-white -mx-[15mm] p-[10mm] px-[15mm] mb-12">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-black tracking-tighter uppercase">{profile.companyName}</h1>
+          <p className="text-xs font-black uppercase tracking-[0.3em] text-emerald-400">{profile.ownerName}</p>
+          <div className="flex gap-4 mt-2 opacity-50 text-[9px] font-bold uppercase">
+            <span>{profile.email}</span>
+            <span>{profile.phone}</span>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="text-4xl font-black tracking-tight leading-none">INVOICE</p>
+          <p className="text-lg font-mono text-emerald-400">#{invoice.invoiceNumber}</p>
+        </div>
+      </div>
+
+      <div style={spacingStyle} className="grid grid-cols-12 gap-12 items-start px-4">
+         <div className="col-span-4 space-y-6">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-2">Customer Details</p>
+              <p className="text-xl font-black uppercase">{invoice.customerName}</p>
+              <p className="text-xs opacity-60 mt-1 leading-relaxed">{invoice.customerAddress}</p>
+            </div>
+            <div className="pt-6 border-t border-slate-100">
+               <div className="flex justify-between text-xs font-bold mb-1">
+                 <span className="opacity-40 uppercase">Issue Date</span>
+                 <span>{invoice.date}</span>
+               </div>
+               <div className="flex justify-between text-xs font-bold">
+                 <span className="opacity-40 uppercase">Payment Due</span>
+                 <span className="text-red-600">{invoice.dueDate}</span>
+               </div>
+            </div>
+         </div>
+         <div className="col-span-8">
+            <InvoiceTable />
+         </div>
+      </div>
+    </div>
+  );
+
+  const TotalsSection = () => (
+    <div className="mt-8 flex justify-end">
+      <div className={`w-64 p-6 bg-slate-50 border-slate-200 border-2 rounded-3xl flex flex-col gap-2 items-end`}>
+         <div className="flex justify-between w-full text-[10px] font-bold uppercase opacity-60">
+           <span>Gross Subtotal</span>
+           <span>{formatCurrency(invoice.subtotal, invoice.currency)}</span>
+         </div>
+         <div className="w-full h-px bg-slate-950/10 my-1"></div>
+         <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">Net Amount Payable</p>
+         <p className="text-3xl font-black tracking-tighter leading-none">{formatCurrency(invoice.total, invoice.currency)}</p>
+      </div>
+    </div>
+  );
 
   return (
     <div 
@@ -367,12 +574,37 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
     >
       <div style={scaleStyle} className="w-full flex flex-col h-full overflow-hidden relative">
         <WatermarkLayer />
-        <Header />
-        <Parties />
-        <Table />
-        <Totals />
-        <div className="flex-grow min-h-[40px]"></div>
-        <BottomSection />
+        {renderLayout()}
+        <TotalsSection />
+        <div className="mt-auto pt-10 border-t border-slate-100 flex justify-between items-end">
+           <div className="space-y-4 max-w-lg">
+              {fields.showNotes && invoice.notes && (
+                <div className="p-4 bg-slate-50/50 border border-slate-100 rounded-2xl">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-emerald-600 mb-1 flex items-center gap-1"><Info size={10}/> Official Notes</p>
+                  <p className="text-[10px] font-bold leading-relaxed opacity-60">{invoice.notes}</p>
+                </div>
+              )}
+              <div className="flex flex-col gap-1">
+                <p className="text-[8px] font-black uppercase tracking-[0.4em] opacity-30">NILE FLEET GENSET POWERED BY BEBITO</p>
+              </div>
+           </div>
+           {fields.showSignature && (
+             <div className="text-right flex flex-col items-end">
+                {profile.signatureUrl && <img src={profile.signatureUrl} className="h-24 w-auto object-contain mb-[-10px] z-20 pointer-events-none mix-blend-multiply" />}
+                <div className="border-t-2 border-slate-900 pt-2 w-64">
+                  <p className="text-[9px] font-black uppercase tracking-widest opacity-40">Authorized Official</p>
+                  <div className="mt-2 space-y-1">
+                    <p className="text-sm font-black uppercase leading-none">{profile.name}</p>
+                    {profile.title && <p className="text-[9px] font-bold uppercase opacity-60">{profile.title}</p>}
+                  </div>
+                  <div className="mt-3 flex flex-col gap-0.5 border-t border-slate-100 pt-2">
+                    {profile.phone && <p className="text-[7px] font-bold opacity-50 flex items-center justify-end gap-1"><Phone size={8}/> {profile.phone}</p>}
+                    {profile.email && <p className="text-[7px] font-bold opacity-50 flex items-center justify-end gap-1"><Mail size={8}/> {profile.email}</p>}
+                  </div>
+                </div>
+             </div>
+           )}
+        </div>
       </div>
     </div>
   );
