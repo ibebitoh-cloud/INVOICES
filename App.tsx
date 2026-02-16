@@ -454,6 +454,11 @@ const App: React.FC = () => {
     });
 
     setBookings(prev => [newEntry, ...prev]);
+    // Reset state after save
+    setManualBooking({
+        bookingNo: '', reeferNumber: '', goPort: '', giPort: '', rateValue: 0,
+        shipper: '', trucker: '', shipperAddress: '', customer: ''
+    });
     setShowManualEntryModal(false);
   };
 
@@ -694,7 +699,7 @@ const App: React.FC = () => {
                           <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Company Owner</label><div className="relative"><User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16}/><input className="w-full bg-slate-50 pl-12 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={profile.ownerName || ''} onChange={e => setProfile({...profile, ownerName: e.target.value})} /></div></div>
                           <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Authorized Official</label><div className="relative"><CheckCircle className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16}/><input className="w-full bg-slate-50 pl-12 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={profile.name} onChange={e => setProfile({...profile, name: e.target.value})} /></div></div>
                           <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Professional Title</label><div className="relative"><AwardIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16}/><input className="w-full bg-slate-50 pl-12 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={profile.title || ''} onChange={e => setProfile({...profile, title: e.target.value})} /></div></div>
-                          <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Physical Address</label><textarea rows={2} className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none resize-none" value={profile.address} onChange={e => setProfile({...profile, address: e.target.value})} /></div>
+                          <div className="space-y-1 col-span-2"><label className="text-[10px] font-black text-slate-400 uppercase">Physical Address</label><textarea rows={2} className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none resize-none" value={profile.address} onChange={e => setProfile({...profile, address: e.target.value})} /></div>
                        </div>
                     </div>
 
@@ -862,11 +867,17 @@ const App: React.FC = () => {
           <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl p-10 space-y-8">
             <div className="flex justify-between items-center"><h3 className="text-3xl font-black text-slate-900 tracking-tight">Add Unit</h3><button onClick={() => setShowManualEntryModal(false)}><X/></button></div>
             <form onSubmit={handleManualBookingSubmit} className="space-y-4">
-               <input required className="w-full bg-slate-50 p-4 rounded-xl font-bold" placeholder="Customer Name" value={manualBooking.customer} onChange={e => setManualBooking({...manualBooking, customer: e.target.value})} />
-               <input required className="w-full bg-slate-50 p-4 rounded-xl font-bold" placeholder="Booking No." value={manualBooking.bookingNo} onChange={e => setManualBooking({...manualBooking, bookingNo: e.target.value})} />
-               <input className="w-full bg-slate-50 p-4 rounded-xl font-bold" placeholder="Unit Number" value={manualBooking.reeferNumber} onChange={e => setManualBooking({...manualBooking, reeferNumber: e.target.value})} />
-               <input type="number" className="w-full bg-slate-50 p-4 rounded-xl font-bold" placeholder="Rate (EGP)" value={manualBooking.rateValue} onChange={e => setManualBooking({...manualBooking, rateValue: parseFloat(e.target.value) || 0})} />
-               <button type="submit" className="w-full bg-emerald-600 text-white py-4 rounded-xl font-black uppercase tracking-widest">Save Booking</button>
+               <input required className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" placeholder="Customer Name" value={manualBooking.customer} onChange={e => setManualBooking({...manualBooking, customer: e.target.value})} />
+               <input required className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" placeholder="Booking No." value={manualBooking.bookingNo} onChange={e => setManualBooking({...manualBooking, bookingNo: e.target.value})} />
+               <div className="grid grid-cols-2 gap-4">
+                 <input className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" placeholder="Unit Number" value={manualBooking.reeferNumber} onChange={e => setManualBooking({...manualBooking, reeferNumber: e.target.value})} />
+                 <input type="number" className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" placeholder="Rate (EGP)" value={manualBooking.rateValue || ''} onChange={e => setManualBooking({...manualBooking, rateValue: parseFloat(e.target.value) || 0})} />
+               </div>
+               <div className="grid grid-cols-2 gap-4">
+                 <input className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" placeholder="Shipper Name" value={manualBooking.shipper} onChange={e => setManualBooking({...manualBooking, shipper: e.target.value})} />
+                 <input className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" placeholder="Trucker Name" value={manualBooking.trucker} onChange={e => setManualBooking({...manualBooking, trucker: e.target.value})} />
+               </div>
+               <button type="submit" className="w-full bg-emerald-600 text-white py-4 rounded-xl font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all">Save Booking</button>
             </form>
           </div>
         </div>

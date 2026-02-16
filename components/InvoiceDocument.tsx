@@ -3,7 +3,7 @@ import React, { useMemo } from 'react';
 import { Invoice, Booking, TemplateFields, InvoiceTheme, CustomTheme } from '../types';
 import { formatCurrency } from '../utils/formatters';
 import { 
-  Anchor, Briefcase, Clock, Truck, Package, Square, ArrowRight, Heart, FileText, Info, Phone, Globe, Landmark, Mail, Hash, Box, Layers, Layout as LayoutIcon, MapPin
+  Anchor, Briefcase, Clock, Truck, Package, Square, ArrowRight, Heart, FileText, Info, Phone, Globe, Landmark, Mail, Hash, Box, Layers, Layout as LayoutIcon, MapPin, ShieldCheck, User
 } from 'lucide-react';
 
 interface InvoiceDocumentProps {
@@ -29,7 +29,7 @@ const getThemeConfig = (theme: InvoiceTheme, customData?: CustomTheme): ThemeCon
     return {
       accent: customData.accent,
       secondary: customData.secondary,
-      bg: 'bg-white', // Force white background as requested
+      bg: 'bg-white',
       text: customData.text,
       border: customData.border,
       font: customData.font,
@@ -95,7 +95,7 @@ const getThemeConfig = (theme: InvoiceTheme, customData?: CustomTheme): ThemeCon
   return {
     accent: base.accent!,
     secondary: base.secondary!,
-    bg: 'bg-white', // All themes now white
+    bg: 'bg-white',
     text: base.text || 'text-slate-900',
     border: base.border!,
     font: base.font!,
@@ -131,6 +131,10 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
   const t = getThemeConfig(themeName, config.customThemeData);
   const profile = invoice.userProfile;
 
+  // Extract common Shipper and Trucker if they are universal for the invoice items
+  const mainShipper = invoice.items[0]?.shipper || '---';
+  const mainTrucker = invoice.items[0]?.trucker || '---';
+
   const groupedItems = useMemo(() => {
     const groups = new Map<string, Booking[]>();
     invoice.items.forEach(item => {
@@ -160,6 +164,23 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
     width: `${100 / config.contentScale}%`,
     height: `${100 / config.contentScale}%`
   };
+
+  // Prominent Logistics Summary Section
+  const LogisticsInfoBanner = () => (
+    <div style={spacingStyle} className={`grid grid-cols-2 gap-4 border-2 ${t.border} p-5 relative overflow-hidden group`}>
+      <div className="absolute top-0 right-0 p-2 opacity-5">
+        <Truck size={60} />
+      </div>
+      <div>
+        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Official Shipper</p>
+        <p className="text-xl font-black uppercase text-slate-900">{mainShipper}</p>
+      </div>
+      <div className="border-l-2 border-slate-100 pl-6">
+        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Contracted Trucker</p>
+        <p className="text-xl font-black uppercase text-slate-900">{mainTrucker}</p>
+      </div>
+    </div>
+  );
 
   const InvoiceTable = ({ noHeader = false, variant = 'standard' }: { noHeader?: boolean, variant?: string }) => (
     <div className="w-full relative z-10 shrink-0">
@@ -203,7 +224,8 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
                 <td className="py-4 px-4 align-top">
                   <div className="flex items-center gap-3 mb-2">
                     <div className={`w-1 h-5 ${t.accent}`}></div>
-                    <p className="font-black text-sm uppercase">{group[0].bookingNo}</p>
+                    {/* Increased booking font size to xl to match shipper/trucker */}
+                    <p className="font-black text-xl uppercase">{group[0].bookingNo}</p>
                     <div className="flex items-center gap-2 py-0.5 px-2 rounded bg-slate-50 border border-slate-100 text-[9px] font-black text-slate-500 uppercase">
                        <span>{group[0].goPort}</span>
                        <ArrowRight size={10} className="text-emerald-500" />
@@ -219,7 +241,8 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
                   </div>
                 </td>
                 <td className="py-4 px-4 text-right align-top">
-                  <p className="text-base font-black tracking-tight">
+                  {/* Increased rate font size to xl to match shipper/trucker */}
+                  <p className="text-xl font-black tracking-tight">
                     {formatCurrency(group.reduce((a,c)=>a+c.rateValue,0), invoice.currency)}
                   </p>
                 </td>
@@ -233,16 +256,16 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
 
   const renderLayout = () => {
     switch (t.layout) {
-      case 'centered': return <CenteredLayout />;
-      case 'split': return <SplitLayout />;
-      case 'industrial': return <IndustrialLayout />;
-      case 'bold': return <SwissBoldLayout />;
-      case 'sidebar': return <SidebarLayout />;
-      case 'cards': return <CardsLayout />;
-      case 'blueprint': return <BlueprintLayout />;
-      case 'elegant': return <ElegantLayout />;
-      case 'minimal': return <MinimalLayout />;
-      default: return <ClassicLayout />;
+      case 'centered': return <><CenteredLayout /><LogisticsInfoBanner /></>;
+      case 'split': return <><SplitLayout /><LogisticsInfoBanner /></>;
+      case 'industrial': return <><IndustrialLayout /></>;
+      case 'bold': return <><SwissBoldLayout /><LogisticsInfoBanner /></>;
+      case 'sidebar': return <><SidebarLayout /></>;
+      case 'cards': return <><CardsLayout /></>;
+      case 'blueprint': return <><BlueprintLayout /><LogisticsInfoBanner /></>;
+      case 'elegant': return <><ElegantLayout /><LogisticsInfoBanner /></>;
+      case 'minimal': return <><MinimalLayout /><LogisticsInfoBanner /></>;
+      default: return <><ClassicLayout /><LogisticsInfoBanner /></>;
     }
   };
 
@@ -331,9 +354,15 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
       </div>
       <div className="col-span-9 bg-white p-12">
         <h2 className="text-4xl font-black uppercase mb-12 tracking-tight">Fleet Operational Invoice</h2>
-        <div className="mb-8 border-b border-slate-100 pb-4">
-            <p className="text-[10px] font-black uppercase tracking-widest opacity-30">Company Principal</p>
-            <p className="text-lg font-black uppercase">{profile.ownerName}</p>
+        <div className="grid grid-cols-2 gap-8 mb-8">
+            <div className="bg-slate-50 p-6 rounded-2xl">
+              <p className="text-[10px] font-black uppercase text-slate-400 mb-2">Primary Shipper</p>
+              <p className="text-2xl font-black uppercase">{mainShipper}</p>
+            </div>
+            <div className="bg-slate-50 p-6 rounded-2xl">
+              <p className="text-[10px] font-black uppercase text-slate-400 mb-2">Trucker Partner</p>
+              <p className="text-2xl font-black uppercase">{mainTrucker}</p>
+            </div>
         </div>
         <InvoiceTable noHeader={true} />
       </div>
@@ -351,6 +380,16 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
           <p className="text-[10px] font-black uppercase tracking-widest text-purple-400 mb-1">Doc #</p>
           <p className="text-2xl font-black text-purple-900 leading-none">{invoice.invoiceNumber}</p>
         </div>
+      </div>
+      <div className="mb-6 grid grid-cols-2 gap-4">
+          <div className="p-4 border-2 border-purple-100 rounded-2xl">
+             <p className="text-[10px] font-black uppercase text-purple-400 mb-1">Shipper</p>
+             <p className="font-black text-lg">{mainShipper}</p>
+          </div>
+          <div className="p-4 border-2 border-purple-100 rounded-2xl">
+             <p className="text-[10px] font-black uppercase text-purple-400 mb-1">Trucker</p>
+             <p className="font-black text-lg">{mainTrucker}</p>
+          </div>
       </div>
       <div className="flex-1">
         <InvoiceTable variant="cards" />
@@ -456,6 +495,18 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
           <div className="mt-4 flex gap-4 text-[9px] font-mono font-bold">
              <span>D: {invoice.date}</span>
              <span className="text-red-600">DUE: {invoice.dueDate}</span>
+          </div>
+       </div>
+
+       {/* SHIPPER/TRUCKER BLOCK (Industrial) */}
+       <div className="col-span-12 border-b-4 border-slate-900 p-6 grid grid-cols-2 bg-slate-900 text-white">
+          <div className="border-r-2 border-white/20 pr-6">
+            <p className="text-[9px] font-mono font-black uppercase opacity-60 mb-1">Logistics: Shipper</p>
+            <p className="text-2xl font-mono font-black uppercase">{mainShipper}</p>
+          </div>
+          <div className="pl-6">
+            <p className="text-[9px] font-mono font-black uppercase opacity-60 mb-1">Logistics: Trucker</p>
+            <p className="text-2xl font-mono font-black uppercase">{mainTrucker}</p>
           </div>
        </div>
 
