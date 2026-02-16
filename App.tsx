@@ -16,7 +16,7 @@ import {
   ShieldCheck, Key, Cpu, Paintbrush, Building2, Hash, Edit3,
   FileText, Activity, Layers2, FileOutput, Globe, Phone, Landmark, Sliders, ToggleRight, ToggleLeft, Save,
   Hash as HashIcon, Mail, Box, Calendar, MessageSquareText, Award as AwardIcon, User,
-  Maximize, Minimize
+  Maximize, Minimize, Palette as PaletteIcon, Globe2, Moon
 } from 'lucide-react';
 import { Booking, Invoice, InvoiceSectionId, TemplateConfig, UserProfile, TemplateFields, GroupingType, InvoiceTheme, CustomerConfig, CustomTheme } from './types';
 import { parseCurrency, formatCurrency, exportToCSV, downloadSampleCSV } from './utils/formatters';
@@ -26,7 +26,11 @@ const DEFAULT_COMPANY_LOGO = "https://images.unsplash.com/photo-1586611292717-f8
 
 const STANDARD_THEMES: { id: InvoiceTheme, label: string, desc: string, icon: any, color: string }[] = [
   { id: 'logistics-grid', label: 'Classic Logistics', desc: 'Heavy borders, official grid layout', icon: TableIcon, color: 'bg-emerald-600' },
+  { id: 'dark-mode-pro', label: 'Midnight Pro', desc: 'Elegant dark mode for tech companies', icon: Moon, color: 'bg-slate-900' },
+  { id: 'airport-terminal', label: 'Airport Manifest', desc: 'Monospaced flight-board aesthetic', icon: Globe2, color: 'bg-black' },
+  { id: 'brutalist', label: 'High Brutalist', desc: 'Bold, heavy, yellow industrial style', icon: Zap, color: 'bg-yellow-400' },
   { id: 'corporate', label: 'Corporate Clean', desc: 'Minimal, business-standard style', icon: Briefcase, color: 'bg-slate-900' },
+  { id: 'eco-freight', label: 'Eco Freight', desc: 'Fresh lime and earth tones', icon: Leaf, color: 'bg-lime-600' },
   { id: 'luxury-gold', label: 'Executive Gold', desc: 'Premium serif fonts with gold accents', icon: Award, color: 'bg-amber-500' },
   { id: 'vintage', label: 'Vintage Archive', desc: 'Typewriter fonts on clean white paper', icon: ScrollText, color: 'bg-orange-600' },
   { id: 'swiss-modern', label: 'Swiss Bold', desc: 'High contrast, bold grotesque font', icon: Grid3X3, color: 'bg-red-600' },
@@ -543,7 +547,7 @@ const App: React.FC = () => {
       </aside>
 
       <main className="flex-1 overflow-y-auto custom-scroll relative bg-slate-50">
-        <div className={`max-w-6xl mx-auto ${view === 'print-view' ? 'p-0' : 'p-12'}`}>
+        <div className={`mx-auto ${view === 'print-view' ? 'p-0' : (view === 'invoice-preview' ? 'p-0 max-w-full' : 'p-12 max-w-6xl')}`}>
           {view === 'dashboard' && (
             <div className="space-y-8 animate-in fade-in duration-500">
               <header className="flex justify-between items-end">
@@ -729,15 +733,6 @@ const App: React.FC = () => {
                           <div className="space-y-1 col-span-2"><label className="text-[10px] font-black text-slate-400 uppercase">Physical Address</label><textarea rows={2} className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none resize-none" value={profile.address} onChange={e => setProfile({...profile, address: e.target.value})} /></div>
                        </div>
                     </div>
-
-                    <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100 space-y-8">
-                       <h3 className="text-xl font-black text-slate-900 pb-4 border-b uppercase tracking-tight flex items-center gap-3"><Phone size={22} className="text-blue-500"/> Contact & Digital</h3>
-                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Business Phone</label><div className="relative"><Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16}/><input className="w-full bg-slate-50 pl-12 p-4 rounded-xl font-bold border-2 border-transparent focus:border-blue-600 outline-none" value={profile.phone || ''} onChange={e => setProfile({...profile, phone: e.target.value})} /></div></div>
-                          <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Email Address</label><div className="relative"><Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16}/><input className="w-full bg-slate-50 pl-12 p-4 rounded-xl font-bold border-2 border-transparent focus:border-blue-600 outline-none" value={profile.email} onChange={e => setProfile({...profile, email: e.target.value})} /></div></div>
-                          <div className="space-y-1 col-span-2"><label className="text-[10px] font-black text-slate-400 uppercase">Website URL</label><div className="relative"><Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16}/><input className="w-full bg-slate-50 pl-12 p-4 rounded-xl font-bold border-2 border-transparent focus:border-blue-600 outline-none" value={profile.website || ''} onChange={e => setProfile({...profile, website: e.target.value})} /></div></div>
-                       </div>
-                    </div>
                   </div>
 
                   <div className="lg:col-span-4 space-y-8">
@@ -747,37 +742,6 @@ const App: React.FC = () => {
                         {profile.logoUrl ? <img src={profile.logoUrl} className="h-full object-contain p-4 transition-transform group-hover:scale-110" /> : <ImageIcon size={48} className="text-slate-200" />}
                         {profile.logoUrl && <button onClick={() => setProfile({...profile, logoUrl: null})} className="absolute top-4 right-4 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={14}/></button>}
                       </div>
-                    </div>
-
-                    <div className="bg-white p-8 rounded-[3rem] shadow-xl border border-slate-100 space-y-6">
-                      <div className="flex justify-between items-center"><p className="text-[10px] font-black text-slate-400 uppercase">Digital Signature</p><label className="cursor-pointer text-emerald-600 font-black text-[10px] uppercase hover:underline"><input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], 'signatureUrl')} />Upload</label></div>
-                      <div className="h-28 bg-slate-50 rounded-2xl flex items-center justify-center border-2 border-slate-100 overflow-hidden relative group">
-                        {profile.signatureUrl ? <img src={profile.signatureUrl} className="h-full object-contain p-4 mix-blend-multiply transition-transform group-hover:scale-110" /> : <PenTool size={32} className="text-slate-200" />}
-                        {profile.signatureUrl && <button onClick={() => setProfile({...profile, signatureUrl: null})} className="absolute top-4 right-4 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={14}/></button>}
-                      </div>
-                    </div>
-
-                    <div className="bg-white p-8 rounded-[3rem] shadow-xl border border-slate-100 space-y-6">
-                      <div className="flex justify-between items-center"><p className="text-[10px] font-black text-slate-400 uppercase">Safety Watermark</p><label className="cursor-pointer text-emerald-600 font-black text-[10px] uppercase hover:underline"><input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], 'watermarkUrl')} />Upload</label></div>
-                      <div className="h-32 bg-slate-50 rounded-2xl flex items-center justify-center border-2 border-slate-100 overflow-hidden relative group">
-                        {profile.watermarkUrl ? (
-                          <div className="relative w-full h-full flex items-center justify-center">
-                             <img src={profile.watermarkUrl} style={{ opacity: profile.watermarkOpacity }} className="h-full object-contain p-4 transition-all" />
-                             <button onClick={() => setProfile({...profile, watermarkUrl: null})} className="absolute top-4 right-4 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"><Trash2 size={14}/></button>
-                          </div>
-                        ) : (
-                          <Layers2 size={32} className="text-slate-200" />
-                        )}
-                      </div>
-                      {profile.watermarkUrl && (
-                        <div className="space-y-3 pt-2">
-                           <div className="flex justify-between text-[8px] font-black text-slate-400 uppercase tracking-widest">
-                             <span className="flex items-center gap-1"><Sliders size={10}/> Intensity</span>
-                             <span>{Math.round(profile.watermarkOpacity * 100)}%</span>
-                           </div>
-                           <input type="range" min="0.01" max="0.3" step="0.01" className="w-full accent-emerald-500" value={profile.watermarkOpacity} onChange={e => setProfile({...profile, watermarkOpacity: parseFloat(e.target.value)})} />
-                        </div>
-                      )}
                     </div>
                   </div>
                </div>
@@ -793,9 +757,6 @@ const App: React.FC = () => {
                <div className="space-y-8">
                  <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><MessageSquareText size={18}/> Default Settlement Note</h3>
                  <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100 space-y-4">
-                    <p className="text-xs text-slate-400 font-medium leading-relaxed">
-                      This text appears in the "Official Notes" section. Use the YYYY-MM-DD format (e.g., 2026-03-03) anywhere in the text to have it automatically synchronized with each customer's specific due date during generation.
-                    </p>
                     <textarea 
                       className="w-full bg-slate-50 p-6 rounded-2xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none resize-none" 
                       rows={5}
@@ -805,64 +766,51 @@ const App: React.FC = () => {
                     />
                  </div>
                </div>
-
-               <div className="space-y-8">
-                 <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><Palette size={18}/> Visual Style</h3>
-                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {STANDARD_THEMES.map(t => (
-                      <button key={t.id} onClick={() => updateTheme(t.id)} className={`p-8 rounded-[2.5rem] border-2 transition-all text-left space-y-6 ${templateConfig.theme === t.id ? 'bg-emerald-50 border-emerald-500' : 'bg-white border-transparent hover:border-slate-200 shadow-xl'}`}>
-                         <div className={`p-4 rounded-2xl ${t.color} text-white shadow-lg inline-block`}><t.icon size={28}/></div>
-                         <div><h4 className="text-xl font-black text-slate-900">{t.label}</h4><p className="text-slate-500 font-medium text-xs mt-1">{t.desc}</p></div>
-                      </button>
-                    ))}
-                 </div>
-               </div>
-
-               <div className="space-y-8">
-                 <div className="flex items-end justify-between"><h3 className="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><ListChecks size={18}/> Field Visibility</h3></div>
-                 <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-4">
-                    {[
-                      { key: 'showLogo', label: 'Company Logo' },
-                      { key: 'showCompanyInfo', label: 'Our Address' },
-                      { key: 'showTaxId', label: 'Tax ID / CR' },
-                      { key: 'showInvoiceDate', label: 'Invoice Date' },
-                      { key: 'showDueDate', label: 'Due Date' },
-                      { key: 'showCustomerAddress', label: 'Customer Address' },
-                      { key: 'showBookingNo', label: 'Booking Number' },
-                      { key: 'showPorts', label: 'Ports (Go/Gi)' },
-                      { key: 'showReefer', label: 'Reefer Numbers' },
-                      { key: 'showGenset', label: 'Genset Info' },
-                      { key: 'showTrucker', label: 'Trucker Name' },
-                      { key: 'showShipperAddress', label: 'Shipper Name' },
-                      { key: 'showNotes', label: 'Terms & Notes' },
-                      { key: 'showWatermark', label: 'Safety Watermark' }
-                    ].map(field => (
-                      <button key={field.key} onClick={() => toggleTemplateField(field.key as keyof TemplateFields)} className={`flex items-center justify-between p-4 rounded-2xl transition-all ${templateConfig.fields[field.key as keyof TemplateFields] ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>
-                        <span className="text-[11px] font-black uppercase tracking-tight">{field.label}</span>
-                        {templateConfig.fields[field.key as keyof TemplateFields] ? <ToggleRight size={24} /> : <ToggleLeft size={24} />}
-                      </button>
-                    ))}
-                 </div>
-               </div>
             </div>
           )}
 
           {view === 'invoice-preview' && activeInvoice && (
-            <div className="animate-in fade-in duration-500 pb-32">
-               <div className="no-print bg-white p-8 rounded-[2.5rem] shadow-2xl mb-8 border-2 border-slate-100 flex items-center justify-between">
-                  <div className="flex items-center gap-4 flex-1">
-                    <button onClick={() => setView('dashboard')} className="p-3 bg-slate-50 rounded-xl text-slate-400 hover:text-slate-900 transition-colors"><ChevronLeft size={24}/></button>
-                    <div className="flex flex-col gap-1 w-full max-w-xs">
-                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1"><HashIcon size={10}/> Invoice Serial</label>
-                       <input type="text" value={activeInvoice.invoiceNumber} onChange={(e) => setActiveInvoice({...activeInvoice, invoiceNumber: e.target.value})} className="bg-slate-50 border-2 border-transparent focus:border-emerald-500 p-2 rounded-xl font-black text-slate-900 outline-none transition-all" />
+            <div className="flex h-[calc(100vh-2rem)] overflow-hidden">
+               {/* Main Preview Area */}
+               <div className="flex-1 overflow-y-auto p-12 space-y-8 no-scrollbar bg-slate-200/50">
+                  <div className="no-print bg-white p-6 rounded-3xl shadow-xl border border-slate-100 flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-4">
+                      <button onClick={() => setView('dashboard')} className="p-3 bg-slate-50 rounded-xl text-slate-400 hover:text-slate-900 transition-colors"><ChevronLeft size={24}/></button>
+                      <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Previewing</p>
+                        <h3 className="text-xl font-black text-slate-900 leading-none">{activeInvoice.invoiceNumber}</h3>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button disabled={isDownloading} onClick={() => handleDownloadPDF(`${activeInvoice.invoiceNumber}.pdf`)} className={`bg-emerald-600 text-white px-8 py-3 rounded-2xl font-black uppercase text-xs flex items-center gap-2 shadow-xl hover:bg-emerald-700 transition-all active:scale-95 ${isDownloading ? 'opacity-50' : ''}`}><Download size={18}/> {isDownloading ? 'Exporting...' : 'Export PDF'}</button>
+                      <button onClick={() => window.print()} className="bg-slate-900 text-white p-3 rounded-2xl shadow-xl hover:bg-black transition-all"><Printer size={20}/></button>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <button disabled={isDownloading} onClick={() => handleDownloadPDF(`${activeInvoice.invoiceNumber}.pdf`)} className={`bg-emerald-600 text-white px-10 py-4 rounded-2xl font-black uppercase text-xs flex items-center gap-2 shadow-xl hover:bg-emerald-700 transition-all active:scale-95 ${isDownloading ? 'opacity-50' : ''}`}><Download size={18}/> {isDownloading ? 'Exporting...' : 'Download PDF'}</button>
-                    <button onClick={() => window.print()} className="bg-slate-900 text-white p-4 rounded-2xl shadow-xl hover:bg-black transition-all"><Printer size={20}/></button>
+                  <div className="flex justify-center"><InvoiceDocument invoice={activeInvoice} /></div>
+               </div>
+
+               {/* Right Style Slider Sidebar */}
+               <div className="no-print w-80 bg-white border-l border-slate-200 h-full flex flex-col animate-in slide-in-from-right duration-500">
+                  <div className="p-6 border-b border-slate-100 bg-slate-50 flex items-center gap-3">
+                    <div className="p-2 bg-emerald-500 rounded-lg text-white"><PaletteIcon size={20}/></div>
+                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Style Selection Slider</h3>
+                  </div>
+                  <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scroll">
+                    {STANDARD_THEMES.map(t => (
+                      <button 
+                        key={t.id} 
+                        onClick={() => updateTheme(t.id)} 
+                        className={`w-full group p-4 rounded-2xl border-2 transition-all text-left flex items-start gap-4 ${activeInvoice.templateConfig?.theme === t.id ? 'bg-emerald-50 border-emerald-500' : 'bg-white border-transparent hover:border-slate-100 hover:bg-slate-50'}`}
+                      >
+                         <div className={`p-3 rounded-xl ${t.color} text-white shadow-md group-hover:scale-110 transition-transform`}><t.icon size={20}/></div>
+                         <div>
+                            <p className={`text-xs font-black uppercase tracking-tight ${activeInvoice.templateConfig?.theme === t.id ? 'text-emerald-700' : 'text-slate-900'}`}>{t.label}</p>
+                            <p className="text-[10px] font-medium text-slate-400 leading-tight mt-1">{t.desc}</p>
+                         </div>
+                      </button>
+                    ))}
                   </div>
                </div>
-               <div className="flex justify-center"><InvoiceDocument invoice={activeInvoice} /></div>
             </div>
           )}
 
@@ -904,55 +852,6 @@ const App: React.FC = () => {
                  <input className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" placeholder="Trucker Name" value={manualBooking.trucker} onChange={e => setManualBooking({...manualBooking, trucker: e.target.value})} />
                </div>
                <button type="submit" className="w-full bg-emerald-600 text-white py-4 rounded-xl font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all">Save Booking</button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {showActionModal && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl p-10 space-y-8 relative">
-            <button onClick={() => setShowActionModal(false)} className="absolute top-8 right-8 text-slate-300 hover:text-slate-900 transition-colors"><X size={24}/></button>
-            <div className="flex items-center gap-4"><div className="bg-emerald-100 p-3 rounded-2xl text-emerald-600"><Activity size={28}/></div><div><h3 className="text-3xl font-black text-slate-900 tracking-tight">Advanced Actions</h3><p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">{selectedIds.size} selections active</p></div></div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <button onClick={() => executeInstantPrint()} className="group p-6 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[2rem] flex flex-col gap-4 transition-all shadow-lg active:scale-95"><div className="bg-white/20 w-12 h-12 rounded-xl flex items-center justify-center"><Printer size={24}/></div><div className="text-left"><h4 className="font-black uppercase text-sm">Instant Print All</h4><p className="text-white/60 text-[10px] font-medium leading-relaxed">Direct path to physical output</p></div></button>
-              <button onClick={() => executeInvoiceGeneration()} className="group p-6 bg-slate-900 hover:bg-black text-white rounded-[2rem] flex flex-col gap-4 transition-all shadow-lg active:scale-95"><div className="bg-white/10 w-12 h-12 rounded-xl flex items-center justify-center"><Eye size={24}/></div><div className="text-left"><h4 className="font-black uppercase text-sm">Batch Preview</h4><p className="text-white/50 text-[10px] font-medium leading-relaxed">Inspect before finalization</p></div></button>
-              <button onClick={() => executeBulkStatusUpdate('BILLED')} className="group p-6 bg-white border-2 border-slate-100 hover:border-blue-500 rounded-[2rem] flex flex-col gap-4 transition-all active:scale-95"><div className="bg-slate-50 w-12 h-12 rounded-xl flex items-center justify-center"><CheckCircle size={24}/></div><div className="text-left"><h4 className="font-black uppercase text-sm text-slate-900">Mark as Billed</h4><p className="text-slate-400 text-[10px] font-medium leading-relaxed">Status update without invoices</p></div></button>
-              <button onClick={() => executeBulkStatusUpdate('PENDING')} className="group p-6 bg-white border-2 border-slate-100 hover:border-orange-500 rounded-[2rem] flex flex-col gap-4 transition-all active:scale-95"><div className="bg-slate-50 w-12 h-12 rounded-xl flex items-center justify-center"><RotateCcw size={24}/></div><div className="text-left"><h4 className="font-black uppercase text-sm text-slate-900">Revert to Pending</h4><p className="text-slate-400 text-[10px] font-medium leading-relaxed">Unlock for modifications</p></div></button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {editingBooking && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl p-10 space-y-8 relative max-h-[90vh] overflow-y-auto no-scrollbar">
-            <div className="flex justify-between items-center"><div className="flex items-center gap-4"><div className="bg-emerald-100 p-3 rounded-2xl text-emerald-600"><Edit3 size={28}/></div><h3 className="text-3xl font-black text-slate-900 tracking-tight">Edit Entry</h3></div><button onClick={() => setEditingBooking(null)} className="p-3 bg-slate-50 rounded-xl text-slate-400 hover:text-slate-900 transition-colors"><X size={24}/></button></div>
-            <form onSubmit={(e) => { e.preventDefault(); setBookings(prev => prev.map(b => b.id === editingBooking.id ? editingBooking : b)); setEditingBooking(null); }} className="grid grid-cols-2 gap-6">
-               <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Booking Number</label><input required className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={editingBooking.bookingNo} onChange={e => setEditingBooking({...editingBooking, bookingNo: e.target.value})} /></div>
-               <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Reefer Number</label><input required className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={editingBooking.reeferNumber} onChange={e => setEditingBooking({...editingBooking, reeferNumber: e.target.value})} /></div>
-               <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Rate (EGP)</label><input type="number" step="0.01" className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={editingBooking.rateValue} onChange={e => setEditingBooking({...editingBooking, rateValue: parseFloat(e.target.value) || 0})} /></div>
-               <button type="submit" className="col-span-2 bg-emerald-600 text-white py-5 rounded-2xl font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all"><Save size={18}/> Commit Changes</button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {showAddCustomerModal && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl p-10 space-y-8">
-            <div className="flex justify-between items-center"><h3 className="text-3xl font-black text-slate-900 tracking-tight">Register Client</h3><button onClick={() => setShowAddCustomerModal(false)}><X/></button></div>
-            <form onSubmit={handleAddCustomer} className="space-y-4">
-               <input required className="w-full bg-slate-50 p-4 rounded-xl font-bold" placeholder="Client Company Name" value={newCustomer.name} onChange={e => setNewCustomer({...newCustomer, name: e.target.value})} />
-               <div className="grid grid-cols-2 gap-4">
-                 <input className="w-full bg-slate-50 p-4 rounded-xl font-bold" placeholder="Prefix" value={newCustomer.prefix} onChange={e => setNewCustomer({...newCustomer, prefix: e.target.value})} />
-                 <input type="number" className="w-full bg-slate-50 p-4 rounded-xl font-bold" placeholder="Start Seq" value={newCustomer.nextNumber} onChange={e => setNewCustomer({...newCustomer, nextNumber: parseInt(e.target.value) || 1})} />
-               </div>
-               <div className="space-y-1">
-                 <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Default Due Date</label>
-                 <input type="date" className="w-full bg-slate-50 p-4 rounded-xl font-bold" value={newCustomer.dueDate} onChange={e => setNewCustomer({...newCustomer, dueDate: e.target.value})} />
-               </div>
-               <button type="submit" className="w-full bg-emerald-600 text-white py-4 rounded-xl font-black uppercase tracking-widest">Register Client</button>
             </form>
           </div>
         </div>

@@ -3,7 +3,7 @@ import React, { useMemo } from 'react';
 import { Invoice, Booking, TemplateFields, InvoiceTheme, CustomTheme } from '../types';
 import { formatCurrency } from '../utils/formatters';
 import { 
-  Anchor, Briefcase, Clock, Truck, Package, Square, ArrowRight, Heart, FileText, Info, Phone, Globe, Landmark, Mail, Hash, Box, Layers, Layout as LayoutIcon, MapPin, ShieldCheck, User
+  Anchor, Briefcase, Clock, Truck, Package, Square, ArrowRight, Heart, FileText, Info, Phone, Globe, Landmark, Mail, Hash, Box, Layers, Layout as LayoutIcon, MapPin, ShieldCheck, User, Zap, Terminal, Activity, Globe2
 } from 'lucide-react';
 
 interface InvoiceDocumentProps {
@@ -19,7 +19,7 @@ interface ThemeConfig {
   border: string;
   font: string;
   radius: string;
-  layout: 'classic' | 'modern' | 'industrial' | 'split' | 'minimal' | 'sidebar' | 'bold' | 'centered' | 'cards' | 'blueprint' | 'elegant';
+  layout: 'classic' | 'modern' | 'industrial' | 'split' | 'minimal' | 'sidebar' | 'bold' | 'centered' | 'cards' | 'blueprint' | 'elegant' | 'dark' | 'brutalist' | 'airport' | 'eco';
   tableStyle: 'grid' | 'clean' | 'striped' | 'heavy' | 'glass';
   headerStyle: 'standard' | 'centered' | 'badge' | 'sidebar';
 }
@@ -41,61 +41,29 @@ const getThemeConfig = (theme: InvoiceTheme, customData?: CustomTheme): ThemeCon
   }
 
   const configs: Record<string, Partial<ThemeConfig>> = {
-    'logistics-grid': { 
-      accent: 'bg-emerald-600', secondary: 'text-emerald-700', bg: 'bg-white', border: 'border-slate-900', 
-      font: 'font-sans', radius: 'rounded-none', layout: 'classic', tableStyle: 'heavy', headerStyle: 'standard' 
-    },
-    'corporate': { 
-      accent: 'bg-slate-900', secondary: 'text-slate-600', bg: 'bg-white', border: 'border-slate-200', 
-      font: 'font-sans', radius: 'rounded-lg', layout: 'split', tableStyle: 'clean', headerStyle: 'badge' 
-    },
-    'luxury-gold': { 
-      accent: 'bg-amber-600', secondary: 'text-amber-500', bg: 'bg-white', border: 'border-amber-200', 
-      font: 'font-playfair', radius: 'rounded-none', layout: 'centered', tableStyle: 'clean', headerStyle: 'centered' 
-    },
-    'vintage': { 
-      accent: 'bg-amber-800', secondary: 'text-amber-900', bg: 'bg-white', border: 'border-amber-900/20', 
-      font: 'font-serif-bask', radius: 'rounded-none', layout: 'classic', tableStyle: 'grid', headerStyle: 'standard' 
-    },
-    'technical-draft': { 
-      accent: 'bg-slate-700', secondary: 'text-slate-500', bg: 'bg-white', border: 'border-slate-300', 
-      font: 'font-mono-jb', radius: 'rounded-none', layout: 'industrial', tableStyle: 'grid', headerStyle: 'standard' 
-    },
-    'swiss-modern': { 
-      accent: 'bg-red-600', secondary: 'text-black', bg: 'bg-white', border: 'border-black', 
-      font: 'font-bebas', radius: 'rounded-none', layout: 'bold', tableStyle: 'heavy', headerStyle: 'centered' 
-    },
-    'minimalist': {
-      accent: 'bg-slate-900', secondary: 'text-slate-400', bg: 'bg-white', border: 'border-transparent',
-      font: 'font-grotesk', radius: 'rounded-none', layout: 'minimal', tableStyle: 'clean', headerStyle: 'badge'
-    },
-    'sidebar-pro': {
-      accent: 'bg-blue-600', secondary: 'text-blue-800', bg: 'bg-white', border: 'border-slate-100',
-      font: 'font-sans', radius: 'rounded-2xl', layout: 'sidebar', tableStyle: 'clean', headerStyle: 'sidebar'
-    },
-    'modern-cards': {
-      accent: 'bg-purple-600', secondary: 'text-purple-700', bg: 'bg-white', border: 'border-purple-100',
-      font: 'font-sans', radius: 'rounded-3xl', layout: 'cards', tableStyle: 'clean', headerStyle: 'badge'
-    },
-    'blueprint': {
-      accent: 'bg-cyan-600', secondary: 'text-cyan-700', bg: 'bg-white', border: 'border-cyan-200',
-      font: 'font-mono-jb', layout: 'blueprint', tableStyle: 'grid', headerStyle: 'standard'
-    },
-    'elegant': {
-      accent: 'bg-rose-400', secondary: 'text-rose-600', bg: 'bg-white', border: 'border-rose-100',
-      font: 'font-serif-bask', layout: 'elegant', tableStyle: 'clean', headerStyle: 'centered'
-    },
-    'industrial': {
-      accent: 'bg-zinc-900', secondary: 'text-zinc-600', bg: 'bg-white', border: 'border-zinc-300',
-      font: 'font-bebas', layout: 'industrial', tableStyle: 'heavy', headerStyle: 'badge'
-    }
+    'logistics-grid': { accent: 'bg-emerald-600', secondary: 'text-emerald-700', bg: 'bg-white', border: 'border-slate-900', font: 'font-sans', radius: 'rounded-none', layout: 'classic', tableStyle: 'heavy' },
+    'corporate': { accent: 'bg-slate-900', secondary: 'text-slate-600', bg: 'bg-white', border: 'border-slate-200', font: 'font-sans', radius: 'rounded-lg', layout: 'split', tableStyle: 'clean' },
+    'luxury-gold': { accent: 'bg-amber-600', secondary: 'text-amber-500', bg: 'bg-white', border: 'border-amber-200', font: 'font-playfair', radius: 'rounded-none', layout: 'centered', tableStyle: 'clean' },
+    'vintage': { accent: 'bg-amber-800', secondary: 'text-amber-900', bg: 'bg-white', border: 'border-amber-900/20', font: 'font-serif-bask', radius: 'rounded-none', layout: 'classic', tableStyle: 'grid' },
+    'technical-draft': { accent: 'bg-slate-700', secondary: 'text-slate-500', bg: 'bg-white', border: 'border-slate-300', font: 'font-mono-jb', radius: 'rounded-none', layout: 'industrial', tableStyle: 'grid' },
+    'swiss-modern': { accent: 'bg-red-600', secondary: 'text-black', bg: 'bg-white', border: 'border-black', font: 'font-bebas', radius: 'rounded-none', layout: 'bold', tableStyle: 'heavy' },
+    'minimalist': { accent: 'bg-slate-900', secondary: 'text-slate-400', bg: 'bg-white', border: 'border-transparent', font: 'font-grotesk', radius: 'rounded-none', layout: 'minimal', tableStyle: 'clean' },
+    'sidebar-pro': { accent: 'bg-blue-600', secondary: 'text-blue-800', bg: 'bg-white', border: 'border-slate-100', font: 'font-sans', radius: 'rounded-2xl', layout: 'sidebar', tableStyle: 'clean' },
+    'modern-cards': { accent: 'bg-purple-600', secondary: 'text-purple-700', bg: 'bg-white', border: 'border-purple-100', font: 'font-sans', radius: 'rounded-3xl', layout: 'cards', tableStyle: 'clean' },
+    'blueprint': { accent: 'bg-cyan-600', secondary: 'text-cyan-700', bg: 'bg-white', border: 'border-cyan-200', font: 'font-mono-jb', layout: 'blueprint', tableStyle: 'grid' },
+    'elegant': { accent: 'bg-rose-400', secondary: 'text-rose-600', bg: 'bg-white', border: 'border-rose-100', font: 'font-serif-bask', layout: 'elegant', tableStyle: 'clean' },
+    'industrial': { accent: 'bg-zinc-900', secondary: 'text-zinc-600', bg: 'bg-white', border: 'border-zinc-300', font: 'font-bebas', layout: 'industrial', tableStyle: 'heavy' },
+    'dark-mode-pro': { accent: 'bg-emerald-500', secondary: 'text-emerald-400', bg: 'bg-slate-950', text: 'text-white', border: 'border-slate-800', font: 'font-grotesk', layout: 'dark', tableStyle: 'heavy' },
+    'brutalist': { accent: 'bg-yellow-400', secondary: 'text-black', bg: 'bg-white', border: 'border-black', font: 'font-bebas', layout: 'brutalist', tableStyle: 'heavy' },
+    'airport-terminal': { accent: 'bg-black', secondary: 'text-yellow-400', bg: 'bg-white', border: 'border-slate-200', font: 'font-mono-jb', layout: 'airport', tableStyle: 'grid' },
+    'eco-freight': { accent: 'bg-lime-600', secondary: 'text-lime-800', bg: 'bg-white', border: 'border-lime-200', font: 'font-sans', layout: 'eco', tableStyle: 'clean' },
   };
 
   const base = configs[theme] || configs['logistics-grid'];
   return {
     accent: base.accent!,
     secondary: base.secondary!,
-    bg: 'bg-white',
+    bg: base.bg || 'bg-white',
     text: base.text || 'text-slate-900',
     border: base.border!,
     font: base.font!,
@@ -131,7 +99,6 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
   const t = getThemeConfig(themeName, config.customThemeData);
   const profile = invoice.userProfile;
 
-  // Extract common Shipper and Trucker if they are universal for the invoice items
   const mainShipper = invoice.items[0]?.shipper || '---';
   const mainTrucker = invoice.items[0]?.trucker || '---';
 
@@ -165,109 +132,157 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
     height: `${100 / config.contentScale}%`
   };
 
-  // Prominent Logistics Summary Section
   const LogisticsInfoBanner = () => (
     <div style={spacingStyle} className={`grid grid-cols-2 gap-4 border-2 ${t.border} p-5 relative overflow-hidden group`}>
       <div className="absolute top-0 right-0 p-2 opacity-5">
         <Truck size={60} />
       </div>
       <div>
-        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Official Shipper</p>
-        <p className="text-xl font-black uppercase text-slate-900">{mainShipper}</p>
+        <p className={`text-[10px] font-black uppercase tracking-widest ${t.layout === 'dark' ? 'text-slate-500' : 'text-slate-400'} mb-1`}>Official Shipper</p>
+        <p className={`text-xl font-black uppercase ${t.text}`}>{mainShipper}</p>
       </div>
-      <div className="border-l-2 border-slate-100 pl-6">
-        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Contracted Trucker</p>
-        <p className="text-xl font-black uppercase text-slate-900">{mainTrucker}</p>
+      <div className={`border-l-2 ${t.layout === 'dark' ? 'border-slate-800' : 'border-slate-100'} pl-6`}>
+        <p className={`text-[10px] font-black uppercase tracking-widest ${t.layout === 'dark' ? 'text-slate-500' : 'text-slate-400'} mb-1`}>Contracted Trucker</p>
+        <p className={`text-xl font-black uppercase ${t.text}`}>{mainTrucker}</p>
       </div>
     </div>
   );
 
   const InvoiceTable = ({ noHeader = false, variant = 'standard' }: { noHeader?: boolean, variant?: string }) => (
     <div className="w-full relative z-10 shrink-0">
-      {variant === 'cards' ? (
-        <div className="space-y-4">
+      <table className={`w-full text-left table-auto border-collapse ${t.tableStyle === 'grid' ? 'border-2' : ''} ${t.tableStyle === 'heavy' ? 'border-t-8 border-slate-950' : ''}`}>
+        {!noHeader && (
+          <thead>
+            <tr className={`border-b-2 ${t.layout === 'dark' ? 'border-slate-700' : 'border-slate-950'}`}>
+              <th className={`py-3 px-4 text-[10px] font-black uppercase tracking-widest ${t.layout === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Logistics Itemization</th>
+              <th className={`py-3 px-4 text-[10px] font-black uppercase tracking-widest ${t.layout === 'dark' ? 'text-slate-500' : 'text-slate-400'} text-right`}>Subtotal</th>
+            </tr>
+          </thead>
+        )}
+        <tbody className={`divide-y ${t.layout === 'dark' ? 'divide-slate-800' : 'divide-slate-100'}`}>
           {groupedItems.map((group, idx) => (
-            <div key={idx} className={`p-6 border-2 ${t.border} rounded-2xl flex justify-between items-center group transition-all hover:bg-slate-50`}>
-              <div>
-                <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{group[0].bookingNo}</p>
-                <div className="flex items-center gap-3">
-                  <h4 className="text-xl font-black uppercase">{group[0].customer}</h4>
-                  <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[9px] font-black rounded uppercase">
-                    {group[0].goPort} <ArrowRight size={10}/> {group[0].giPort}
+            <tr key={idx} className="break-inside-avoid">
+              <td className="py-4 px-4 align-top">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className={`w-1 h-5 ${t.accent}`}></div>
+                  <p className={`font-black text-xl uppercase ${t.text}`}>{group[0].bookingNo}</p>
+                  <div className={`flex items-center gap-2 py-0.5 px-2 rounded ${t.layout === 'dark' ? 'bg-slate-900 border-slate-800 text-slate-400' : 'bg-slate-50 border-slate-100 text-slate-500'} text-[9px] font-black uppercase`}>
+                     <span>{group[0].goPort}</span>
+                     <ArrowRight size={10} className="text-emerald-500" />
+                     <span>{group[0].giPort}</span>
                   </div>
                 </div>
-                <div className="mt-3 flex gap-2">
+                <div className="ml-4 flex flex-wrap gap-1.5">
                   {group.map(u => (
-                    <span key={u.id} className="text-[10px] font-bold px-2 py-0.5 bg-slate-100 rounded text-slate-600">{u.reeferNumber}</span>
+                    <span key={u.id} className={`text-[10px] font-black px-2 py-0.5 border ${t.layout === 'dark' ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white'} rounded-sm uppercase`}>
+                      {u.reeferNumber}
+                    </span>
                   ))}
                 </div>
-              </div>
-              <div className="text-right">
-                <p className="text-2xl font-black tracking-tight">{formatCurrency(group.reduce((a,c)=>a+c.rateValue,0), invoice.currency)}</p>
-              </div>
-            </div>
+              </td>
+              <td className="py-4 px-4 text-right align-top">
+                <p className={`text-xl font-black tracking-tight ${t.text}`}>
+                  {formatCurrency(group.reduce((a,c)=>a+c.rateValue,0), invoice.currency)}
+                </p>
+              </td>
+            </tr>
           ))}
-        </div>
-      ) : (
-        <table className={`w-full text-left table-auto border-collapse ${t.tableStyle === 'grid' ? 'border-2' : ''} ${t.tableStyle === 'heavy' ? 'border-t-8 border-slate-950' : ''}`}>
-          {!noHeader && (
-            <thead>
-              <tr className={`border-b-2 border-slate-950`}>
-                <th className="py-3 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Logistics Itemization</th>
-                <th className="py-3 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Subtotal</th>
-              </tr>
-            </thead>
-          )}
-          <tbody className={`divide-y divide-slate-100`}>
-            {groupedItems.map((group, idx) => (
-              <tr key={idx} className="break-inside-avoid">
-                <td className="py-4 px-4 align-top">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className={`w-1 h-5 ${t.accent}`}></div>
-                    {/* Increased booking font size to xl to match shipper/trucker */}
-                    <p className="font-black text-xl uppercase">{group[0].bookingNo}</p>
-                    <div className="flex items-center gap-2 py-0.5 px-2 rounded bg-slate-50 border border-slate-100 text-[9px] font-black text-slate-500 uppercase">
-                       <span>{group[0].goPort}</span>
-                       <ArrowRight size={10} className="text-emerald-500" />
-                       <span>{group[0].giPort}</span>
-                    </div>
-                  </div>
-                  <div className="ml-4 flex flex-wrap gap-1.5">
-                    {group.map(u => (
-                      <span key={u.id} className="text-[10px] font-black px-2 py-0.5 border border-slate-200 rounded-sm bg-white uppercase">
-                        {u.reeferNumber}
-                      </span>
-                    ))}
-                  </div>
-                </td>
-                <td className="py-4 px-4 text-right align-top">
-                  {/* Increased rate font size to xl to match shipper/trucker */}
-                  <p className="text-xl font-black tracking-tight">
-                    {formatCurrency(group.reduce((a,c)=>a+c.rateValue,0), invoice.currency)}
-                  </p>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+        </tbody>
+      </table>
     </div>
   );
 
   const renderLayout = () => {
     switch (t.layout) {
-      case 'centered': return <><CenteredLayout /><LogisticsInfoBanner /></>;
-      case 'split': return <><SplitLayout /><LogisticsInfoBanner /></>;
-      case 'industrial': return <><IndustrialLayout /></>;
-      case 'bold': return <><SwissBoldLayout /><LogisticsInfoBanner /></>;
-      case 'sidebar': return <><SidebarLayout /></>;
-      case 'cards': return <><CardsLayout /></>;
-      case 'blueprint': return <><BlueprintLayout /><LogisticsInfoBanner /></>;
-      case 'elegant': return <><ElegantLayout /><LogisticsInfoBanner /></>;
-      case 'minimal': return <><MinimalLayout /><LogisticsInfoBanner /></>;
-      default: return <><ClassicLayout /><LogisticsInfoBanner /></>;
+      case 'dark': return <DarkLayout />;
+      case 'brutalist': return <BrutalistLayout />;
+      case 'airport': return <AirportLayout />;
+      case 'eco': return <EcoLayout />;
+      case 'centered': return <><CenteredLayout /><LogisticsInfoBanner /><InvoiceTable /></>;
+      case 'split': return <><SplitLayout /><LogisticsInfoBanner /><InvoiceTable /></>;
+      case 'industrial': return <IndustrialLayout />;
+      case 'bold': return <><SwissBoldLayout /><LogisticsInfoBanner /><InvoiceTable /></>;
+      case 'sidebar': return <SidebarLayout />;
+      case 'cards': return <CardsLayout />;
+      case 'blueprint': return <><BlueprintLayout /><LogisticsInfoBanner /><InvoiceTable /></>;
+      case 'elegant': return <><ElegantLayout /><LogisticsInfoBanner /><InvoiceTable /></>;
+      case 'minimal': return <><MinimalLayout /><LogisticsInfoBanner /><InvoiceTable /></>;
+      default: return <><ClassicLayout /><LogisticsInfoBanner /><InvoiceTable /></>;
     }
   };
+
+  const DarkLayout = () => (
+    <div className="flex flex-col h-full">
+      <div style={spacingStyle} className="flex justify-between items-start border-b-2 border-slate-800 pb-8 pt-6">
+        <div>
+          <h1 className="text-4xl font-black uppercase tracking-tight text-emerald-500 leading-none">{profile.companyName}</h1>
+          <p className="text-xs font-bold text-slate-400 mt-2 uppercase tracking-widest">{profile.ownerName}</p>
+        </div>
+        <div className="text-right">
+          <p className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.3em] mb-1">Electronic Bill</p>
+          <p className="text-3xl font-black font-mono">{invoice.invoiceNumber}</p>
+        </div>
+      </div>
+      <LogisticsInfoBanner />
+      <div className="flex-1 mt-6"><InvoiceTable /></div>
+    </div>
+  );
+
+  const BrutalistLayout = () => (
+    <div className="flex flex-col h-full">
+      <div style={spacingStyle} className="bg-yellow-400 p-8 border-4 border-black">
+        <h1 className="text-7xl font-bebas leading-none tracking-tighter">{profile.companyName}</h1>
+        <div className="flex justify-between items-end mt-4">
+          <p className="text-2xl font-bebas uppercase tracking-widest">{profile.ownerName}</p>
+          <p className="text-5xl font-bebas">#{invoice.invoiceNumber}</p>
+        </div>
+      </div>
+      <LogisticsInfoBanner />
+      <InvoiceTable />
+    </div>
+  );
+
+  const AirportLayout = () => (
+    <div className="flex flex-col h-full border-x-4 border-black px-8 py-10">
+      <div style={spacingStyle} className="bg-black text-yellow-400 p-6 rounded-t-xl">
+        <div className="flex justify-between items-center">
+          <div className="flex gap-4 items-center">
+            <Globe2 size={40} />
+            <div>
+              <h1 className="text-4xl font-mono font-black uppercase tracking-tighter">{profile.companyName}</h1>
+              <p className="text-xs font-mono font-bold">TERMINAL: OPERATIONS_A</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-xs font-mono font-black">MANIFEST_NO: {invoice.invoiceNumber}</p>
+            <p className="text-xs font-mono font-bold">{invoice.date}</p>
+          </div>
+        </div>
+      </div>
+      <LogisticsInfoBanner />
+      <InvoiceTable />
+    </div>
+  );
+
+  const EcoLayout = () => (
+    <div className="flex flex-col h-full px-4">
+      <div style={spacingStyle} className="border-b-4 border-lime-600 pb-6 pt-6 flex justify-between items-end">
+        <div>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-lime-600 rounded-full flex items-center justify-center text-white"><Package size={20}/></div>
+            <h1 className="text-3xl font-black text-lime-900 tracking-tight uppercase leading-none">{profile.companyName}</h1>
+          </div>
+          <p className="text-xs font-bold text-lime-700 mt-2 uppercase ml-14">{profile.ownerName}</p>
+        </div>
+        <div className="text-right">
+           <p className="text-[10px] font-black uppercase tracking-widest text-lime-400">Freight Bill</p>
+           <p className="text-2xl font-black text-lime-900">{invoice.invoiceNumber}</p>
+        </div>
+      </div>
+      <LogisticsInfoBanner />
+      <InvoiceTable />
+    </div>
+  );
 
   const ClassicLayout = () => (
     <>
@@ -301,7 +316,6 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
            {fields.showTaxId && <p className="text-[9px] font-black uppercase opacity-40">Tax ID: {profile.taxId}</p>}
         </div>
       </div>
-      <InvoiceTable />
     </>
   );
 
@@ -330,7 +344,6 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
             <p className="text-[9px] font-bold uppercase text-amber-500 underline">Due: {invoice.dueDate}</p>
          </div>
       </div>
-      <InvoiceTable />
     </div>
   );
 
@@ -354,16 +367,7 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
       </div>
       <div className="col-span-9 bg-white p-12">
         <h2 className="text-4xl font-black uppercase mb-12 tracking-tight">Fleet Operational Invoice</h2>
-        <div className="grid grid-cols-2 gap-8 mb-8">
-            <div className="bg-slate-50 p-6 rounded-2xl">
-              <p className="text-[10px] font-black uppercase text-slate-400 mb-2">Primary Shipper</p>
-              <p className="text-2xl font-black uppercase">{mainShipper}</p>
-            </div>
-            <div className="bg-slate-50 p-6 rounded-2xl">
-              <p className="text-[10px] font-black uppercase text-slate-400 mb-2">Trucker Partner</p>
-              <p className="text-2xl font-black uppercase">{mainTrucker}</p>
-            </div>
-        </div>
+        <LogisticsInfoBanner />
         <InvoiceTable noHeader={true} />
       </div>
     </div>
@@ -381,18 +385,9 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
           <p className="text-2xl font-black text-purple-900 leading-none">{invoice.invoiceNumber}</p>
         </div>
       </div>
-      <div className="mb-6 grid grid-cols-2 gap-4">
-          <div className="p-4 border-2 border-purple-100 rounded-2xl">
-             <p className="text-[10px] font-black uppercase text-purple-400 mb-1">Shipper</p>
-             <p className="font-black text-lg">{mainShipper}</p>
-          </div>
-          <div className="p-4 border-2 border-purple-100 rounded-2xl">
-             <p className="text-[10px] font-black uppercase text-purple-400 mb-1">Trucker</p>
-             <p className="font-black text-lg">{mainTrucker}</p>
-          </div>
-      </div>
+      <LogisticsInfoBanner />
       <div className="flex-1">
-        <InvoiceTable variant="cards" />
+        <InvoiceTable />
       </div>
     </div>
   );
@@ -422,9 +417,6 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
           <p className="text-[10px] opacity-60 mt-1">{profile.title || 'FLEET OPERATIONS MANAGER'}</p>
         </div>
       </div>
-      <div className="flex-1">
-        <InvoiceTable />
-      </div>
     </div>
   );
 
@@ -447,9 +439,6 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
           <p className="text-xs italic opacity-40 mt-1">Date of Issue: {invoice.date}</p>
         </div>
       </div>
-      <div className="flex-1 text-left">
-        <InvoiceTable />
-      </div>
     </div>
   );
 
@@ -469,15 +458,11 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
         <p className="text-xs font-black text-slate-300 uppercase mb-4 tracking-widest">To</p>
         <p className="text-4xl font-black tracking-tighter uppercase leading-none">{invoice.customerName}</p>
       </div>
-      <div className="flex-1">
-        <InvoiceTable noHeader={true} />
-      </div>
     </div>
   );
 
   const IndustrialLayout = () => (
     <div className="grid grid-cols-12 border-4 border-slate-900 h-full overflow-hidden">
-       {/* Header Cell */}
        <div className="col-span-7 border-b-4 border-r-4 border-slate-900 p-6 bg-white">
           <div className="flex items-start gap-4">
             {profile.logoUrl && <img src={profile.logoUrl} className="h-16 w-16 object-contain" />}
@@ -486,19 +471,11 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
               <p className="text-[10px] font-mono font-bold bg-slate-900 text-white px-2 inline-block mt-2">PRINCIPAL: {profile.ownerName}</p>
             </div>
           </div>
-          <p className="text-[10px] font-mono font-bold mt-4 opacity-70 whitespace-pre-wrap">{profile.address}</p>
        </div>
-       
        <div className="col-span-5 border-b-4 border-slate-900 p-6 bg-slate-50 flex flex-col justify-center">
           <p className="text-[9px] font-mono font-black uppercase opacity-40">Document Serial</p>
           <p className="text-3xl font-mono font-black">#{invoice.invoiceNumber}</p>
-          <div className="mt-4 flex gap-4 text-[9px] font-mono font-bold">
-             <span>D: {invoice.date}</span>
-             <span className="text-red-600">DUE: {invoice.dueDate}</span>
-          </div>
        </div>
-
-       {/* SHIPPER/TRUCKER BLOCK (Industrial) */}
        <div className="col-span-12 border-b-4 border-slate-900 p-6 grid grid-cols-2 bg-slate-900 text-white">
           <div className="border-r-2 border-white/20 pr-6">
             <p className="text-[9px] font-mono font-black uppercase opacity-60 mb-1">Logistics: Shipper</p>
@@ -509,23 +486,7 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
             <p className="text-2xl font-mono font-black uppercase">{mainTrucker}</p>
           </div>
        </div>
-
-       {/* Client Cell */}
-       <div className="col-span-12 border-b-4 border-slate-900 p-6 grid grid-cols-2">
-          <div className="border-r-2 border-slate-900/20 pr-6">
-            <p className="text-[9px] font-mono font-black uppercase opacity-40 mb-2">Billing To</p>
-            <p className="text-2xl font-mono font-black uppercase">{invoice.customerName}</p>
-            <p className="text-xs font-mono font-bold opacity-60 mt-1">{invoice.customerAddress}</p>
-          </div>
-          <div className="pl-6 flex flex-col justify-end">
-             {profile.taxId && <p className="text-xs font-mono font-bold">REG_ID: {profile.taxId}</p>}
-             {profile.website && <p className="text-xs font-mono font-bold">WWW: {profile.website}</p>}
-          </div>
-       </div>
-
-       <div className="col-span-12 p-2 bg-white flex-1">
-          <InvoiceTable noHeader={true} />
-       </div>
+       <div className="col-span-12 p-2 bg-white flex-1"><InvoiceTable noHeader={true} /></div>
     </div>
   );
 
@@ -533,31 +494,17 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
     <div className="flex flex-col h-full bg-white px-4">
       <div className="flex justify-between items-end border-b-[12px] border-black pb-4 pt-10">
         <h1 className="text-7xl font-bebas leading-none tracking-tighter">INVOICE</h1>
-        <div className="text-right">
-          <p className="text-5xl font-bebas leading-none italic">{invoice.invoiceNumber}</p>
-        </div>
+        <div className="text-right"><p className="text-5xl font-bebas leading-none italic">{invoice.invoiceNumber}</p></div>
       </div>
-      
       <div className="grid grid-cols-12 gap-4 mt-8">
         <div className="col-span-8 space-y-2">
           <h2 className="text-5xl font-bebas leading-none">{profile.companyName}</h2>
           <p className="text-xl font-bebas text-red-600 tracking-widest">{profile.ownerName}</p>
-          <p className="text-sm font-bold uppercase mt-4 max-w-sm">{profile.address}</p>
         </div>
         <div className="col-span-4 bg-black text-white p-6 flex flex-col justify-between">
-          <div>
-            <p className="text-[10px] uppercase font-black tracking-widest opacity-50 mb-4">Customer</p>
-            <p className="text-2xl font-bebas tracking-wide uppercase">{invoice.customerName}</p>
-          </div>
-          <div className="space-y-1 mt-6">
-            <p className="text-[10px] font-black uppercase">Date: {invoice.date}</p>
-            <p className="text-[10px] font-black uppercase text-red-500">Payment Required: {invoice.dueDate}</p>
-          </div>
+          <p className="text-2xl font-bebas tracking-wide uppercase">{invoice.customerName}</p>
+          <p className="text-[10px] font-black uppercase">Date: {invoice.date}</p>
         </div>
-      </div>
-
-      <div className="mt-12 flex-1">
-        <InvoiceTable />
       </div>
     </div>
   );
@@ -568,52 +515,25 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
         <div className="space-y-1">
           <h1 className="text-3xl font-black tracking-tighter uppercase">{profile.companyName}</h1>
           <p className="text-xs font-black uppercase tracking-[0.3em] text-emerald-400">{profile.ownerName}</p>
-          <div className="flex gap-4 mt-2 opacity-50 text-[9px] font-bold uppercase">
-            <span>{profile.email}</span>
-            <span>{profile.phone}</span>
-          </div>
         </div>
         <div className="text-right">
           <p className="text-4xl font-black tracking-tight leading-none">INVOICE</p>
           <p className="text-lg font-mono text-emerald-400">#{invoice.invoiceNumber}</p>
         </div>
       </div>
-
-      <div style={spacingStyle} className="grid grid-cols-12 gap-12 items-start px-4">
-         <div className="col-span-4 space-y-6">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-2">Customer Details</p>
-              <p className="text-xl font-black uppercase">{invoice.customerName}</p>
-              <p className="text-xs opacity-60 mt-1 leading-relaxed">{invoice.customerAddress}</p>
-            </div>
-            <div className="pt-6 border-t border-slate-100">
-               <div className="flex justify-between text-xs font-bold mb-1">
-                 <span className="opacity-40 uppercase">Issue Date</span>
-                 <span>{invoice.date}</span>
-               </div>
-               <div className="flex justify-between text-xs font-bold">
-                 <span className="opacity-40 uppercase">Payment Due</span>
-                 <span className="text-red-600">{invoice.dueDate}</span>
-               </div>
-            </div>
-         </div>
-         <div className="col-span-8">
-            <InvoiceTable />
-         </div>
-      </div>
     </div>
   );
 
   const TotalsSection = () => (
     <div className="mt-8 flex justify-end">
-      <div className={`w-64 p-6 bg-slate-50 border-slate-200 border-2 rounded-3xl flex flex-col gap-2 items-end`}>
-         <div className="flex justify-between w-full text-[10px] font-bold uppercase opacity-60">
+      <div className={`w-64 p-6 ${t.layout === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200'} border-2 rounded-3xl flex flex-col gap-2 items-end`}>
+         <div className={`flex justify-between w-full text-[10px] font-bold uppercase ${t.layout === 'dark' ? 'text-slate-500' : 'opacity-60'}`}>
            <span>Gross Subtotal</span>
            <span>{formatCurrency(invoice.subtotal, invoice.currency)}</span>
          </div>
-         <div className="w-full h-px bg-slate-950/10 my-1"></div>
-         <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">Net Amount Payable</p>
-         <p className="text-3xl font-black tracking-tighter leading-none">{formatCurrency(invoice.total, invoice.currency)}</p>
+         <div className={`w-full h-px ${t.layout === 'dark' ? 'bg-slate-800' : 'bg-slate-950/10'} my-1`}></div>
+         <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${t.layout === 'dark' ? 'text-emerald-500' : 'opacity-40'}`}>Net Amount Payable</p>
+         <p className={`text-3xl font-black tracking-tighter leading-none ${t.text}`}>{formatCurrency(invoice.total, invoice.currency)}</p>
       </div>
     </div>
   );
@@ -627,30 +547,23 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
         <WatermarkLayer />
         {renderLayout()}
         <TotalsSection />
-        <div className="mt-auto pt-10 border-t border-slate-100 flex justify-between items-end">
+        <div className={`mt-auto pt-10 border-t ${t.layout === 'dark' ? 'border-slate-800' : 'border-slate-100'} flex justify-between items-end`}>
            <div className="space-y-4 max-w-lg">
               {fields.showNotes && invoice.notes && (
-                <div className="p-4 bg-slate-50/50 border border-slate-100 rounded-2xl">
+                <div className={`p-4 ${t.layout === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-slate-50/50 border-slate-100'} border rounded-2xl`}>
                   <p className="text-[9px] font-black uppercase tracking-widest text-emerald-600 mb-1 flex items-center gap-1"><Info size={10}/> Official Notes</p>
-                  <p className="text-[10px] font-bold leading-relaxed opacity-60">{invoice.notes}</p>
+                  <p className={`text-[10px] font-bold leading-relaxed ${t.layout === 'dark' ? 'text-slate-400' : 'opacity-60'}`}>{invoice.notes}</p>
                 </div>
               )}
-              <div className="flex flex-col gap-1">
-                <p className="text-[8px] font-black uppercase tracking-[0.4em] opacity-30">NILE FLEET GENSET POWERED BY BEBITO</p>
-              </div>
+              <p className={`text-[8px] font-black uppercase tracking-[0.4em] ${t.layout === 'dark' ? 'text-slate-700' : 'opacity-30'}`}>NILE FLEET GENSET POWERED BY BEBITO</p>
            </div>
            {fields.showSignature && (
              <div className="text-right flex flex-col items-end">
                 {profile.signatureUrl && <img src={profile.signatureUrl} className="h-24 w-auto object-contain mb-[-10px] z-20 pointer-events-none mix-blend-multiply" />}
-                <div className="border-t-2 border-slate-900 pt-2 w-64">
-                  <p className="text-[9px] font-black uppercase tracking-widest opacity-40">Authorized Official</p>
+                <div className={`border-t-2 ${t.layout === 'dark' ? 'border-emerald-500' : 'border-slate-900'} pt-2 w-64`}>
+                  <p className={`text-[9px] font-black uppercase tracking-widest ${t.layout === 'dark' ? 'text-slate-600' : 'opacity-40'}`}>Authorized Official</p>
                   <div className="mt-2 space-y-1">
-                    <p className="text-sm font-black uppercase leading-none">{profile.name}</p>
-                    {profile.title && <p className="text-[9px] font-bold uppercase opacity-60">{profile.title}</p>}
-                  </div>
-                  <div className="mt-3 flex flex-col gap-0.5 border-t border-slate-100 pt-2">
-                    {profile.phone && <p className="text-[7px] font-bold opacity-50 flex items-center justify-end gap-1"><Phone size={8}/> {profile.phone}</p>}
-                    {profile.email && <p className="text-[7px] font-bold opacity-50 flex items-center justify-end gap-1"><Mail size={8}/> {profile.email}</p>}
+                    <p className={`text-sm font-black uppercase leading-none ${t.text}`}>{profile.name}</p>
                   </div>
                 </div>
              </div>
