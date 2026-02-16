@@ -26,14 +26,14 @@ const DEFAULT_COMPANY_LOGO = "https://images.unsplash.com/photo-1586611292717-f8
 
 const STANDARD_THEMES: { id: InvoiceTheme, label: string, desc: string, icon: any, color: string }[] = [
   { id: 'logistics-grid', label: 'Classic Logistics', desc: 'Heavy borders, official grid layout', icon: TableIcon, color: 'bg-emerald-600' },
-  { id: 'dark-mode-pro', label: 'Midnight Pro', desc: 'Elegant dark mode for tech companies', icon: Moon, color: 'bg-slate-900' },
+  { id: 'dark-mode-pro', label: 'Electronic Bill', desc: 'Sleek tech-focused white layout', icon: Smartphone, color: 'bg-slate-900' },
   { id: 'airport-terminal', label: 'Airport Manifest', desc: 'Monospaced flight-board aesthetic', icon: Globe2, color: 'bg-black' },
   { id: 'brutalist', label: 'High Brutalist', desc: 'Bold, heavy, yellow industrial style', icon: Zap, color: 'bg-yellow-400' },
   { id: 'corporate', label: 'Corporate Clean', desc: 'Minimal, business-standard style', icon: Briefcase, color: 'bg-slate-900' },
   { id: 'eco-freight', label: 'Eco Freight', desc: 'Fresh lime and earth tones', icon: Leaf, color: 'bg-lime-600' },
   { id: 'luxury-gold', label: 'Executive Gold', desc: 'Premium serif fonts with gold accents', icon: Award, color: 'bg-amber-500' },
   { id: 'vintage', label: 'Vintage Archive', desc: 'Typewriter fonts on clean white paper', icon: ScrollText, color: 'bg-orange-600' },
-  { id: 'swiss-modern', label: 'Swiss Bold', desc: 'High contrast, bold grotesque font', icon: Grid3X3, color: 'bg-red-600' },
+  { id: 'swiss-modern', label: 'Modern Clean', desc: 'Clean typography, minimal spacing', icon: Layout, color: 'bg-slate-800' },
   { id: 'technical-draft', label: 'Technical Draft', desc: 'Monospace, blueprint technical look', icon: Terminal, color: 'bg-slate-600' },
   { id: 'minimalist', label: 'Ultra Minimal', desc: 'Maximum whitespace, zero borders', icon: Square, color: 'bg-slate-300' },
   { id: 'sidebar-pro', label: 'Left Sidebar', desc: 'Details on side, wide table layout', icon: MoveHorizontal, color: 'bg-blue-600' },
@@ -733,6 +733,16 @@ const App: React.FC = () => {
                           <div className="space-y-1 col-span-2"><label className="text-[10px] font-black text-slate-400 uppercase">Physical Address</label><textarea rows={2} className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none resize-none" value={profile.address} onChange={e => setProfile({...profile, address: e.target.value})} /></div>
                        </div>
                     </div>
+                    
+                    {/* Extra Info Section added to profile for contact details */}
+                    <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100 space-y-8">
+                       <h3 className="text-xl font-black text-slate-900 pb-4 border-b uppercase tracking-tight flex items-center gap-3"><Phone size={22} className="text-blue-500"/> Contact Records</h3>
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Official Phone</label><input className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={profile.phone || ''} onChange={e => setProfile({...profile, phone: e.target.value})} /></div>
+                          <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase">Official Email</label><input className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={profile.email} onChange={e => setProfile({...profile, email: e.target.value})} /></div>
+                          <div className="space-y-1 col-span-2"><label className="text-[10px] font-black text-slate-400 uppercase">Official Website</label><input className="w-full bg-slate-50 p-4 rounded-xl font-bold border-2 border-transparent focus:border-emerald-600 outline-none" value={profile.website || ''} onChange={e => setProfile({...profile, website: e.target.value})} /></div>
+                       </div>
+                    </div>
                   </div>
 
                   <div className="lg:col-span-4 space-y-8">
@@ -793,7 +803,7 @@ const App: React.FC = () => {
                <div className="no-print w-80 bg-white border-l border-slate-200 h-full flex flex-col animate-in slide-in-from-right duration-500">
                   <div className="p-6 border-b border-slate-100 bg-slate-50 flex items-center gap-3">
                     <div className="p-2 bg-emerald-500 rounded-lg text-white"><PaletteIcon size={20}/></div>
-                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Style Selection Slider</h3>
+                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Styles (All White)</h3>
                   </div>
                   <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scroll">
                     {STANDARD_THEMES.map(t => (

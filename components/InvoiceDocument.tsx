@@ -30,7 +30,7 @@ const getThemeConfig = (theme: InvoiceTheme, customData?: CustomTheme): ThemeCon
       accent: customData.accent,
       secondary: customData.secondary,
       bg: 'bg-white',
-      text: customData.text,
+      text: 'text-slate-900',
       border: customData.border,
       font: customData.font,
       radius: customData.radius,
@@ -40,31 +40,32 @@ const getThemeConfig = (theme: InvoiceTheme, customData?: CustomTheme): ThemeCon
     };
   }
 
+  // Force bg-white and text-slate-900 for all standard themes per request
   const configs: Record<string, Partial<ThemeConfig>> = {
-    'logistics-grid': { accent: 'bg-emerald-600', secondary: 'text-emerald-700', bg: 'bg-white', border: 'border-slate-900', font: 'font-sans', radius: 'rounded-none', layout: 'classic', tableStyle: 'heavy' },
-    'corporate': { accent: 'bg-slate-900', secondary: 'text-slate-600', bg: 'bg-white', border: 'border-slate-200', font: 'font-sans', radius: 'rounded-lg', layout: 'split', tableStyle: 'clean' },
-    'luxury-gold': { accent: 'bg-amber-600', secondary: 'text-amber-500', bg: 'bg-white', border: 'border-amber-200', font: 'font-playfair', radius: 'rounded-none', layout: 'centered', tableStyle: 'clean' },
-    'vintage': { accent: 'bg-amber-800', secondary: 'text-amber-900', bg: 'bg-white', border: 'border-amber-900/20', font: 'font-serif-bask', radius: 'rounded-none', layout: 'classic', tableStyle: 'grid' },
-    'technical-draft': { accent: 'bg-slate-700', secondary: 'text-slate-500', bg: 'bg-white', border: 'border-slate-300', font: 'font-mono-jb', radius: 'rounded-none', layout: 'industrial', tableStyle: 'grid' },
-    'swiss-modern': { accent: 'bg-red-600', secondary: 'text-black', bg: 'bg-white', border: 'border-black', font: 'font-bebas', radius: 'rounded-none', layout: 'bold', tableStyle: 'heavy' },
-    'minimalist': { accent: 'bg-slate-900', secondary: 'text-slate-400', bg: 'bg-white', border: 'border-transparent', font: 'font-grotesk', radius: 'rounded-none', layout: 'minimal', tableStyle: 'clean' },
-    'sidebar-pro': { accent: 'bg-blue-600', secondary: 'text-blue-800', bg: 'bg-white', border: 'border-slate-100', font: 'font-sans', radius: 'rounded-2xl', layout: 'sidebar', tableStyle: 'clean' },
-    'modern-cards': { accent: 'bg-purple-600', secondary: 'text-purple-700', bg: 'bg-white', border: 'border-purple-100', font: 'font-sans', radius: 'rounded-3xl', layout: 'cards', tableStyle: 'clean' },
-    'blueprint': { accent: 'bg-cyan-600', secondary: 'text-cyan-700', bg: 'bg-white', border: 'border-cyan-200', font: 'font-mono-jb', layout: 'blueprint', tableStyle: 'grid' },
-    'elegant': { accent: 'bg-rose-400', secondary: 'text-rose-600', bg: 'bg-white', border: 'border-rose-100', font: 'font-serif-bask', layout: 'elegant', tableStyle: 'clean' },
-    'industrial': { accent: 'bg-zinc-900', secondary: 'text-zinc-600', bg: 'bg-white', border: 'border-zinc-300', font: 'font-bebas', layout: 'industrial', tableStyle: 'heavy' },
-    'dark-mode-pro': { accent: 'bg-emerald-500', secondary: 'text-emerald-400', bg: 'bg-slate-950', text: 'text-white', border: 'border-slate-800', font: 'font-grotesk', layout: 'dark', tableStyle: 'heavy' },
-    'brutalist': { accent: 'bg-yellow-400', secondary: 'text-black', bg: 'bg-white', border: 'border-black', font: 'font-bebas', layout: 'brutalist', tableStyle: 'heavy' },
-    'airport-terminal': { accent: 'bg-black', secondary: 'text-yellow-400', bg: 'bg-white', border: 'border-slate-200', font: 'font-mono-jb', layout: 'airport', tableStyle: 'grid' },
-    'eco-freight': { accent: 'bg-lime-600', secondary: 'text-lime-800', bg: 'bg-white', border: 'border-lime-200', font: 'font-sans', layout: 'eco', tableStyle: 'clean' },
+    'logistics-grid': { accent: 'bg-emerald-600', secondary: 'text-emerald-700', border: 'border-slate-900', font: 'font-sans', radius: 'rounded-none', layout: 'classic', tableStyle: 'heavy' },
+    'corporate': { accent: 'bg-slate-900', secondary: 'text-slate-600', border: 'border-slate-200', font: 'font-sans', radius: 'rounded-lg', layout: 'split', tableStyle: 'clean' },
+    'luxury-gold': { accent: 'bg-amber-600', secondary: 'text-amber-500', border: 'border-amber-200', font: 'font-playfair', radius: 'rounded-none', layout: 'centered', tableStyle: 'clean' },
+    'vintage': { accent: 'bg-amber-800', secondary: 'text-amber-900', border: 'border-amber-900/20', font: 'font-serif-bask', radius: 'rounded-none', layout: 'classic', tableStyle: 'grid' },
+    'technical-draft': { accent: 'bg-slate-700', secondary: 'text-slate-500', border: 'border-slate-300', font: 'font-mono-jb', radius: 'rounded-none', layout: 'industrial', tableStyle: 'grid' },
+    'swiss-modern': { accent: 'bg-slate-900', secondary: 'text-slate-500', border: 'border-slate-200', font: 'font-grotesk', radius: 'rounded-none', layout: 'bold', tableStyle: 'clean' },
+    'minimalist': { accent: 'bg-slate-900', secondary: 'text-slate-400', border: 'border-transparent', font: 'font-grotesk', radius: 'rounded-none', layout: 'minimal', tableStyle: 'clean' },
+    'sidebar-pro': { accent: 'bg-blue-600', secondary: 'text-blue-800', border: 'border-slate-100', font: 'font-sans', radius: 'rounded-2xl', layout: 'sidebar', tableStyle: 'clean' },
+    'modern-cards': { accent: 'bg-purple-600', secondary: 'text-purple-700', border: 'border-purple-100', font: 'font-sans', radius: 'rounded-3xl', layout: 'cards', tableStyle: 'clean' },
+    'blueprint': { accent: 'bg-cyan-600', secondary: 'text-cyan-700', border: 'border-cyan-200', font: 'font-mono-jb', layout: 'blueprint', tableStyle: 'grid' },
+    'elegant': { accent: 'bg-rose-400', secondary: 'text-rose-600', border: 'border-rose-100', font: 'font-serif-bask', layout: 'elegant', tableStyle: 'clean' },
+    'industrial': { accent: 'bg-zinc-900', secondary: 'text-zinc-600', border: 'border-zinc-300', font: 'font-bebas', layout: 'industrial', tableStyle: 'heavy' },
+    'dark-mode-pro': { accent: 'bg-emerald-600', secondary: 'text-emerald-700', border: 'border-slate-200', font: 'font-grotesk', layout: 'dark', tableStyle: 'heavy' },
+    'brutalist': { accent: 'bg-yellow-400', secondary: 'text-slate-900', border: 'border-black', font: 'font-bebas', layout: 'brutalist', tableStyle: 'heavy' },
+    'airport-terminal': { accent: 'bg-slate-900', secondary: 'text-slate-500', border: 'border-slate-200', font: 'font-mono-jb', layout: 'airport', tableStyle: 'grid' },
+    'eco-freight': { accent: 'bg-lime-600', secondary: 'text-lime-800', border: 'border-lime-200', font: 'font-sans', layout: 'eco', tableStyle: 'clean' },
   };
 
   const base = configs[theme] || configs['logistics-grid'];
   return {
     accent: base.accent!,
     secondary: base.secondary!,
-    bg: base.bg || 'bg-white',
-    text: base.text || 'text-slate-900',
+    bg: 'bg-white', // Strictly white background
+    text: 'text-slate-900', // Strictly dark text
     border: base.border!,
     font: base.font!,
     radius: base.radius || 'rounded-none',
@@ -138,11 +139,11 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
         <Truck size={60} />
       </div>
       <div>
-        <p className={`text-[10px] font-black uppercase tracking-widest ${t.layout === 'dark' ? 'text-slate-500' : 'text-slate-400'} mb-1`}>Official Shipper</p>
+        <p className={`text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1`}>Official Shipper</p>
         <p className={`text-xl font-black uppercase ${t.text}`}>{mainShipper}</p>
       </div>
-      <div className={`border-l-2 ${t.layout === 'dark' ? 'border-slate-800' : 'border-slate-100'} pl-6`}>
-        <p className={`text-[10px] font-black uppercase tracking-widest ${t.layout === 'dark' ? 'text-slate-500' : 'text-slate-400'} mb-1`}>Contracted Trucker</p>
+      <div className={`border-l-2 border-slate-100 pl-6`}>
+        <p className={`text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1`}>Contracted Trucker</p>
         <p className={`text-xl font-black uppercase ${t.text}`}>{mainTrucker}</p>
       </div>
     </div>
@@ -153,20 +154,20 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
       <table className={`w-full text-left table-auto border-collapse ${t.tableStyle === 'grid' ? 'border-2' : ''} ${t.tableStyle === 'heavy' ? 'border-t-8 border-slate-950' : ''}`}>
         {!noHeader && (
           <thead>
-            <tr className={`border-b-2 ${t.layout === 'dark' ? 'border-slate-700' : 'border-slate-950'}`}>
-              <th className={`py-3 px-4 text-[10px] font-black uppercase tracking-widest ${t.layout === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Logistics Itemization</th>
-              <th className={`py-3 px-4 text-[10px] font-black uppercase tracking-widest ${t.layout === 'dark' ? 'text-slate-500' : 'text-slate-400'} text-right`}>Subtotal</th>
+            <tr className={`border-b-2 border-slate-950`}>
+              <th className={`py-3 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400`}>Logistics Itemization</th>
+              <th className={`py-3 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right`}>Subtotal</th>
             </tr>
           </thead>
         )}
-        <tbody className={`divide-y ${t.layout === 'dark' ? 'divide-slate-800' : 'divide-slate-100'}`}>
+        <tbody className={`divide-y divide-slate-100`}>
           {groupedItems.map((group, idx) => (
             <tr key={idx} className="break-inside-avoid">
               <td className="py-4 px-4 align-top">
                 <div className="flex items-center gap-3 mb-2">
                   <div className={`w-1 h-5 ${t.accent}`}></div>
                   <p className={`font-black text-xl uppercase ${t.text}`}>{group[0].bookingNo}</p>
-                  <div className={`flex items-center gap-2 py-0.5 px-2 rounded ${t.layout === 'dark' ? 'bg-slate-900 border-slate-800 text-slate-400' : 'bg-slate-50 border-slate-100 text-slate-500'} text-[9px] font-black uppercase`}>
+                  <div className={`flex items-center gap-2 py-0.5 px-2 rounded bg-slate-50 border-slate-100 text-slate-500 text-[9px] font-black uppercase`}>
                      <span>{group[0].goPort}</span>
                      <ArrowRight size={10} className="text-emerald-500" />
                      <span>{group[0].giPort}</span>
@@ -174,7 +175,7 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
                 </div>
                 <div className="ml-4 flex flex-wrap gap-1.5">
                   {group.map(u => (
-                    <span key={u.id} className={`text-[10px] font-black px-2 py-0.5 border ${t.layout === 'dark' ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white'} rounded-sm uppercase`}>
+                    <span key={u.id} className={`text-[10px] font-black px-2 py-0.5 border border-slate-200 bg-white rounded-sm uppercase`}>
                       {u.reeferNumber}
                     </span>
                   ))}
@@ -194,14 +195,14 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
 
   const renderLayout = () => {
     switch (t.layout) {
-      case 'dark': return <DarkLayout />;
+      case 'dark': return <DarkLayout />; // Now strictly white/black per theme logic
       case 'brutalist': return <BrutalistLayout />;
       case 'airport': return <AirportLayout />;
       case 'eco': return <EcoLayout />;
       case 'centered': return <><CenteredLayout /><LogisticsInfoBanner /><InvoiceTable /></>;
       case 'split': return <><SplitLayout /><LogisticsInfoBanner /><InvoiceTable /></>;
       case 'industrial': return <IndustrialLayout />;
-      case 'bold': return <><SwissBoldLayout /><LogisticsInfoBanner /><InvoiceTable /></>;
+      case 'bold': return <><SwissModernCleanLayout /><LogisticsInfoBanner /><InvoiceTable /></>;
       case 'sidebar': return <SidebarLayout />;
       case 'cards': return <CardsLayout />;
       case 'blueprint': return <><BlueprintLayout /><LogisticsInfoBanner /><InvoiceTable /></>;
@@ -211,16 +212,39 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
     }
   };
 
+  /* Fix: Added missing SplitLayout component definition for usage in renderLayout switch */
+  const SplitLayout = () => (
+    <div style={spacingStyle} className="flex justify-between items-start pt-10 pb-8 border-b-2 border-slate-900/10">
+      <div>
+        <h1 className="text-4xl font-black uppercase tracking-tight leading-none">{profile.companyName}</h1>
+        <p className="text-xs font-bold text-slate-400 mt-2 uppercase tracking-widest">{profile.ownerName}</p>
+        <div className="mt-8">
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Bill To</p>
+          <p className="text-xl font-black uppercase tracking-tight">{invoice.customerName}</p>
+          {fields.showCustomerAddress && <p className="text-[10px] opacity-60 mt-1">{invoice.customerAddress}</p>}
+        </div>
+      </div>
+      <div className="text-right">
+        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Invoice Document</p>
+        <p className="text-4xl font-black font-mono">#{invoice.invoiceNumber}</p>
+        <div className="mt-8 space-y-1">
+           <p className="text-[10px] font-black uppercase">Issued: {invoice.date}</p>
+           {fields.showDueDate && <p className="text-[10px] font-black uppercase text-emerald-600">Due: {invoice.dueDate}</p>}
+        </div>
+      </div>
+    </div>
+  );
+
   const DarkLayout = () => (
     <div className="flex flex-col h-full">
-      <div style={spacingStyle} className="flex justify-between items-start border-b-2 border-slate-800 pb-8 pt-6">
+      <div style={spacingStyle} className="flex justify-between items-start border-b-2 border-slate-200 pb-8 pt-6">
         <div>
-          <h1 className="text-4xl font-black uppercase tracking-tight text-emerald-500 leading-none">{profile.companyName}</h1>
+          <h1 className="text-4xl font-black uppercase tracking-tight text-emerald-600 leading-none">{profile.companyName}</h1>
           <p className="text-xs font-bold text-slate-400 mt-2 uppercase tracking-widest">{profile.ownerName}</p>
         </div>
         <div className="text-right">
-          <p className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.3em] mb-1">Electronic Bill</p>
-          <p className="text-3xl font-black font-mono">{invoice.invoiceNumber}</p>
+          <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.3em] mb-1">Logistics Manifest</p>
+          <p className="text-3xl font-black font-mono">#{invoice.invoiceNumber}</p>
         </div>
       </div>
       <LogisticsInfoBanner />
@@ -230,11 +254,11 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
 
   const BrutalistLayout = () => (
     <div className="flex flex-col h-full">
-      <div style={spacingStyle} className="bg-yellow-400 p-8 border-4 border-black">
-        <h1 className="text-7xl font-bebas leading-none tracking-tighter">{profile.companyName}</h1>
+      <div style={spacingStyle} className="bg-yellow-400/10 p-8 border-4 border-black">
+        <h1 className="text-7xl font-bebas leading-none tracking-tighter text-black">{profile.companyName}</h1>
         <div className="flex justify-between items-end mt-4">
-          <p className="text-2xl font-bebas uppercase tracking-widest">{profile.ownerName}</p>
-          <p className="text-5xl font-bebas">#{invoice.invoiceNumber}</p>
+          <p className="text-2xl font-bebas uppercase tracking-widest text-black">{profile.ownerName}</p>
+          <p className="text-5xl font-bebas text-black">#{invoice.invoiceNumber}</p>
         </div>
       </div>
       <LogisticsInfoBanner />
@@ -243,18 +267,18 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
   );
 
   const AirportLayout = () => (
-    <div className="flex flex-col h-full border-x-4 border-black px-8 py-10">
-      <div style={spacingStyle} className="bg-black text-yellow-400 p-6 rounded-t-xl">
+    <div className="flex flex-col h-full border-x-4 border-slate-900 px-8 py-10">
+      <div style={spacingStyle} className="border-4 border-slate-900 p-6 rounded-t-xl">
         <div className="flex justify-between items-center">
           <div className="flex gap-4 items-center">
-            <Globe2 size={40} />
+            <Globe2 size={40} className="text-slate-900" />
             <div>
               <h1 className="text-4xl font-mono font-black uppercase tracking-tighter">{profile.companyName}</h1>
-              <p className="text-xs font-mono font-bold">TERMINAL: OPERATIONS_A</p>
+              <p className="text-xs font-mono font-bold text-slate-500">SYSTEM: LOGISTICS_CORE_V1</p>
             </div>
           </div>
           <div className="text-right">
-            <p className="text-xs font-mono font-black">MANIFEST_NO: {invoice.invoiceNumber}</p>
+            <p className="text-xs font-mono font-black">REF_NO: {invoice.invoiceNumber}</p>
             <p className="text-xs font-mono font-bold">{invoice.date}</p>
           </div>
         </div>
@@ -275,7 +299,7 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
           <p className="text-xs font-bold text-lime-700 mt-2 uppercase ml-14">{profile.ownerName}</p>
         </div>
         <div className="text-right">
-           <p className="text-[10px] font-black uppercase tracking-widest text-lime-400">Freight Bill</p>
+           <p className="text-[10px] font-black uppercase tracking-widest text-lime-400">Green Logistics</p>
            <p className="text-2xl font-black text-lime-900">{invoice.invoiceNumber}</p>
         </div>
       </div>
@@ -325,7 +349,7 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
         {fields.showLogo && profile.logoUrl && <img src={profile.logoUrl} className="h-24 mx-auto object-contain" />}
         <div>
           <h1 className="text-4xl font-playfair font-bold uppercase tracking-widest">{profile.companyName}</h1>
-          <p className="text-xs font-black uppercase tracking-[0.5em] text-amber-500 mt-1">{profile.ownerName}</p>
+          <p className="text-xs font-black uppercase tracking-[0.5em] text-amber-600 mt-1">{profile.ownerName}</p>
         </div>
         <div className="w-16 h-0.5 bg-amber-500 mx-auto"></div>
         <p className="text-[10px] font-serif uppercase tracking-widest opacity-60">{profile.address}</p>
@@ -349,18 +373,18 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
 
   const SidebarLayout = () => (
     <div className="grid grid-cols-12 h-full -mx-[15mm] -my-[15mm]">
-      <div className={`col-span-3 ${t.accent} text-white p-10 flex flex-col gap-10`}>
-        {fields.showLogo && profile.logoUrl && <img src={profile.logoUrl} className="w-full object-contain mb-4 invert brightness-0" />}
+      <div className={`col-span-3 border-r border-slate-100 p-10 flex flex-col gap-10`}>
+        {fields.showLogo && profile.logoUrl && <img src={profile.logoUrl} className="w-full object-contain mb-4" />}
         <div className="space-y-4">
-          <p className="text-[10px] font-black uppercase tracking-widest opacity-50">Invoice No.</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Invoice No.</p>
           <p className="text-2xl font-black">#{invoice.invoiceNumber}</p>
         </div>
         <div className="space-y-4">
-          <p className="text-[10px] font-black uppercase tracking-widest opacity-50">Billed To</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Billed To</p>
           <p className="text-lg font-black uppercase">{invoice.customerName}</p>
           <p className="text-[9px] leading-relaxed opacity-70">{invoice.customerAddress}</p>
         </div>
-        <div className="mt-auto space-y-2 opacity-50 text-[9px] font-black uppercase">
+        <div className="mt-auto space-y-2 text-slate-400 text-[9px] font-black uppercase">
           <p>Date: {invoice.date}</p>
           <p>Due: {invoice.dueDate}</p>
         </div>
@@ -377,12 +401,12 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
     <div className="flex flex-col h-full">
       <div className="flex justify-between items-center mb-10">
         <div>
-          <h1 className="text-4xl font-black text-purple-600 tracking-tight leading-none">{profile.companyName}</h1>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] mt-2">{profile.ownerName} <span className="opacity-40">| Principal</span></p>
+          <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-none">{profile.companyName}</h1>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] mt-2 text-slate-400">{profile.ownerName} <span className="opacity-40">| Principal</span></p>
         </div>
-        <div className="bg-purple-50 p-6 rounded-3xl text-right">
-          <p className="text-[10px] font-black uppercase tracking-widest text-purple-400 mb-1">Doc #</p>
-          <p className="text-2xl font-black text-purple-900 leading-none">{invoice.invoiceNumber}</p>
+        <div className="bg-slate-50 p-6 rounded-3xl text-right">
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Ref ID</p>
+          <p className="text-2xl font-black text-slate-900 leading-none">{invoice.invoiceNumber}</p>
         </div>
       </div>
       <LogisticsInfoBanner />
@@ -393,11 +417,11 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
   );
 
   const BlueprintLayout = () => (
-    <div className="flex flex-col h-full border-4 border-cyan-600 p-8">
-      <div className="flex justify-between border-b-2 border-cyan-600 pb-8 mb-8">
+    <div className="flex flex-col h-full border-4 border-cyan-600/30 p-8">
+      <div className="flex justify-between border-b-2 border-cyan-600/30 pb-8 mb-8">
         <div>
           <p className="text-[10px] font-mono font-black text-cyan-600 uppercase mb-2">// LOGISTICS_DRAFT</p>
-          <h1 className="text-5xl font-mono font-black uppercase leading-none tracking-tighter">{profile.companyName}</h1>
+          <h1 className="text-5xl font-mono font-black uppercase leading-none tracking-tighter text-slate-900">{profile.companyName}</h1>
           <p className="text-xs font-mono font-bold mt-1 text-cyan-700">OWNER: {profile.ownerName}</p>
         </div>
         <div className="text-right font-mono">
@@ -406,7 +430,7 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
         </div>
       </div>
       <div className="grid grid-cols-2 gap-10 mb-12 font-mono">
-        <div className="p-4 bg-cyan-50 border border-cyan-100">
+        <div className="p-4 bg-cyan-50/50 border border-cyan-100">
           <p className="text-[10px] font-black text-cyan-600 uppercase mb-2">TARGET_CLIENT</p>
           <p className="text-xl font-black">{invoice.customerName}</p>
           <p className="text-[10px] opacity-60 mt-1">{invoice.customerAddress}</p>
@@ -462,13 +486,13 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
   );
 
   const IndustrialLayout = () => (
-    <div className="grid grid-cols-12 border-4 border-slate-900 h-full overflow-hidden">
-       <div className="col-span-7 border-b-4 border-r-4 border-slate-900 p-6 bg-white">
+    <div className="grid grid-cols-12 border-4 border-slate-900 h-full overflow-hidden bg-white">
+       <div className="col-span-7 border-b-4 border-r-4 border-slate-900 p-6">
           <div className="flex items-start gap-4">
             {profile.logoUrl && <img src={profile.logoUrl} className="h-16 w-16 object-contain" />}
             <div>
               <h1 className="text-3xl font-mono font-black uppercase tracking-tight leading-none">{profile.companyName}</h1>
-              <p className="text-[10px] font-mono font-bold bg-slate-900 text-white px-2 inline-block mt-2">PRINCIPAL: {profile.ownerName}</p>
+              <p className="text-[10px] font-mono font-bold border border-slate-900 px-2 inline-block mt-2">PRINCIPAL: {profile.ownerName}</p>
             </div>
           </div>
        </div>
@@ -490,35 +514,24 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
     </div>
   );
 
-  const SwissBoldLayout = () => (
+  const SwissModernCleanLayout = () => (
     <div className="flex flex-col h-full bg-white px-4">
-      <div className="flex justify-between items-end border-b-[12px] border-black pb-4 pt-10">
-        <h1 className="text-7xl font-bebas leading-none tracking-tighter">INVOICE</h1>
-        <div className="text-right"><p className="text-5xl font-bebas leading-none italic">{invoice.invoiceNumber}</p></div>
+      <div className="flex justify-between items-end border-b-2 border-black pb-4 pt-10">
+        <h1 className="text-4xl font-grotesk font-black leading-none tracking-tight">INVOICE DOCUMENT</h1>
+        <div className="text-right"><p className="text-2xl font-grotesk font-bold uppercase tracking-tighter">{invoice.invoiceNumber}</p></div>
       </div>
-      <div className="grid grid-cols-12 gap-4 mt-8">
-        <div className="col-span-8 space-y-2">
-          <h2 className="text-5xl font-bebas leading-none">{profile.companyName}</h2>
-          <p className="text-xl font-bebas text-red-600 tracking-widest">{profile.ownerName}</p>
+      <div className="grid grid-cols-12 gap-8 mt-8">
+        <div className="col-span-8 space-y-1">
+          <h2 className="text-3xl font-grotesk font-black leading-none">{profile.companyName}</h2>
+          <p className="text-sm font-bold text-slate-400 tracking-widest uppercase">{profile.ownerName}</p>
+          <p className="text-[10px] mt-4 font-bold text-slate-500 uppercase max-w-sm">{profile.address}</p>
         </div>
-        <div className="col-span-4 bg-black text-white p-6 flex flex-col justify-between">
-          <p className="text-2xl font-bebas tracking-wide uppercase">{invoice.customerName}</p>
-          <p className="text-[10px] font-black uppercase">Date: {invoice.date}</p>
-        </div>
-      </div>
-    </div>
-  );
-
-  const SplitLayout = () => (
-    <div className="flex flex-col">
-      <div style={spacingStyle} className="flex justify-between items-center bg-slate-900 text-white -mx-[15mm] p-[10mm] px-[15mm] mb-12">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-black tracking-tighter uppercase">{profile.companyName}</h1>
-          <p className="text-xs font-black uppercase tracking-[0.3em] text-emerald-400">{profile.ownerName}</p>
-        </div>
-        <div className="text-right">
-          <p className="text-4xl font-black tracking-tight leading-none">INVOICE</p>
-          <p className="text-lg font-mono text-emerald-400">#{invoice.invoiceNumber}</p>
+        <div className="col-span-4 border border-slate-200 p-6 flex flex-col justify-between rounded-xl bg-slate-50">
+          <div>
+            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Billed Client</p>
+            <p className="text-xl font-grotesk font-black tracking-tight uppercase">{invoice.customerName}</p>
+          </div>
+          <p className="text-[10px] font-black uppercase text-slate-400 mt-4">Issue Date: {invoice.date}</p>
         </div>
       </div>
     </div>
@@ -526,13 +539,13 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
 
   const TotalsSection = () => (
     <div className="mt-8 flex justify-end">
-      <div className={`w-64 p-6 ${t.layout === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200'} border-2 rounded-3xl flex flex-col gap-2 items-end`}>
-         <div className={`flex justify-between w-full text-[10px] font-bold uppercase ${t.layout === 'dark' ? 'text-slate-500' : 'opacity-60'}`}>
+      <div className={`w-64 p-6 bg-slate-50 border-slate-200 border-2 rounded-3xl flex flex-col gap-2 items-end`}>
+         <div className={`flex justify-between w-full text-[10px] font-bold uppercase opacity-60`}>
            <span>Gross Subtotal</span>
            <span>{formatCurrency(invoice.subtotal, invoice.currency)}</span>
          </div>
-         <div className={`w-full h-px ${t.layout === 'dark' ? 'bg-slate-800' : 'bg-slate-950/10'} my-1`}></div>
-         <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${t.layout === 'dark' ? 'text-emerald-500' : 'opacity-40'}`}>Net Amount Payable</p>
+         <div className={`w-full h-px bg-slate-950/10 my-1`}></div>
+         <p className={`text-[10px] font-black uppercase tracking-[0.2em] opacity-40`}>Net Amount Payable</p>
          <p className={`text-3xl font-black tracking-tighter leading-none ${t.text}`}>{formatCurrency(invoice.total, invoice.currency)}</p>
       </div>
     </div>
@@ -540,30 +553,38 @@ const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ invoice, isActivePrin
 
   return (
     <div 
-      className={`invoice-container relative shadow-2xl ${t.bg} ${t.font} ${t.text} ${isActivePrint ? 'active-print' : ''}`}
+      className={`invoice-container relative shadow-2xl bg-white ${t.font} ${t.text} ${isActivePrint ? 'active-print' : ''}`}
       style={paddingStyle}
     >
       <div style={scaleStyle} className="w-full flex flex-col h-full overflow-hidden relative">
         <WatermarkLayer />
         {renderLayout()}
         <TotalsSection />
-        <div className={`mt-auto pt-10 border-t ${t.layout === 'dark' ? 'border-slate-800' : 'border-slate-100'} flex justify-between items-end`}>
+        <div className={`mt-auto pt-10 border-t border-slate-100 flex justify-between items-end`}>
            <div className="space-y-4 max-w-lg">
               {fields.showNotes && invoice.notes && (
-                <div className={`p-4 ${t.layout === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-slate-50/50 border-slate-100'} border rounded-2xl`}>
+                <div className={`p-4 bg-slate-50/50 border border-slate-100 rounded-2xl`}>
                   <p className="text-[9px] font-black uppercase tracking-widest text-emerald-600 mb-1 flex items-center gap-1"><Info size={10}/> Official Notes</p>
-                  <p className={`text-[10px] font-bold leading-relaxed ${t.layout === 'dark' ? 'text-slate-400' : 'opacity-60'}`}>{invoice.notes}</p>
+                  <p className={`text-[10px] font-bold leading-relaxed opacity-60`}>{invoice.notes}</p>
                 </div>
               )}
-              <p className={`text-[8px] font-black uppercase tracking-[0.4em] ${t.layout === 'dark' ? 'text-slate-700' : 'opacity-30'}`}>NILE FLEET GENSET POWERED BY BEBITO</p>
+              <p className={`text-[8px] font-black uppercase tracking-[0.4em] opacity-30`}>NILE FLEET GENSET POWERED BY BEBITO</p>
            </div>
            {fields.showSignature && (
              <div className="text-right flex flex-col items-end">
                 {profile.signatureUrl && <img src={profile.signatureUrl} className="h-24 w-auto object-contain mb-[-10px] z-20 pointer-events-none mix-blend-multiply" />}
-                <div className={`border-t-2 ${t.layout === 'dark' ? 'border-emerald-500' : 'border-slate-900'} pt-2 w-64`}>
-                  <p className={`text-[9px] font-black uppercase tracking-widest ${t.layout === 'dark' ? 'text-slate-600' : 'opacity-40'}`}>Authorized Official</p>
-                  <div className="mt-2 space-y-1">
+                <div className={`border-t-2 border-slate-900 pt-2 w-72`}>
+                  <p className={`text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2`}>Authorized Official</p>
+                  <div className="space-y-1">
                     <p className={`text-sm font-black uppercase leading-none ${t.text}`}>{profile.name}</p>
+                    {profile.title && <p className="text-[10px] font-black uppercase text-emerald-600 tracking-tighter">{profile.title}</p>}
+                    
+                    {/* MY INFO: Added detailed contact info under the signature per request */}
+                    <div className="mt-3 space-y-0.5 border-t border-slate-100 pt-2 text-right">
+                      {profile.phone && <p className="text-[9px] font-bold text-slate-500 flex items-center justify-end gap-1.5 leading-none"><Phone size={9} className="text-slate-300"/> {profile.phone}</p>}
+                      {profile.email && <p className="text-[9px] font-bold text-slate-500 flex items-center justify-end gap-1.5 leading-none"><Mail size={9} className="text-slate-300"/> {profile.email}</p>}
+                      {profile.website && <p className="text-[9px] font-bold text-slate-500 flex items-center justify-end gap-1.5 leading-none"><Globe size={9} className="text-slate-300"/> {profile.website}</p>}
+                    </div>
                   </div>
                 </div>
              </div>
