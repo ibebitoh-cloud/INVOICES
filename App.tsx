@@ -15,7 +15,8 @@ import {
   PlusCircle, Compass, Leaf, Sunrise, ScrollText, FlaskConical, Beaker,
   ShieldCheck, Key, Cpu, Paintbrush, Building2, Hash, Edit3,
   FileText, Activity, Layers2, FileOutput, Globe, Phone, Landmark, Sliders, ToggleRight, ToggleLeft, Save,
-  Hash as HashIcon, Mail, Box, Calendar, MessageSquareText, Award as AwardIcon, User
+  Hash as HashIcon, Mail, Box, Calendar, MessageSquareText, Award as AwardIcon, User,
+  Maximize, Minimize
 } from 'lucide-react';
 import { Booking, Invoice, InvoiceSectionId, TemplateConfig, UserProfile, TemplateFields, GroupingType, InvoiceTheme, CustomerConfig, CustomTheme } from './types';
 import { parseCurrency, formatCurrency, exportToCSV, downloadSampleCSV } from './utils/formatters';
@@ -64,6 +65,7 @@ const App: React.FC = () => {
   const [showManualEntryModal, setShowManualEntryModal] = useState(false);
   const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(false);
   
   const [selectedCustomerForDetail, setSelectedCustomerForDetail] = useState<CustomerConfig | null>(null);
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
@@ -153,6 +155,24 @@ const App: React.FC = () => {
     const toSave = { ...templateConfig, hiddenSections: Array.from(templateConfig.hiddenSections) };
     localStorage.setItem('template_config', JSON.stringify(toSave));
   }, [templateConfig]);
+
+  useEffect(() => {
+    const handler = () => setIsFullScreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', handler);
+    return () => document.removeEventListener('fullscreenchange', handler);
+  }, []);
+
+  const toggleFullScreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => {
+        console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+      });
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  };
 
   const handleDownloadPDF = async (filename: string = 'invoice.pdf') => {
     const element = document.querySelector('.invoice-container');
@@ -332,7 +352,6 @@ const App: React.FC = () => {
         updatedCustomerConfigs[custIdx].nextNumber += 1;
       }
 
-      // Sync the due date in the notes string automatically
       const syncedNotes = invConfig.notes.replace(/\d{4}-\d{2}-\d{2}/, customerDueDate);
 
       generatedInvoices.push({
@@ -347,7 +366,7 @@ const App: React.FC = () => {
         subtotal,
         total: subtotal,
         currency: invConfig.currency,
-        notes: syncedNotes, // Synced with the selected due date
+        notes: syncedNotes,
         templateConfig,
         userProfile: profile
       });
@@ -454,7 +473,6 @@ const App: React.FC = () => {
     });
 
     setBookings(prev => [newEntry, ...prev]);
-    // Reset state after save
     setManualBooking({
         bookingNo: '', reeferNumber: '', goPort: '', giPort: '', rateValue: 0,
         shipper: '', trucker: '', shipperAddress: '', customer: ''
@@ -487,12 +505,21 @@ const App: React.FC = () => {
     <div className="min-h-screen flex bg-slate-50 antialiased overflow-hidden">
       <aside className="no-print w-64 bg-slate-900 flex flex-col h-screen sticky top-0 shadow-2xl z-50 shrink-0">
         <div className="p-8">
-          <div className="flex flex-col gap-0.5 mb-10">
-            <div className="flex items-center gap-3">
-              <div className="bg-emerald-500 p-2 rounded-xl text-white"><Briefcase size={20} /></div>
-              <h1 className="text-sm font-black text-white tracking-tighter uppercase leading-tight">NILE FLEET<br/>GENSET</h1>
+          <div className="flex justify-between items-start mb-10">
+            <div className="flex flex-col gap-0.5">
+              <div className="flex items-center gap-3">
+                <div className="bg-emerald-500 p-2 rounded-xl text-white"><Briefcase size={20} /></div>
+                <h1 className="text-sm font-black text-white tracking-tighter uppercase leading-tight">NILE FLEET<br/>GENSET</h1>
+              </div>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] ml-11">{profile.ownerName}</p>
             </div>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] ml-11">{profile.ownerName}</p>
+            <button 
+              onClick={toggleFullScreen}
+              className="text-slate-500 hover:text-white transition-colors p-1"
+              title={isFullScreen ? "Exit Full Screen" : "Enter Full Screen"}
+            >
+              {isFullScreen ? <Minimize size={18}/> : <Maximize size={18}/>}
+            </button>
           </div>
           <nav className="space-y-2">
             {[
@@ -861,7 +888,6 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      {/* Manual Entry Modal */}
       {showManualEntryModal && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl p-10 space-y-8">
@@ -883,7 +909,6 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Bulk Action Modal (Advanced) */}
       {showActionModal && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-6 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl p-10 space-y-8 relative">
